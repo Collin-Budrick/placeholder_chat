@@ -47,10 +47,21 @@ Thumbs.db
 tmp/
 temp/
 .tmp/
+.temp/
+
+# Rust build output
+target/
+**/target/
+
+# Test artifacts
+test-results/
+
+# Local data stores
+data/
+*.redb
 
 # Certificates (sensitive; include only if intended)
 apps/web/certs/*.key
 apps/web/certs/*.crt
 apps/web/certs/*.pem
 apps/web/certs/*.pfx
-
