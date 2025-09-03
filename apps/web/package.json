@@ -74,7 +74,7 @@
     "vite": "7.1.4",
     "vite-plugin-solid": "^2.11.8",
     "vite-plugin-mkcert": "^1.17.6",
-    "selfsigned": "^2.4.1",
+    "selfsigned": "3.0.1",
     "vite-tsconfig-paths": "5.1.4",
     "wait-on": "^8.0.4"
   },
