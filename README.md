@@ -1,65 +1,63 @@
 # goguma_chat
 
-Website, App, and Desktop application for a chat app created with performance in mind. Using bleeding edge technology like LynxJS, Qwik SSG rendering, SolidJS for dynamic server islands, Tauri, Rust, and much more.
+Website, App, and Desktop application for a chat app created with performance in mind. Using LynxJS, Qwik (SSR), SolidJS server islands, Tauri, Rust, and more.
 
-## Web Dev Start Script
+## Prerequisites
 
-This repository includes a PowerShell script to spin up the gateway service and the web development server in the background. It supports starting and stopping the dev stack via a single command.
+- Bun 1.x installed and on PATH (https://bun.sh)
+- Node.js 18+ (some tooling/scripts invoke `node` and `vite`)
+- Rust toolchain + Cargo (stable) for the gateway and desktop app
 
-### Prerequisites
+Install dependencies (workspace root):
 
-- Windows PowerShell (7+ recommended)
-- bun is installed and available in PATH (required for the web dev server)
-- The gateway executable is built and located at `target/debug/gateway.exe`
-- The script expects the repository root to contain `apps/`, `logs/`, and `target/` as shown in this project
+```sh
+bun install
+```
 
-### Quick start
+## Develop (all services)
 
-- Start the dev stack (detached)
-  - Command:
-    ```powershell
-    .\scripts\start-web-dev.ps1
-    ```
-  - This launches gateway and web dev processes in the background and writes logs to:
-    - `logs/gateway-dev.out.log`
-    - `logs/gateway-dev.err.log`
-    - `logs/web-dev.out.log`
-    - `logs/web-dev.err.log`
-  - PID files created:
-    - `logs/gateway-dev.pid`
-    - `logs/web-dev.pid`
-  - The script prints: "Launching background dev stack… (use --stop to kill later)"
+Run the full dev stack (shared package watch, gateway, web/Vite, Lynx launcher, desktop auto-run):
 
-- Stop the dev stack
-  - Command:
-    ```powershell
-    .\scripts\start-web-dev.ps1 --stop
-    ```
-  - This stops the running gateway and web dev processes and cleans up PID files.
+```sh
+bun run dev:all
+```
 
-### What happens when you run
+What happens:
+- Starts TypeScript watch for `packages/shared`.
+- Runs the Rust gateway in dev mode.
+- Starts the web app (Vite, SSR mode). Default dev URL is https://localhost:5173 (auto-discovered across 5173–5180).
+- Launches the Lynx explorer helper and the desktop app once the dev URL is available.
+- Writes a combined log to `logs/dev-all.log`. Stop with Ctrl+C.
 
-- By default, `start-web-dev.ps1` relaunches itself in detached mode so the processes keep running after the PowerShell session ends.
-- The script starts:
-  - `gateway.exe` in the background
-  - `bun run dev` (web dev server) in the `apps/web` directory
-- Logs and PID files are stored under the `logs` directory:
-  - gateway: `logs/gateway-dev.out.log`, `logs/gateway-dev.err.log`, `logs/gateway-dev.pid`
-  - web: `logs/web-dev.out.log`, `logs/web-dev.err.log`, `logs/web-dev.pid`
+Useful env vars:
+- `WEB_FORCE_URL` or `DEV_SERVER_URL` or `LAN_DEV_URL`: override the dev URL the stack should use (e.g. `https://192.168.1.10:5173`).
+- `NO_HTTPS=1`: prefer `http` scheme for local URLs (default is `https`).
+- `LYNX_QR_PORT` (default `3000`), `LYNX_HOST`, `LYNX_PORT_RANGE` (e.g. `5173-5180`).
+- `WAIT_TIMEOUT_MS` (default `120000`), `WAIT_POLL_MS` (default `400`).
 
-### Verification tips
+Troubleshooting:
+- If the desktop app fails to start, ensure Rust is installed and any platform prerequisites for Tauri/GUI apps are set up.
+- For HTTPS warnings locally, trust the self-signed certificate in your browser or set `NO_HTTPS=1`.
 
-- To verify, you can inspect the logs:
-  - `tail -f logs/web-dev.out.log`
-  - `tail -f logs/gateway-dev.out.log`
-- Or check for running processes:
-  - `gateway.exe` (Windows Task Manager or `Get-Process gateway`)
-  - `bun` (`bun.exe`/`bun` on Windows)
+## Production Preview (build + HTTPS preview)
 
-### Notes
+Build and run a production-like preview server over HTTPS:
 
-- If you need to stop all dev-related processes in one go, use the `--stop` option as shown above.
-- If bun or the gateway binary isn’t found, ensure you have built the gateway and installed bun, and that you are running the script from the repository root.
+```sh
+bun run prod:all
+```
+
+What happens:
+- Builds `packages/shared` and the web preview/SSR bundle.
+- Starts a local HTTPS proxy to `vite preview` so you get TLS + HSTS.
+- Listens on `HOST` (default `0.0.0.0`) and `PORT`/`WEB_PORT` (default `5173`).
+
+TLS options:
+- Provide your own certs with env vars (any of):
+  - `DEV_TLS_KEY_FILE` + `DEV_TLS_CERT_FILE`
+  - or `TLS_KEY_FILE` + `TLS_CERT_FILE`
+  - or `SSL_KEY_FILE` + `SSL_CERT_FILE`
+- If none are provided, an in-memory self-signed cert is used (browser will warn).
 
 ## Documentation
 
