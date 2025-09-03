@@ -89,6 +89,20 @@ if (forcedUrl) {
     // ignore malformed
   }
 }
+// Ensure mkcert is used for LAN HTTPS with the primary LAN IP included
+try {
+  const lanHostForCert = (function() {
+    try { return (new URL(forcedUrl)).hostname; } catch {}
+    try { return pickLanHost(); } catch { return undefined; }
+  })();
+  const hosts = new Set([
+    ...(webEnv.MKCERT_HOSTS ? webEnv.MKCERT_HOSTS.split(',').map(s => s.trim()) : []),
+    'localhost', '127.0.0.1', '::1',
+    ...(lanHostForCert ? [lanHostForCert] : []),
+  ].filter(Boolean));
+  if (!webEnv.USE_MKCERT) webEnv.USE_MKCERT = '1';
+  webEnv.MKCERT_HOSTS = Array.from(hosts).join(',');
+} catch {}
 procs.push(spawnTagged('WEB', 'bun', ['run', 'dev:web'], { cwd: path.join(repoRoot, 'apps', 'web'), env: webEnv }));
 // Lynx Explorer auto-launcher (from apps/web) — use LAN 192.168.* address
 function pickLanHost(prefer = ['192.168.', '192.', '10.', '172.27.', '172.']) {
@@ -268,6 +282,24 @@ async function findDevUrl() {
 (async () => {
   try {
     const url = await findDevUrl();
+    // Announce the dev URL(s) clearly for the web app
+    try {
+      const u = new URL(url);
+      const scheme = u.protocol.replace(':', '');
+      const port = u.port || (scheme === 'https' ? '443' : '80');
+      const loopbacks = ['localhost', '127.0.0.1'];
+      const lanHosts = getLocalHosts().filter((h) => !loopbacks.includes(h));
+      const localUrl = `${scheme}://localhost:${port}/`;
+      const networkUrls = Array.from(new Set(lanHosts)).map((h) => `${scheme}://${h}:${port}/`);
+      const lines = [
+        `[web] Dev server ready: ${url}`,
+        `[web] Local:   ${localUrl}`,
+        ...(networkUrls.length ? [`[web] Network: ${networkUrls[0]}`] : []),
+        ...(networkUrls.slice(1).map((n) => `          ${n}`)),
+      ].join('\n');
+      writeLines('stdout', 'WEB', Buffer.from(lines + '\n'));
+    } catch {}
+    // Also inform the desktop runner
     writeLines('stdout', 'DESK', Buffer.from(`[desktop:auto] Using dev URL ${url}\n`));
     const env = { ...process.env, TAURI_DEV_URL: url };
     const desk = spawnTagged('DESK', 'cargo', ['run', '-p', 'desktop_app'], { cwd: repoRoot, env });

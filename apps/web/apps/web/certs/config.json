@@ -1,0 +1,17 @@
+{
+  "record": {
+    "hosts": [
+      "localhost",
+      "172.20.192.1",
+      "192.168.1.19",
+      "127.0.0.1",
+      "172.23.80.1",
+      "::1"
+    ],
+    "hash": {
+      "key": "6b036695235027350447ea7f43972a2fddf9d8fd40b25d505be085c3ae4aca6e",
+      "cert": "1f9b63e59ac577e8f977b7aaac1e163c99ef44ef3f7b8235bd1bfd279adee23d"
+    }
+  },
+  "configFilePath": "C:\\Users\\Collin\\Documents\\Projects\\Stack\\apps\\web\\apps\\web\\certs\\config.json"
+}

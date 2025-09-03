@@ -29,7 +29,10 @@ errorOnDuplicatesPkgDeps(devDependencies, dependencies);
 export default defineConfig(({ command, mode }): UserConfig => {
   const extraPlugins: any[] = [];
   const resolveHttpsOptions = () => {
+    // Honor explicit disable first (used by prod preview proxy)
     if (process.env.NO_HTTPS === '1') return false as any;
+    // When using mkcert, let the plugin supply the certs
+    if (process.env.USE_MKCERT === '1') return true as any;
     const rawKey = process.env.DEV_TLS_KEY_FILE || process.env.TLS_KEY_FILE || process.env.SSL_KEY_FILE;
     const rawCert = process.env.DEV_TLS_CERT_FILE || process.env.TLS_CERT_FILE || process.env.SSL_CERT_FILE;
     const resolvePath = (p?: string) => {
@@ -45,8 +48,25 @@ export default defineConfig(({ command, mode }): UserConfig => {
       }
       return null;
     };
-    const keyFile = resolvePath(rawKey);
-    const certFile = resolvePath(rawCert);
+    let keyFile = resolvePath(rawKey);
+    let certFile = resolvePath(rawCert);
+
+    // Convenience fallback: look for certs in ./certs if env vars are not provided
+    if (!keyFile || !certFile) {
+      const defaultKeyCandidates = [
+        'certs/dev.key',
+        'certs/localhost-key.pem',
+        'certs/key.pem',
+      ];
+      const defaultCertCandidates = [
+        'certs/dev.crt',
+        'certs/dev.pem',
+        'certs/localhost.crt',
+        'certs/localhost.pem',
+      ];
+      keyFile ||= defaultKeyCandidates.map(resolvePath).find(Boolean) as string | null;
+      certFile ||= defaultCertCandidates.map(resolvePath).find(Boolean) as string | null;
+    }
     if (keyFile && certFile) {
       try {
         const relKey = path.relative(process.cwd(), keyFile);
@@ -90,11 +110,43 @@ export default defineConfig(({ command, mode }): UserConfig => {
   } catch (e) {}
   try {
     if (process.env.USE_MKCERT === '1') {
-      // Enable trusted HTTPS in dev using mkcert only when explicitly requested
+      // Enable trusted HTTPS in dev using mkcert with optional custom hosts
       // https://github.com/liuweiGL/vite-plugin-mkcert
       // @ts-ignore
       const mkcert = require('vite-plugin-mkcert');
-      extraPlugins.push(mkcert.default ? mkcert.default() : mkcert());
+      const parseHosts = (s?: string) =>
+        (s || '')
+          .split(/[\s,]+/)
+          .map((x: string) => x.trim())
+          .filter(Boolean);
+      const urlHosts = [
+        process.env.VITE_PUBLIC_HOST,
+        process.env.WEB_FORCE_URL,
+        process.env.DEV_SERVER_URL,
+        process.env.LAN_DEV_URL,
+      ]
+        .filter((u): u is string => typeof u === 'string' && u.length > 0)
+        .map((u) => {
+          try {
+            // Allow raw hosts as well as full URLs
+            return new URL(u).hostname;
+          } catch {
+            return String(u).replace(/^https?:\/\//, '').replace(/:\d+.*$/, '');
+          }
+        })
+        .filter(Boolean);
+      const baseHosts = ['localhost', '127.0.0.1', '::1'];
+      const envHosts = parseHosts(process.env.MKCERT_HOSTS);
+      // de-duplicate while keeping order: env > urls > base
+      const seen = new Set<string>();
+      const hosts = [...envHosts, ...urlHosts, ...baseHosts].filter((h) => {
+        const k = h.toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      const options = { hosts, savePath: 'apps/web/certs' } as any;
+      extraPlugins.push(mkcert.default ? mkcert.default(options) : mkcert(options));
     }
   } catch (e) {}
   try {
@@ -178,7 +230,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
     //     : undefined,
     server: {
       host: true,
-      strictPort: false,
+      // Make port strict and honor WEB_PORT/PORT if provided
+      port: Number(process.env.WEB_PORT || process.env.PORT || 5173),
+      strictPort: true,
       https: resolveHttpsOptions(),
       headers: {
         // Don't cache the server response in dev mode

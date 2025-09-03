@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import os from 'node:os';
 import path from 'node:path';
 // Load .env.development and .env to pass TLS cert paths and other config to Vite
 try {
@@ -7,6 +8,49 @@ try {
   // Load .env.development first, then .env to allow overrides
   dotenv.config({ path: path.resolve(process.cwd(), '.env.development') });
   dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+} catch {}
+
+// Prefer trusted mkcert certs for LAN HTTPS if no explicit key/cert set
+try {
+  const hasExplicitKey = Boolean(process.env.DEV_TLS_KEY_FILE || process.env.TLS_KEY_FILE || process.env.SSL_KEY_FILE);
+  const hasExplicitCert = Boolean(process.env.DEV_TLS_CERT_FILE || process.env.TLS_CERT_FILE || process.env.SSL_CERT_FILE);
+  if (!hasExplicitKey || !hasExplicitCert) {
+    // Default to using mkcert so LAN IPs are trusted
+    if (!process.env.USE_MKCERT) process.env.USE_MKCERT = '1';
+    if (!process.env.MKCERT_HOSTS) {
+      // Build a sane default list: localhost + first LAN IPv4
+      const lanAddrs = [];
+      const ifs = os.networkInterfaces();
+      for (const name of Object.keys(ifs)) {
+        for (const addr of ifs[name] || []) {
+          if (addr.family === 'IPv4' && !addr.internal) lanAddrs.push(addr.address);
+        }
+      }
+      const firstLan = lanAddrs[0];
+      const hosts = ['localhost', '127.0.0.1', '::1'];
+      if (firstLan) hosts.push(firstLan);
+      process.env.MKCERT_HOSTS = hosts.join(',');
+    }
+  }
+} catch {}
+
+// If local dev certs exist, point Vite at them automatically
+try {
+  const keyRel = 'certs/dev.key';
+  const certRel = 'certs/dev.crt';
+  const keyPath = path.resolve(process.cwd(), keyRel);
+  const certPath = path.resolve(process.cwd(), certRel);
+  // Respect explicit env if set; otherwise set when both files are present
+  if (!process.env.DEV_TLS_KEY_FILE && !process.env.TLS_KEY_FILE && !process.env.SSL_KEY_FILE) {
+    if (require('node:fs').existsSync(keyPath)) {
+      process.env.DEV_TLS_KEY_FILE = keyRel;
+    }
+  }
+  if (!process.env.DEV_TLS_CERT_FILE && !process.env.TLS_CERT_FILE && !process.env.SSL_CERT_FILE) {
+    if (require('node:fs').existsSync(certPath)) {
+      process.env.DEV_TLS_CERT_FILE = certRel;
+    }
+  }
 } catch {}
 
 // Provide safe dev defaults so Auth.js doesn't crash in dev
