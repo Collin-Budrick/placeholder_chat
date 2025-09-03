@@ -60,3 +60,12 @@ This repository includes a PowerShell script to spin up the gateway service and 
 
 - If you need to stop all dev-related processes in one go, use the `--stop` option as shown above.
 - If bun or the gateway binary isn’t found, ensure you have built the gateway and installed bun, and that you are running the script from the repository root.
+
+## Documentation
+
+- Frontend Guide: Qwik + Tailwind v4 + DaisyUI v5 + Auth.js + Modular Forms + Valibot + Vite
+  - `.clinerules/frontend_docs.md`
+  - Direct link: [.clinerules/frontend_docs.md](.clinerules/frontend_docs.md)
+- Backend Guide: Axum gateway, redb storage, bus, JWT auth, WebSockets, TLS/rustls notes
+  - `.clinerules/backend_docs.md`
+  - Direct link: [.clinerules/backend_docs.md](.clinerules/backend_docs.md)
