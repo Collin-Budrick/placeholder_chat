@@ -1,0 +1,8 @@
+{"id":"1756064507724","seq":0,"room":"smoke-test","server_ts":1756064507724,"body":{"text":"smoke-1-to-2"}}
+{"id":"1756064507737","seq":0,"room":"smoke-test","server_ts":1756064507737,"body":{"text":"smoke-2-to-1"}}
+{"id":"1756064563847","seq":0,"room":"smoke-test","server_ts":1756064563847,"body":{"text":"smoke-1-to-2"}}
+{"id":"1756064563857","seq":0,"room":"smoke-test","server_ts":1756064563857,"body":{"text":"smoke-2-to-1"}}
+{"id":"1756064992914","seq":0,"room":"smoke-test","server_ts":1756064992914,"body":{"text":"smoke-1-to-2"}}
+{"id":"1756064992924","seq":0,"room":"smoke-test","server_ts":1756064992924,"body":{"text":"smoke-2-to-1"}}
+{"id":"1756065242011","seq":0,"room":"smoke-test","server_ts":1756065242011,"body":{"text":"smoke-1-to-2"}}
+{"id":"1756065242021","seq":0,"room":"smoke-test","server_ts":1756065242021,"body":{"text":"smoke-2-to-1"}}

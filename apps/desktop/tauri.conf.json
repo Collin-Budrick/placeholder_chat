@@ -1,0 +1,18 @@
+{
+  "build": {
+    "frontendDist": "./static"
+  },
+  "productName": "StackDesktop",
+  "version": "0.1.0",
+  "identifier": "com.stack.desktop",
+  "app": {
+    "windows": [
+      {
+        "title": "Stack Desktop",
+        "width": 1200,
+        "height": 800,
+        "url": "https://REPLACE_ME_WITH_YOUR_WEBSITE"
+      }
+    ]
+  }
+}

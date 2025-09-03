@@ -1,0 +1,13 @@
+﻿[package]
+name = "rooms"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.99"
+proto = { path = "../proto" }
+storage = { path = "../storage" }
+bus = { path = "../bus" }
+serde_json = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tracing = { workspace = true }

@@ -1,0 +1,14 @@
+﻿[package]
+name = "presence"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+storage = { path = "../storage" }
+bus = { path = "../bus" }
+uuid = { workspace = true, features = ["v4"] }
+tracing = { workspace = true }

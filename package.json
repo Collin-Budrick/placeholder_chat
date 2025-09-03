@@ -1,0 +1,41 @@
+{
+  "name": "stack",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "@builder.io/qwik": "^1.16.0",
+    "@builder.io/qwik-city": "^1.16.0",
+    "@fastify/compress": "8.1.0",
+    "@fastify/static": "8.2.0",
+    "@tailwindcss/vite": "^4.1.12",
+    "daisyui": "5.0.50",
+    "express": "5.1.0",
+    "fastify": "5.5.0",
+    "fastify-plugin": "5.0.1",
+    "ignore": "^7.0.5",
+    "tailwindcss": "^4.1.12",
+    "typescript": "^5.9.2",
+    "vite": "7.1.3",
+    "vite-plugin-solid": "^2.11.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.12",
+    "@types/node": "^24.3.0",
+    "dotenv": "17.2.1",
+    "concurrently": "^9.2.1"
+  },
+  "scripts": {
+    "build.server": "vite build -c adapters/fastify/vite.config.ts",
+    "serve": "node server/entry.fastify",
+    "shared:watch": "cd packages/shared && bun run watch",
+    "gateway:dev": "node scripts/start-gateway.js",
+    "dev:all": "node scripts/dev-all.js",
+    "prod:all": "node scripts/prod-all.js",
+    "desktop:dev": "cargo run -p desktop_app",
+    "desktop:build": "cargo build -p desktop_app --release"
+  }
+}

@@ -1,0 +1,164 @@
+[
+  {
+    "deleted": [
+      {
+        "created_at": 1756194237,
+        "email": "admin@example.com",
+        "id": "03f1a0db-c458-4a21-b594-2ee3ed52b53d",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756193906,
+        "email": "admin@example.com",
+        "id": "0bcd5b3d-4329-4d80-8c5b-c08fd2d98afa",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756195589,
+        "email": "admin@example.com",
+        "id": "1b440a80-45a5-4e05-8cd3-02f6edc16e14",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756191989,
+        "email": "admin@example.com",
+        "id": "320c290c-98ad-40ba-953e-dd3f2e955850",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756193169,
+        "email": "admin@example.com",
+        "id": "44bef9fb-aa96-4163-b042-c27d7568e4f9",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756193773,
+        "email": "admin@example.com",
+        "id": "5769dd8c-6a4d-48f5-b9fc-870bcc5e37fb",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756191433,
+        "email": "admin@example.com",
+        "id": "6aeb5c8f-3e15-4adb-b6df-cecb6179cbf2",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756193140,
+        "email": "admin@example.com",
+        "id": "6d8ad5c1-b17e-4781-af51-cd20275df7a2",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756193855,
+        "email": "admin@example.com",
+        "id": "72f968c5-37dc-4cd6-8ecd-43e63f5223ac",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756194166,
+        "email": "admin@example.com",
+        "id": "7a257b47-db04-41be-adfe-bf9727e799fd",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756191380,
+        "email": "admin@example.com",
+        "id": "8745eccd-3162-41c9-9013-8332bd952450",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756191304,
+        "email": "admin@example.com",
+        "id": "88212ae0-9aa8-4840-9209-c953795da534",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756193093,
+        "email": "admin@example.com",
+        "id": "905a14ee-c1ec-4321-9164-ce7dbd8c29fe",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756191927,
+        "email": "admin@example.com",
+        "id": "a3302729-7189-450a-9d78-7d40007f846f",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756192322,
+        "email": "admin@example.com",
+        "id": "a398b064-6047-4b58-8a86-61badae163f5",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756194622,
+        "email": "admin@example.com",
+        "id": "a8f93902-76c2-4193-bcd0-3bcbcd952b2c",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756195753,
+        "email": "admin@example.com",
+        "id": "b795b33f-84ad-44e2-9201-78d7493b8391",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756192398,
+        "email": "admin@example.com",
+        "id": "c2f536f7-65ee-4f19-b5a7-9b112af1b118",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756195840,
+        "email": "admin@example.com",
+        "id": "c806859d-31d0-4135-9e1d-978a4f84a462",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756194105,
+        "email": "admin@example.com",
+        "id": "c860894b-41f4-46c7-a3b5-43971b316fd2",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756193101,
+        "email": "admin@example.com",
+        "id": "c9bfa069-2589-4aa0-861c-53d1ab9b7414",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756191221,
+        "email": "admin@example.com",
+        "id": "cbfe643f-0b47-438e-b37a-6f9d461a32e0",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756192274,
+        "email": "admin@example.com",
+        "id": "ceefc919-3875-41bd-a823-7c527795b9f9",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756194125,
+        "email": "admin@example.com",
+        "id": "d4516226-19b8-4840-9ac9-35f8f5da5d0b",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756191261,
+        "email": "admin@example.com",
+        "id": "dacc9d75-70ed-4f6d-8021-56b64b6c48ae",
+        "role": "admin"
+      },
+      {
+        "created_at": 1756191909,
+        "email": "admin@example.com",
+        "id": "e364d5eb-901f-4489-8fce-934973366fcf",
+        "role": "admin"
+      }
+    ],
+    "email": "admin@example.com",
+    "kept": "052bc26e-74ee-439c-a07f-c89778ee189b"
+  }
+]

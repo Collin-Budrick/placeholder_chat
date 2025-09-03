@@ -1,0 +1,22 @@
+﻿[package]
+name = "bus"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = { workspace = true }
+proto = { path = "../proto" }
+capnp = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "net", "fs", "time", "sync"] }
+futures-util = { workspace = true }
+nng = { workspace = true, optional = true }
+zmq = { workspace = true, optional = true }
+ipc = { path = "../ipc", optional = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[features]
+default = []
+with-nng = ["nng"]
+with-zmq = ["zmq"]
+with-ipc = ["ipc/with-interprocess"]

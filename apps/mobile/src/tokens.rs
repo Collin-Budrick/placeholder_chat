@@ -1,0 +1,36 @@
+// generated from tokens.json
+pub struct Tokens {
+    pub color_bg: &'static str,
+    pub color_brand: &'static str,
+    pub color_fg: &'static str,
+    pub color_muted: &'static str,
+    pub radius_button: f32,
+    pub radius_card: f32,
+    pub space_lg: f32,
+    pub space_md: f32,
+    pub space_sm: f32,
+    pub space_xs: f32,
+    pub dur_fast: u32,
+    pub dur_normal: u32,
+    pub dur_slow: u32,
+    pub font_mono: &'static str,
+    pub font_sans: &'static str,
+}
+
+pub const TOKENS: Tokens = Tokens {
+    color_bg: "#0b0f17",
+    color_brand: "#5B8CFF",
+    color_fg: "#e5e7eb",
+    color_muted: "#9aa4b2",
+    radius_button: 10f32,
+    radius_card: 16f32,
+    space_lg: 24f32,
+    space_md: 18f32,
+    space_sm: 12f32,
+    space_xs: 6f32,
+    dur_fast: 120u32,
+    dur_normal: 200u32,
+    dur_slow: 320u32,
+    font_mono: "JetBrains Mono, ui-monospace, monospace",
+    font_sans: "Inter, system-ui, sans-serif",
+};
