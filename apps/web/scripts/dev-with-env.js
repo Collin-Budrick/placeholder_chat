@@ -30,6 +30,9 @@ try {
       const hosts = ['localhost', '127.0.0.1', '::1'];
       if (firstLan) hosts.push(firstLan);
       process.env.MKCERT_HOSTS = hosts.join(',');
+      try {
+        console.log(`[dev-env] mkcert hosts: ${process.env.MKCERT_HOSTS}`);
+      } catch {}
     }
   }
 } catch {}
@@ -44,11 +47,13 @@ try {
   if (!process.env.DEV_TLS_KEY_FILE && !process.env.TLS_KEY_FILE && !process.env.SSL_KEY_FILE) {
     if (require('node:fs').existsSync(keyPath)) {
       process.env.DEV_TLS_KEY_FILE = keyRel;
+      console.log(`[dev-env] Using TLS key: ${keyRel}`);
     }
   }
   if (!process.env.DEV_TLS_CERT_FILE && !process.env.TLS_CERT_FILE && !process.env.SSL_CERT_FILE) {
     if (require('node:fs').existsSync(certPath)) {
       process.env.DEV_TLS_CERT_FILE = certRel;
+      console.log(`[dev-env] Using TLS cert: ${certRel}`);
     }
   }
 } catch {}
@@ -66,7 +71,15 @@ if (!process.env.AUTH_TRUST_HOST || process.env.AUTH_TRUST_HOST === '') {
 //   process.env.AUTH_URL = 'http://127.0.0.1:5173';
 // }
 
-const child = spawn('vite', ['--mode', 'ssr'], {
+const summary = {
+  NO_HTTPS: process.env.NO_HTTPS,
+  USE_MKCERT: process.env.USE_MKCERT,
+  MKCERT_HOSTS: process.env.MKCERT_HOSTS,
+  DOCKER_TRAEFIK: process.env.DOCKER_TRAEFIK,
+};
+try { console.log('[dev-env] Summary:', summary); } catch {}
+
+const child = spawn('vite', ['--mode', 'ssr', '--host', '0.0.0.0', '--port', process.env.PORT || '5174'], {
   stdio: 'inherit',
   env: process.env,
   shell: process.platform === 'win32',

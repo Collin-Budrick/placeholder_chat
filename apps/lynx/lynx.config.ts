@@ -38,6 +38,7 @@ export default defineConfig({
       },
     }),
     pluginReactLynx(),
-    pluginTypeCheck(),
+    // Allow disabling checker in container/dev via env
+    ...(process.env.LYNX_TYPECHECK === '0' ? [] : [pluginTypeCheck()]),
   ],
 })

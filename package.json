@@ -36,6 +36,10 @@
     "dev:all": "node scripts/dev-all.js",
     "prod:all": "node scripts/prod-all.js",
     "desktop:dev": "cargo run -p desktop_app",
-    "desktop:build": "cargo build -p desktop_app --release"
-  }
+    "desktop:build": "cargo build -p desktop_app --release",
+    "docker:env": "node scripts/write-public-ip-env.mjs",
+    "docker:up": "node scripts/write-public-ip-env.mjs && docker compose up",
+    "docker:uph3": "node scripts/write-public-ip-env.mjs && docker compose -f docker-compose.yml -f docker-compose.h3.yml up"
+  },
+  "packageManager": "pnpm@10.15.1+sha512.34e538c329b5553014ca8e8f4535997f96180a1d0f614339357449935350d924e22f8614682191264ec33d1462ac21561aff97f6bb18065351c162c7e8f6de67"
 }

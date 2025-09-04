@@ -5,6 +5,7 @@
   "scripts": {
     "build": "rspeedy build",
     "dev": "rspeedy dev",
+    "dev:docker": "rspeedy dev --base /lynx",
     "preview": "rspeedy preview"
   },
   "dependencies": {

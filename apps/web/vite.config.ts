@@ -190,7 +190,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       );
     }
   } catch (e) {}
-  return {
+  const cfg: UserConfig = {
     // Suppress Vite's informational "externalized for browser compatibility" logs
     // (These are expected when Node built-ins are referenced from server-only modules.)
     logLevel: 'warn',
@@ -230,8 +230,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
     //     : undefined,
     server: {
       host: true,
-      // Make port strict and honor WEB_PORT/PORT if provided
-      port: Number(process.env.WEB_PORT || process.env.PORT || 5173),
+      // Bind Vite inside container on 5174; Traefik listens on 5173
+      port: 5174,
       strictPort: true,
       https: resolveHttpsOptions(),
       headers: {
@@ -246,27 +246,44 @@ export default defineConfig(({ command, mode }): UserConfig => {
       hmr:
         process.env.NO_HMR === '1'
           ? false
-          : process.env.VITE_PUBLIC_HOST
+          : process.env.DOCKER_TRAEFIK === '1'
             ? {
-                host: process.env.VITE_PUBLIC_HOST.replace(/^https?:\/\//, "").replace(/\/$/, ""),
                 protocol: 'wss',
-                clientPort: 443,
+                // omit host so the client uses window.location.hostname
+                clientPort: 5173, // Traefik public port
+                port: 5174,       // internal Vite port
               }
-            : undefined,
+            : process.env.VITE_PUBLIC_HOST
+              ? {
+                  host: process.env.VITE_PUBLIC_HOST.replace(/^https?:\/\//, "").replace(/\/$/, ""),
+                  protocol: 'wss',
+                  clientPort: 443,
+                }
+              : undefined,
+      // Improve reliability of file watching on Windows/WSL bind mounts
+      watch: {
+        usePolling: true,
+        interval: 100,
+      },
       // Dev proxy: forward /api and /ws to the gateway to avoid CORS and to make
       // browser-origin requests reach the backend during development.
-      proxy: {
-        "/api": {
-          target: "http://127.0.0.1:7000",
-          changeOrigin: true,
-          secure: false,
-        },
-        "/ws": {
-          target: "ws://127.0.0.1:7000",
-          changeOrigin: true,
-          ws: true,
-        },
-      },
+      proxy: (() => {
+        const inDockerTraefik = process.env.DOCKER_TRAEFIK === '1';
+        const httpTarget = inDockerTraefik ? 'http://gateway:7000' : 'http://127.0.0.1:7000';
+        const wsTarget = inDockerTraefik ? 'ws://gateway:7000' : 'ws://127.0.0.1:7000';
+        return {
+          "/api": {
+            target: httpTarget,
+            changeOrigin: true,
+            secure: false,
+          },
+          "/ws": {
+            target: wsTarget,
+            changeOrigin: true,
+            ws: true,
+          },
+        } as any;
+      })(),
     },
     preview: {
       host: true,
@@ -301,6 +318,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
       },
     },
   };
+
+  try {
+    const httpsKind = cfg.server?.https
+      ? (cfg.server.https === true ? 'mkcert/auto' : (cfg.server.https === false ? 'disabled' : 'file/selfsigned'))
+      : 'disabled';
+    const hmr = cfg.server?.hmr === false ? 'disabled' : JSON.stringify(cfg.server?.hmr ?? {});
+    console.log(`[vite-config] server: port=${cfg.server?.port} https=${httpsKind} hmr=${hmr} docker_traefik=${process.env.DOCKER_TRAEFIK ?? ''}`);
+  } catch {}
+
+  return cfg;
 });
 // *** utils ***
 /**

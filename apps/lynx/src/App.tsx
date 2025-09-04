@@ -1,11 +1,11 @@
 import { useEffect, useState } from '@lynx-js/react'
 import './App.css'
-import { Header, type Route } from './components/Header'
-import { HomePage } from './pages/Home'
-import { AboutPage } from './pages/About'
-import { ContactPage } from './pages/Contact'
-import { LoginPage } from './pages/Login'
-import { SignupPage } from './pages/Signup'
+import { Header, type Route } from './components/Header.tsx'
+import { HomePage } from './pages/Home.tsx'
+import { AboutPage } from './pages/About.tsx'
+import { ContactPage } from './pages/Contact.tsx'
+import { LoginPage } from './pages/Login.tsx'
+import { SignupPage } from './pages/Signup.tsx'
 import { sharedVersion, ping } from '@stack/shared'
 
 export function App() {

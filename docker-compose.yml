@@ -1,0 +1,159 @@
+services:
+  # --- Vite web (dev) ---
+  web:
+    image: node:20-bookworm-slim
+    working_dir: /workspace
+    command: >
+      sh -lc "corepack enable && corepack prepare pnpm@latest --activate \
+      && pnpm install \
+      && pnpm -C apps/web run dev:web"
+    environment:
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "100"
+      # Disable HTTPS inside Vite; Traefik terminates TLS
+      NO_HTTPS: "1"
+      # Hint for vite.config to enable WSS HMR via Traefik
+      DOCKER_TRAEFIK: "1"
+    volumes:
+      - ./:/workspace
+      - /workspace/node_modules
+      - /workspace/apps/web/node_modules
+    labels:
+      - "traefik.enable=true"
+      # Match all hosts; route everything at '/'
+      - "traefik.http.routers.web.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.web.entrypoints=websecure"
+      - "traefik.http.routers.web.tls=true"
+      # Ensure generic '/' route has lower priority than '/lynx'
+      - "traefik.http.routers.web.priority=10"
+      - "traefik.http.services.web.loadbalancer.server.port=5174"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"http=require('http');r=http.get('http://127.0.0.1:5174/');r.on('response', s=>process.exit(s.statusCode<500?0:1));r.on('error', ()=>process.exit(1));\" "]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 60s
+    depends_on: []
+
+  # --- LynxJS app (dev) ---
+  lynx:
+    image: node:20-bookworm-slim
+    working_dir: /workspace
+    # Prefer docker-specific dev script if present; fallback to default
+    command: >
+      sh -lc "corepack enable && corepack prepare pnpm@latest --activate \
+      && pnpm install \
+      && exec pnpm -C apps/lynx run dev:docker"
+    environment:
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "100"
+      # Suggest to bind and choose port if rspeedy honors env
+      HOST: "0.0.0.0"
+      PORT: "3000"
+      # disable TS type-check plugin in dev to avoid strict errors blocking HMR
+      LYNX_TYPECHECK: "0"
+    volumes:
+      - ./:/workspace
+      - /workspace/node_modules
+      - /workspace/apps/lynx/node_modules
+    tty: true
+    stdin_open: true
+    labels:
+      - "traefik.enable=true"
+      # expose at /lynx (adjust if you prefer a subdomain)
+      - "traefik.http.routers.lynx.rule=PathPrefix(`/lynx`)"
+      - "traefik.http.routers.lynx.middlewares=lynx-redirect@docker"
+      - "traefik.http.middlewares.lynx-redirect.redirectregex.regex=^/lynx/?$"
+      - "traefik.http.middlewares.lynx-redirect.redirectregex.replacement=/lynx/main.lynx.bundle?fullscreen=true"
+      - "traefik.http.middlewares.lynx-redirect.redirectregex.permanent=false"
+      - "traefik.http.routers.lynx.entrypoints=websecure"
+      - "traefik.http.routers.lynx.tls=true"
+      - "traefik.http.routers.lynx.priority=100"
+      - "traefik.http.services.lynx.loadbalancer.server.port=3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"http=require('http');r=http.get('http://127.0.0.1:3000/');r.on('response', s=>process.exit(s.statusCode<500?0:1));r.on('error', ()=>process.exit(1));\" "]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 60s
+
+  # --- Rust Gateway (dev API) ---
+  gateway:
+    image: rustlang/rust:nightly
+    working_dir: /workspace
+    # Use full cargo path to avoid PATH issues on some hosts
+    command: >
+      /bin/bash -lc "set -euo pipefail \
+      && apt-get update \
+      && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends capnproto pkg-config libssl-dev build-essential ca-certificates \
+      && update-ca-certificates \
+      && /usr/local/cargo/bin/cargo --version \
+      && /usr/local/cargo/bin/cargo run --manifest-path apps/gateway/Cargo.toml"
+    environment:
+      RUST_LOG: info
+      # Allow the dev site origins over HTTPS on 5173
+      CORS_ALLOW_ORIGINS: "https://localhost:5173,https://127.0.0.1:5173,https://192.168.1.19:5173"
+      # Bind on container network
+      GATEWAY_ADDR: 0.0.0.0:7000
+    volumes:
+      - ./:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "/bin/bash -lc 'exec 3<>/dev/tcp/127.0.0.1/7000 && echo -e \"GET /healthz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q ok <&3' "]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 60s
+
+  # --- Tauri build (Linux target) ---
+  tauri-build:
+    image: rust:1.79-bullseye
+    working_dir: /workspace
+    entrypoint: ["/bin/bash","-lc"]
+    command: >
+      set -euo pipefail
+      && apt-get update \
+      && apt-get install -y curl wget libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev pkg-config build-essential libssl-dev \
+      && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+      && apt-get install -y nodejs \
+      && npm i -g pnpm \
+      && cargo install tauri-cli || true \
+      && cd apps/desktop \
+      && pnpm i || npm i || true \
+      && tauri build \
+      && mkdir -p /workspace/dist/tauri \
+      && cp -r target/release/bundle /workspace/dist/tauri/
+    volumes:
+      - ./:/workspace
+    profiles: ["build"]
+    restart: "no"
+
+  # --- Traefik gateway (HTTP/3) ---
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--entrypoints.websecure.address=:5173/tcp"
+      - "--log.level=INFO"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+    ports:
+      - "5173:5173/tcp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./apps/web/certs:/certs:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    depends_on:
+      web:
+        condition: service_healthy
+      lynx:
+        condition: service_started
+      gateway:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      # Prefer hosting dashboard on a subdomain to avoid /api conflicts
+      - "traefik.http.routers.traefik-host.rule=HostRegexp(`traefik\\..+`)"
+      - "traefik.http.routers.traefik-host.entrypoints=websecure"
+      - "traefik.http.routers.traefik-host.tls=true"
+      - "traefik.http.routers.traefik-host.service=api@internal"

@@ -1,0 +1,11 @@
+tls:
+  certificates:
+    - certFile: /certs/dev.crt
+      keyFile: /certs/dev.key
+  # Use the same dev certificate as the default so requests
+  # without SNI (or with IP host) still present a valid cert
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/dev.crt
+        keyFile: /certs/dev.key

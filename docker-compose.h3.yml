@@ -1,0 +1,23 @@
+services:
+  traefik:
+    # Note: compose merges arrays by replacement; include base flags here too
+    command:
+      - "--entrypoints.websecure.address=:5173/tcp"
+      - "--entrypoints.websecure.http3=true"
+      # Enable detailed logs and access log for troubleshooting
+      - "--log.level=DEBUG"
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+      - "--accesslog.fields.defaultmode=keep"
+      - "--accesslog.fields.headers.defaultmode=drop"
+      - "--accesslog.fields.names.RouterName=keep"
+      - "--accesslog.fields.names.ServiceName=keep"
+      - "--accesslog.fields.names.ServiceURL=keep"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+    # Preserve TCP port and add UDP for HTTP/3
+    ports:
+      - "5173:5173/tcp"
+      - "${HTTP3_PORT:-5173}:${HTTP3_PORT:-5173}/udp"
