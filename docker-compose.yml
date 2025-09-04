@@ -20,10 +20,13 @@ services:
       - /workspace/apps/web/node_modules
     labels:
       - "traefik.enable=true"
-      # Match all hosts; route everything at '/'
+      # Match all hosts; route everything at '/' 
       - "traefik.http.routers.web.rule=PathPrefix(`/`)"
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.tls=true"
+      # Add explicit Alt-Svc header advertising HTTP/3
+      - "traefik.http.routers.web.middlewares=web-headers@docker"
+      - "traefik.http.middlewares.web-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
       # Ensure generic '/' route has lower priority than '/lynx'
       - "traefik.http.routers.web.priority=10"
       - "traefik.http.services.web.loadbalancer.server.port=5174"
@@ -62,10 +65,12 @@ services:
       - "traefik.enable=true"
       # expose at /lynx (adjust if you prefer a subdomain)
       - "traefik.http.routers.lynx.rule=PathPrefix(`/lynx`)"
-      - "traefik.http.routers.lynx.middlewares=lynx-redirect@docker"
+      # Redirect base /lynx to the dev bundle and advertise HTTP/3 via Alt-Svc
+      - "traefik.http.routers.lynx.middlewares=lynx-redirect@docker,lynx-headers@docker"
       - "traefik.http.middlewares.lynx-redirect.redirectregex.regex=^/lynx/?$"
       - "traefik.http.middlewares.lynx-redirect.redirectregex.replacement=/lynx/main.lynx.bundle?fullscreen=true"
       - "traefik.http.middlewares.lynx-redirect.redirectregex.permanent=false"
+      - "traefik.http.middlewares.lynx-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
       - "traefik.http.routers.lynx.entrypoints=websecure"
       - "traefik.http.routers.lynx.tls=true"
       - "traefik.http.routers.lynx.priority=100"
