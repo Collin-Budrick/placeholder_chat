@@ -1,5 +1,5 @@
 import { component$, Slot } from '@builder.io/qwik';
-import type { RequestHandler } from '@builder.io/qwik-city';
+import type { RequestHandler, StaticGenerateHandler } from '@builder.io/qwik-city';
 import ScrollProgress from '~/components/ScrollProgress';
 import ScrollReveals from '~/components/ScrollReveals';
 import BottomNav from '~/components/BottomNav';
@@ -38,6 +38,10 @@ export default component$(() => {
   );
 });
 
+// Enable static prerendering for all pages under this layout by default.
+// Individual routes can still opt-out if needed.
+export const prerender = true;
+
 // Global security headers and best-practice cache hints
 export const onRequest: RequestHandler = (ev) => {
   let isHttps = ev.request.url.startsWith('https://');
@@ -52,6 +56,19 @@ export const onRequest: RequestHandler = (ev) => {
       }
     } catch { /* ignore */ }
   }
+  const url = new URL(ev.request.url);
+  const p = url.pathname || '/';
+  // Long-cache static assets (immutable by content hash in filenames)
+  if (/\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(p)) {
+    ev.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  } else if (p.endsWith('/q-data.json')) {
+    // Qwik route data: cache briefly, allow quick revalidation
+    ev.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=600');
+  } else if (p === '/' || p.endsWith('/') || p.endsWith('.html')) {
+    // HTML documents: cache for a short time to keep nav snappy in prod/preview
+    ev.headers.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=86400');
+  }
+
   // Content Security Policy (baseline, avoids inline scripts)
   // Allow self scripts/styles; styles allow 'unsafe-inline' for Qwik style islands.
   // Adjust connect-src in dev/prod via env if needed.
@@ -84,4 +101,20 @@ export const onRequest: RequestHandler = (ev) => {
   if (isHttps) {
     ev.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   }
+};
+
+// Explicit list of static routes to prerender at build time
+// (handy for environments without a crawler during build).
+export const onStaticGenerate: StaticGenerateHandler = async () => {
+  return {
+    routes: [
+      '/',
+      '/about/',
+      '/contact/',
+      '/integrations/',
+      '/solid/',
+      // Note: authenticated pages like '/profile/' are intentionally
+      // not prerendered to avoid leaking personalized content.
+    ],
+  };
 };

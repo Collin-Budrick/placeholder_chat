@@ -300,7 +300,7 @@ export default component$(() => {
             {/* Social auth removed as requested */}
 
             <p class="text-sm text-center mt-3">
-              Already have an account? <a href="/login" class="link" preventdefault:click onClick$={$((e: Event) => {
+              Already have an account? <a href="/login/" class="link" preventdefault:click onClick$={$((e: Event) => {
                 e.preventDefault();
                 const el = formWrap.value;
                 if (el) {
@@ -312,12 +312,12 @@ export default component$(() => {
                   void animateMotion(desc, { opacity: [1, 0], y: [0, 6] }, { duration: 0.18, easing: 'ease-out', fill: 'forwards' } as any);
                 }
                 // Navigate immediately (no view transitions)
-                try { void nav('/login'); } catch { /* ignore */ }
+                try { void nav('/login/'); } catch { /* ignore */ }
                 // Fast safety fallback: if SPA nav fails, force navigation
                 setTimeout(() => {
                   try {
-                    if ((globalThis.location?.pathname || '') === '/signup') {
-                      globalThis.location.assign('/login');
+                    if ((globalThis.location?.pathname || '') === '/signup' || (globalThis.location?.pathname || '') === '/signup/') {
+                      globalThis.location.assign('/login/');
                     }
                   } catch { /* ignore */ }
                 }, 220);

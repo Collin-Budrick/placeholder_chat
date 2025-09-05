@@ -3,6 +3,7 @@ import { animateMotion } from '~/lib/motion-qwik';
 
 export const prerender = false;
 import { useNavigate } from '@builder.io/qwik-city';
+import { useSignIn } from '~/routes/plugin@auth';
 import type { DocumentHead } from '@builder.io/qwik-city';
 import { AuthCard } from '../../components/auth/AuthCard';
 import TypeTitle from '~/components/TypeTitle';
@@ -13,6 +14,7 @@ import BackButton from '~/components/BackButton';
 
 export default component$(() => {
   const nav = useNavigate();
+  const signIn = useSignIn();
   const titleText = useSignal<string>('Log in');
   const eraseKey = useSignal<number | null>(null);
   const formWrap = useSignal<HTMLElement>();
@@ -71,13 +73,44 @@ export default component$(() => {
         </div>
         <div class="mt-4" ref={formWrap}>
           <AuthCard borderless>
-            <form action="/auth/callback/credentials" method="post" onSubmit$={$(() => {
+            <form preventdefault:submit action="/auth/callback/credentials" method="post" onSubmit$={$ (async (ev: Event) => {
               try {
-                // Pre-fade the login card for responsiveness (no VTs)
+                const form = ev.currentTarget as HTMLFormElement | null;
+                if (!form) return;
+                serverError.value = null;
+                submitting.value = true;
+                // Pre-fade for responsiveness (no VTs)
                 const el = authContainer.value; if (el) el.classList.add('auth-fade-out');
-                // Mark that a login just occurred so /profile can wait for the session
-                try { sessionStorage.setItem('postLogin', '1'); } catch { /* ignore */ }
-              } catch { /* ignore */ }
+                // Collect credentials
+                const fd = new FormData(form);
+                const username = String(fd.get('username') || '').trim();
+                const password = String(fd.get('password') || '');
+                if (!username || !password) { submitting.value = false; serverError.value = 'Missing credentials'; return; }
+                // Call Auth.js credentials provider server-side; it will in turn hit the gateway
+                const res: any = await (signIn as any)('credentials', {
+                  redirect: false,
+                  username,
+                  password,
+                  callbackUrl: '/profile/',
+                });
+                if (res && (res.ok || res.status === 200)) {
+                  // Mark post-login for profile to refresh session if needed
+                  try { sessionStorage.setItem('postLogin', '1'); } catch {}
+                  // Navigate to profile
+                  try { await nav('/profile/'); return; } catch {}
+                  // Safety fallback
+                  setTimeout(() => { try { globalThis.location.assign('/profile/'); } catch {} }, 50);
+                } else if (res && (res.error || res.status === 401)) {
+                  serverError.value = 'Invalid username or password';
+                } else {
+                  serverError.value = `Login failed${res && res.status ? ` (${res.status})` : ''}`;
+                }
+              } catch (e: any) {
+                serverError.value = e?.message || 'Login failed';
+              } finally {
+                submitting.value = false;
+                const el = authContainer.value; if (el) el.classList.remove('auth-fade-out');
+              }
             })}>
               <input type="hidden" name="callbackUrl" value="/profile" />
               {/* No server-side form action; we call signIn.submit in onSubmit$ */}
@@ -139,7 +172,7 @@ export default component$(() => {
             </form>
             {/* Social auth removed as requested */}
               <p class="text-sm text-center mt-6 text-base-content/70">
-                Don’t have an account? <a href="/signup" class="link" preventdefault:click onClick$={$((e: Event) => {
+                Don’t have an account? <a href="/signup/" class="link" preventdefault:click onClick$={$((e: Event) => {
                   e.preventDefault();
                   const el = formWrap.value;
                   if (el) {
@@ -151,12 +184,12 @@ export default component$(() => {
                     void animateMotion(desc, { opacity: [1, 0], y: [0, 6] }, { duration: 0.18, easing: 'ease-out', fill: 'forwards' } as any);
                   }
                   // Navigate immediately (no view transitions)
-                  try { void nav('/signup'); } catch { /* ignore */ }
+                  try { void nav('/signup/'); } catch { /* ignore */ }
                   // Fast safety fallback: if SPA nav fails, force navigation
                   setTimeout(() => {
                     try {
-                      if ((globalThis.location?.pathname || '') === '/login') {
-                        globalThis.location.assign('/signup');
+                      if ((globalThis.location?.pathname || '') === '/login' || (globalThis.location?.pathname || '') === '/login/') {
+                        globalThis.location.assign('/signup/');
                       }
                     } catch { /* ignore */ }
                   }, 220);

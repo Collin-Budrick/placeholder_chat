@@ -59,6 +59,19 @@ TLS options:
   - or `SSL_KEY_FILE` + `SSL_CERT_FILE`
 - If none are provided, an in-memory self-signed cert is used (browser will warn).
 
+## Run With Docker
+
+This repo includes a Traefik gateway and dev containers for the web app and Lynx tool. To run the stack with HTTPS on port 5173 (and HTTP/3/UDP when supported), use the base compose file plus the HTTP/3 overlay:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.h3.yml up -d --force-recreate
+```
+
+Notes:
+- Traefik listens on `5173/tcp` and `5173/udp`. Visit `https://localhost:5173/` or `https://<your-lan-ip>:5173/`.
+- Dev certificates are mounted from `apps/web/certs` (self-signed). Your browser may prompt to trust them.
+- To stop the stack: `docker compose down` (use the same `-f` files if needed).
+
 ## Documentation
 
 - Frontend Guide: Qwik + Tailwind v4 + DaisyUI v5 + Auth.js + Modular Forms + Valibot + Vite

@@ -217,7 +217,7 @@ export default component$(() => {
               </Link>
             </li>
             <li>
-              <Link href="/about" prefetch aria-current={isActive('/about') ? 'page' : undefined}
+              <Link href="/about/" prefetch aria-current={isActive('/about') ? 'page' : undefined}
                   aria-disabled={isActive('/about') ? 'true' : undefined}
                   tabIndex={isActive('/about') ? -1 : undefined}
                   class={`nav-item nav-link ${isActive('/about') ? 'is-active' : ''}`}
@@ -227,7 +227,7 @@ export default component$(() => {
               </Link>
             </li>
             <li>
-              <Link href="/contact" prefetch aria-current={isActive('/contact') ? 'page' : undefined}
+              <Link href="/contact/" prefetch aria-current={isActive('/contact') ? 'page' : undefined}
                   aria-disabled={isActive('/contact') ? 'true' : undefined}
                   tabIndex={isActive('/contact') ? -1 : undefined}
                   class={`nav-item nav-link ${isActive('/contact') ? 'is-active' : ''}`}
@@ -237,7 +237,7 @@ export default component$(() => {
               </Link>
             </li>
             <li>
-              <Link href={session.value ? '/profile' : '/login'} prefetch preventdefault:click aria-current={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'page' : undefined}
+              <Link href={session.value ? '/profile/' : '/login/'} prefetch preventdefault:click aria-current={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'page' : undefined}
                  aria-disabled={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'true' : undefined}
                  tabIndex={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? -1 : undefined}
                  class={`nav-item nav-link ${isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'is-active' : ''}`}

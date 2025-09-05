@@ -233,6 +233,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
       // Bind Vite inside container on 5174; Traefik listens on 5173
       port: 5174,
       strictPort: true,
+      // Allow LAN-friendly DNS aliases like nip.io / sslip.io and localhost/IP
+      allowedHosts: [
+        '.nip.io',
+        '.sslip.io',
+        'localhost',
+        '127.0.0.1',
+        '192.168.1.19',
+        '192.168.1.19.nip.io',
+      ],
       https: resolveHttpsOptions(),
       headers: {
         // Don't cache the server response in dev mode
