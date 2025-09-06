@@ -323,6 +323,17 @@ async fn main() -> Result<()> {
             })
             .unwrap_or_else(|_| vec![b"http://127.0.0.1:5173".to_vec(), b"http://localhost:5173".to_vec()]);
 
+        // Optional: allow any IP origin on specific ports (e.g., https://192.168.x.x:5173 or https://YOUR.PUBLIC.IP:5173)
+        // Configure via CORS_ALLOW_ANY_IP_PORTS=5173,443 (comma-separated list of ports)
+        let any_ip_ports: Option<Vec<u16>> = std::env::var("CORS_ALLOW_ANY_IP_PORTS")
+            .ok()
+            .map(|s| {
+                s.split(',')
+                    .filter_map(|p| p.trim().parse::<u16>().ok())
+                    .collect::<Vec<_>>()
+            })
+            .filter(|v| !v.is_empty());
+
         // Explicit allowed headers (do NOT use wildcard when allow_credentials is true)
         // Include the X-CSRF-Token header so browsers are allowed to send it from the frontend.
         let allow_hdrs = [
@@ -337,7 +348,27 @@ async fn main() -> Result<()> {
             .allow_headers(allow_hdrs)
             .allow_origin(tower_http::cors::AllowOrigin::predicate(
                 move |origin: &axum::http::HeaderValue, _parts: &axum::http::request::Parts| {
-                    allowed_origins.iter().any(|a: &Vec<u8>| a.as_slice() == origin.as_bytes())
+                    // 1) Exact match against configured list
+                    if allowed_origins
+                        .iter()
+                        .any(|a: &Vec<u8>| a.as_slice() == origin.as_bytes())
+                    {
+                        return true;
+                    }
+                    // 2) If enabled, allow any IP-based origin for a set of ports (useful for LAN/public IPs in dev)
+                    if let Some(ref ports) = any_ip_ports {
+                        if let Ok(h) = origin.to_str() {
+                            if let Ok(u) = url::Url::parse(h) {
+                                if let Some(host) = u.host_str() {
+                                    if host.parse::<std::net::IpAddr>().is_ok() {
+                                        let port = u.port_or_known_default().unwrap_or(0);
+                                        return ports.iter().any(|p| *p == port);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    false
                 },
             ))
             .allow_credentials(true)

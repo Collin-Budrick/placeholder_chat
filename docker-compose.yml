@@ -1,12 +1,12 @@
 services:
   # --- Vite web (dev) ---
   web:
-    image: node:20-bookworm-slim
+    image: oven/bun:1
     working_dir: /workspace
     command: >
-      sh -lc "corepack enable && corepack prepare pnpm@latest --activate \
-      && pnpm install \
-      && pnpm -C apps/web run dev:web"
+      sh -lc "bun install --ignore-scripts \
+      && bunx tsc -p packages/shared/tsconfig.build.json || true \
+      && bun apps/web/scripts/dev-with-env.js"
     environment:
       CHOKIDAR_USEPOLLING: "1"
       CHOKIDAR_INTERVAL: "100"
@@ -14,19 +14,34 @@ services:
       NO_HTTPS: "1"
       # Hint for vite.config to enable WSS HMR via Traefik
       DOCKER_TRAEFIK: "1"
+      # Let Auth.js trust the incoming Host header and derive URLs dynamically
+      AUTH_TRUST_HOST: "true"
+      # Ensure mkcert includes your LAN IP in the certificate SANs
+      # PUBLIC_IP comes from .env; default to 127.0.0.1 to avoid warnings
+      MKCERT_HOSTS: "localhost,127.0.0.1,::1,${PUBLIC_IP:-127.0.0.1}"
+      LAN_DEV_URL: "https://${PUBLIC_IP:-127.0.0.1}:5173"
+      # Option: run Vite in CSR mode if SSR dev renders 404
+      NO_SSR: "1"
     volumes:
       - ./:/workspace
       - /workspace/node_modules
       - /workspace/apps/web/node_modules
+    ports:
+      - "5175:5174"
     labels:
       - "traefik.enable=true"
-      # Match all hosts; route everything at '/' 
+      # Match all hosts; route everything at '/'
       - "traefik.http.routers.web.rule=PathPrefix(`/`)"
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.tls=true"
       # Add explicit Alt-Svc header advertising HTTP/3
       - "traefik.http.routers.web.middlewares=web-headers@docker"
       - "traefik.http.middlewares.web-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
+      # Enforce HSTS over HTTPS responses (in addition to app headers)
+      - "traefik.http.middlewares.web-headers.headers.stsSeconds=63072000"
+      - "traefik.http.middlewares.web-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.web-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.web-headers.headers.forceSTSHeader=true"
       # Ensure generic '/' route has lower priority than '/lynx'
       - "traefik.http.routers.web.priority=10"
       - "traefik.http.services.web.loadbalancer.server.port=5174"
@@ -40,13 +55,11 @@ services:
 
   # --- LynxJS app (dev) ---
   lynx:
-    image: node:20-bookworm-slim
+    image: oven/bun:1
     working_dir: /workspace
     # Prefer docker-specific dev script if present; fallback to default
     command: >
-      sh -lc "corepack enable && corepack prepare pnpm@latest --activate \
-      && pnpm install \
-      && exec pnpm -C apps/lynx run dev:docker"
+      sh -lc "bun install && exec bun -C apps/lynx run dev:docker"
     environment:
       CHOKIDAR_USEPOLLING: "1"
       CHOKIDAR_INTERVAL: "100"
@@ -71,6 +84,10 @@ services:
       - "traefik.http.middlewares.lynx-redirect.redirectregex.replacement=/lynx/main.lynx.bundle?fullscreen=true"
       - "traefik.http.middlewares.lynx-redirect.redirectregex.permanent=false"
       - "traefik.http.middlewares.lynx-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
+      - "traefik.http.middlewares.lynx-headers.headers.stsSeconds=63072000"
+      - "traefik.http.middlewares.lynx-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.lynx-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.lynx-headers.headers.forceSTSHeader=true"
       - "traefik.http.routers.lynx.entrypoints=websecure"
       - "traefik.http.routers.lynx.tls=true"
       - "traefik.http.routers.lynx.priority=100"
@@ -97,7 +114,9 @@ services:
     environment:
       RUST_LOG: info
       # Allow the dev site origins over HTTPS on 5173
-      CORS_ALLOW_ORIGINS: "https://localhost:5173,https://127.0.0.1:5173,https://192.168.1.19:5173"
+      CORS_ALLOW_ORIGINS: "https://localhost:5173,https://127.0.0.1:5173"
+      # Also allow any IP-based origin on port 5173 (LAN/public IPs)
+      CORS_ALLOW_ANY_IP_PORTS: "5173"
       # Bind on container network
       GATEWAY_ADDR: 0.0.0.0:7000
     volumes:
@@ -108,6 +127,15 @@ services:
       timeout: 3s
       retries: 60
       start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      # Route API requests to the Rust gateway
+      - "traefik.http.routers.gateway.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.gateway.entrypoints=websecure"
+      - "traefik.http.routers.gateway.tls=true"
+      # Ensure API route wins over generic web route
+      - "traefik.http.routers.gateway.priority=200"
+      - "traefik.http.services.gateway.loadbalancer.server.port=7000"
 
   # --- Tauri build (Linux target) ---
   tauri-build:
@@ -134,9 +162,10 @@ services:
 
   # --- Traefik gateway (HTTP/3) ---
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.5.1
     command:
-      - "--entrypoints.websecure.address=:5173/tcp"
+      - "--entrypoints.websecure.address=:5173"
+      - "--entrypoints.websecure.http3=true"
       - "--log.level=INFO"
       - "--api.dashboard=true"
       - "--providers.docker=true"
@@ -144,6 +173,7 @@ services:
       - "--providers.file.filename=/etc/traefik/dynamic.yml"
     ports:
       - "5173:5173/tcp"
+      - "5173:5173/udp"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./apps/web/certs:/certs:ro

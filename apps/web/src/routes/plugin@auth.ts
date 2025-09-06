@@ -4,7 +4,13 @@ import Credentials from '@auth/qwik/providers/credentials';
 
 // In the browser, `process` is undefined. Guard accesses so importing this file on the client
 // (for hooks like useSession) does not throw at module-evaluation time.
-const RAW_GATEWAY = (typeof process !== 'undefined' && process.env?.GATEWAY_URL) || 'http://127.0.0.1:7000';
+const RAW_GATEWAY = (() => {
+  const hasProc = typeof process !== 'undefined';
+  const envGw = hasProc ? (process.env?.GATEWAY_URL || '') : '';
+  const inDocker = hasProc && process.env?.DOCKER_TRAEFIK === '1';
+  if (envGw) return envGw;
+  return inDocker ? 'http://gateway:7000' : 'http://127.0.0.1:7000';
+})();
 const GATEWAY = RAW_GATEWAY.includes('localhost') ? RAW_GATEWAY.replace('localhost', '127.0.0.1') : RAW_GATEWAY;
 
 function pickGatewayTokenFromSetCookie(headers: Headers): string | null {
@@ -104,7 +110,13 @@ export const { onRequest, useSession, useSignIn, useSignOut } = QwikAuth$(() => 
         const gw = (token as any).gateway;
         if (gw && !(token as any).role) {
           // Use the configured gateway base to call the backend
-          const base = ((typeof process !== 'undefined' && process.env?.GATEWAY_URL) || 'http://127.0.0.1:7000').replace('localhost', '127.0.0.1');
+          const base = (() => {
+            const hasProc = typeof process !== 'undefined';
+            const envGw = hasProc ? (process.env?.GATEWAY_URL || '') : '';
+            const inDocker = hasProc && process.env?.DOCKER_TRAEFIK === '1';
+            const raw = envGw || (inDocker ? 'http://gateway:7000' : 'http://127.0.0.1:7000');
+            return raw.replace('localhost', '127.0.0.1');
+          })();
           const res = await fetch(new URL('/api/auth/me', base).toString(), {
             method: 'GET',
             headers: {
@@ -137,18 +149,22 @@ export const { onRequest, useSession, useSignIn, useSignOut } = QwikAuth$(() => 
     async redirect({ url, baseUrl }) {
       try {
         const u = new URL(url, baseUrl);
-        if (u.origin !== baseUrl) return baseUrl;
-        const p = u.pathname;
-        // Default: if baseUrl ("/") is requested, land on profile
-        if (p === '/') return new URL('/profile', baseUrl).toString();
+        // Enforce same-origin; otherwise land on app home (then our logic will further route)
+        if (u.origin !== baseUrl) return new URL('/profile', baseUrl).toString();
+        const p = u.pathname || '/';
+        // Normalize trailing slash (treat '/profile/' == '/profile')
+        const norm = p !== '/' && p.endsWith('/') ? p.slice(0, -1) : p;
+        // Default: if root is requested, land on profile
+        if (norm === '/') return new URL('/profile/', baseUrl).toString();
         // Allow explicit navigations to login (e.g., after signOut)
-        if (p.startsWith('/login')) return u.toString();
+        if (norm === '/login' || norm.startsWith('/login')) return u.toString();
         // Allow common in-app destinations
-        if (p === '/profile' || p.startsWith('/admin')) return u.toString();
+        if (norm === '/profile' || norm === '/profile/' || norm.startsWith('/admin')) return u.toString();
       } catch {
-        // fall through to baseUrl
+        // fall through
       }
-      return baseUrl;
+      // Safe default: land authenticated users on profile
+      return new URL('/profile/', baseUrl).toString();
     },
   },
 }));

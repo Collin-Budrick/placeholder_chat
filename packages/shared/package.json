@@ -9,10 +9,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "bunx tsc -p tsconfig.build.json",
     "clean": "rimraf dist || rd /s /q dist",
-    "prepare": "tsc -p tsconfig.build.json",
-    "watch": "tsc -p tsconfig.build.json --watch --preserveWatchOutput"
+    "prepare": "bunx tsc -p tsconfig.build.json",
+    "watch": "bunx tsc -p tsconfig.build.json --watch --preserveWatchOutput"
   },
   "devDependencies": {
     "typescript": "~5.9.2"

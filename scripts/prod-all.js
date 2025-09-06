@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn, spawnSync } from 'node:child_process';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
@@ -9,7 +10,30 @@ const repoRoot = process.cwd();
 const webDir = path.join(repoRoot, 'apps', 'web');
 const sharedDir = path.join(repoRoot, 'packages', 'shared');
 
-const PORT = process.env.PORT || process.env.WEB_PORT || '5173';
+// Default to 5174 for local prod static preview to avoid conflicts with Traefik/dev
+const DEFAULT_PORT = process.env.PORT || process.env.WEB_PORT || '5174';
+
+async function isPortFree(port, host = '0.0.0.0') {
+  return new Promise((resolve) => {
+    const srv = net.createServer();
+    srv.once('error', () => resolve(false));
+    srv.once('listening', () => {
+      srv.close(() => resolve(true));
+    });
+    srv.listen({ port: Number(port), host });
+  });
+}
+
+async function findAvailablePort(startPort) {
+  const start = Number(startPort) || 5174;
+  for (let p = start, i = 0; i < 50; i += 1, p += 1) {
+    // Try a few sequential ports
+    // Prefer binding on all interfaces
+    // eslint-disable-next-line no-await-in-loop
+    if (await isPortFree(p, '0.0.0.0')) return p;
+  }
+  return start; // fallback; Bun will error if still in use
+}
 const SCHEME = 'https';
 
 function run(cmd, args, opts = {}) {
@@ -28,7 +52,8 @@ function run(cmd, args, opts = {}) {
 
 async function main() {
   console.log('[prod:all] Building shared package...');
-  const shared = await run('bun', ['run', 'build'], { cwd: sharedDir });
+  // Use root-installed TypeScript to build the shared workspace, avoiding per-package resolution
+  const shared = await run('bun', ['x', 'tsc', '-p', 'packages/shared/tsconfig.build.json'], { cwd: repoRoot });
   if (shared.code !== 0) {
     console.error('[prod:all] Shared build failed');
     process.exit(shared.code);
@@ -42,15 +67,18 @@ async function main() {
     if (fssync.existsSync(outDir)) await fs.rm(outDir, { recursive: true, force: true });
     if (fssync.existsSync(serverDir)) await fs.rm(serverDir, { recursive: true, force: true });
   } catch {}
-  // Build preview SSR output
-  let r = await run('bun', ['run', 'qwik', 'build', 'preview'], { cwd: webDir });
+  // Build for SSG using Bunx Vite always (avoid Node runner and local vite path)
+  // Client build
+  let r = await run('bun', ['x', 'vite', 'build'], { cwd: webDir });
   if (r.code !== 0) {
-    // Some shells don't forward args; fall back to npm-style script
-    r = await run('npx', ['qwik', 'build', 'preview'], { cwd: webDir });
-    if (r.code !== 0) {
-      console.error('[prod:all] Qwik preview build failed');
-      process.exit(r.code);
-    }
+    console.error('[prod:all] Web client build failed');
+    process.exit(r.code);
+  }
+  // Static adapter prerender build
+  r = await run('bun', ['x', 'vite', 'build', '-c', 'adapters/static/vite.config.ts'], { cwd: webDir });
+  if (r.code !== 0) {
+    console.error('[prod:all] Static site generation failed');
+    process.exit(r.code);
   }
   // Compose mkcert hosts for LAN access and trusted TLS
   const lanHosts = (() => {
@@ -119,16 +147,19 @@ async function main() {
 
   const { keyPath, certPath } = ensureMkcertCert();
 
-  // Use the same HTTPS approach as dev: direct vite preview with preview.https
+  // Choose a free port for the static server
+  const chosenPort = await findAvailablePort(DEFAULT_PORT);
+  if (String(chosenPort) !== String(DEFAULT_PORT)) {
+    console.warn(`[prod:all] Port ${DEFAULT_PORT} busy; using ${chosenPort} instead.`);
+  }
+
+  // Serve the generated static site from ./dist using Bun's static server
   const env = {
     ...process.env,
-    // Ensure HTTPS is enabled; use explicit cert paths from apps/web/certs
-    NO_HTTPS: process.env.NO_HTTPS || '0',
-    USE_MKCERT: '0',
-    DEV_TLS_KEY_FILE: process.env.DEV_TLS_KEY_FILE || path.relative(webDir, keyPath),
-    DEV_TLS_CERT_FILE: process.env.DEV_TLS_CERT_FILE || path.relative(webDir, certPath),
+    PORT: String(chosenPort),
+    HOST: '0.0.0.0',
   };
-  const child = spawn('vite', ['preview', '--host', '0.0.0.0', '--port', String(PORT), '--strictPort'], {
+  const child = spawn('bun', ['./scripts/serve-static.ts'], {
     stdio: 'inherit',
     cwd: webDir,
     env,

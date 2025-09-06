@@ -1,11 +1,21 @@
 import { ofetch } from 'ofetch';
 import { logApi, redactHeaders, previewBodyMaybe } from './log';
 
-const base = (import.meta as any).env?.GATEWAY_URL ?? 'http://127.0.0.1:7000';
-const safeBase = base.includes('localhost') ? base.replace('localhost', '127.0.0.1') : base;
+// In browser, use same-origin relative path so Traefik/Vite dev proxy can route /api -> gateway.
+// In SSR (Node, inside the web container), talk to the gateway service directly.
+const isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined';
+let baseURL = '';
+if (!isBrowser) {
+  const envAny: any = (import.meta as any).env || {};
+  const rawEnvBase = envAny.GATEWAY_URL || (typeof process !== 'undefined' ? (process.env?.GATEWAY_URL ?? '') : '');
+  const inDocker = envAny.DOCKER_TRAEFIK === '1' || (typeof process !== 'undefined' && process.env?.DOCKER_TRAEFIK === '1');
+  const fallback = inDocker ? 'http://gateway:7000' : 'http://127.0.0.1:7000';
+  const raw = rawEnvBase || fallback;
+  baseURL = raw.includes('localhost') ? raw.replace('localhost', '127.0.0.1') : raw;
+}
 
 export const api = ofetch.create({
-  baseURL: safeBase,
+  baseURL,
   headers: {
     Accept: 'application/json',
   },

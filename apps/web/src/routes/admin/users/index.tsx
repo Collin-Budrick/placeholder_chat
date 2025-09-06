@@ -33,7 +33,8 @@ export const useUsersLoader = routeLoader$<{
   // gateway binds to 0.0.0.0. If GATEWAY_URL is provided, use it but rewrite any
   // "localhost" to "127.0.0.1" to be safe in SSR/dev.
   const envBase = ev.env.get('GATEWAY_URL') ?? process.env.GATEWAY_URL;
-  let base = envBase ?? 'http://127.0.0.1:7000';
+  const inDocker = (ev.env.get('DOCKER_TRAEFIK') === '1') || (process.env.DOCKER_TRAEFIK === '1');
+  let base = envBase ?? (inDocker ? 'http://gateway:7000' : 'http://127.0.0.1:7000');
   if (base.includes('localhost')) {
     base = base.replace('localhost', '127.0.0.1');
   }

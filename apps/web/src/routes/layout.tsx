@@ -42,6 +42,9 @@ export default component$(() => {
 // Individual routes can still opt-out if needed.
 export const prerender = true;
 
+// Restrict which routes are statically generated during the SSG build.
+// Avoid pages that require live backend/auth (e.g., /profile, /admin).
+
 // Global security headers and best-practice cache hints
 export const onRequest: RequestHandler = (ev) => {
   let isHttps = ev.request.url.startsWith('https://');
@@ -58,6 +61,12 @@ export const onRequest: RequestHandler = (ev) => {
   }
   const url = new URL(ev.request.url);
   const p = url.pathname || '/';
+  // Canonicalize: remove trailing slash (except for root)
+  if (p !== '/' && p.endsWith('/')) {
+    const to = p.replace(/\/+$/, '');
+    const search = url.search || '';
+    throw ev.redirect(308, `${to}${search}`);
+  }
   // Long-cache static assets (immutable by content hash in filenames)
   if (/\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(p)) {
     ev.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
@@ -109,10 +118,12 @@ export const onStaticGenerate: StaticGenerateHandler = async () => {
   return {
     routes: [
       '/',
-      '/about/',
-      '/contact/',
-      '/integrations/',
-      '/solid/',
+      '/about',
+      '/contact',
+      '/integrations',
+      '/login',
+      '/signup',
+      '/solid',
       // Note: authenticated pages like '/profile/' are intentionally
       // not prerendered to avoid leaking personalized content.
     ],

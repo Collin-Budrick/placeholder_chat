@@ -1,0 +1,92 @@
+services:
+  dev-all:
+    image: stack-bun-node:latest
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+    working_dir: /workspace
+    command: >
+      sh -lc "bun install --ignore-scripts && exec bun run dev:all"
+    environment:
+      # Run Vite over HTTP and let Traefik terminate TLS if used
+      NO_HTTPS: "1"
+      DOCKER_TRAEFIK: "1"
+      DOCKER_RUNNER: "1"
+      AUTH_TRUST_HOST: "true"
+      # Improve file watching on bind mounts
+      CHOKIDAR_USEPOLLING: "1"
+      CHOKIDAR_INTERVAL: "100"
+      # Hints for Lynx dev experience
+      LYNX_TYPECHECK: "0"
+    volumes:
+      - ./:/workspace
+      - /workspace/node_modules
+      - /workspace/apps/web/node_modules
+      - /workspace/apps/lynx/node_modules
+    ports:
+      # Direct access without Traefik
+      - "5175:5174"  # Vite dev
+      - "3000:3000"  # Lynx dev
+      - "7000:7000"  # Gateway
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"http=require('http');r=http.get('http://127.0.0.1:5174/');r.on('response', s=>process.exit(s.statusCode<500?0:1));r.on('error', ()=>process.exit(1));\" "]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 60s
+    labels:
+      - "traefik.enable=true"
+      # Web (Vite) at '/'
+      - "traefik.http.routers.dev-web.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.dev-web.entrypoints=websecure"
+      - "traefik.http.routers.dev-web.tls=true"
+      - "traefik.http.routers.dev-web.middlewares=dev-web-headers@docker"
+      - "traefik.http.middlewares.dev-web-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
+      - "traefik.http.middlewares.dev-web-headers.headers.stsSeconds=63072000"
+      - "traefik.http.middlewares.dev-web-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.dev-web-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.dev-web-headers.headers.forceSTSHeader=true"
+      - "traefik.http.routers.dev-web.priority=10"
+      - "traefik.http.services.dev-web.loadbalancer.server.port=5174"
+      # Gateway at '/api'
+      - "traefik.http.routers.dev-gateway.rule=PathPrefix(`/api`)"
+      - "traefik.http.routers.dev-gateway.entrypoints=websecure"
+      - "traefik.http.routers.dev-gateway.tls=true"
+      - "traefik.http.routers.dev-gateway.priority=200"
+      - "traefik.http.services.dev-gateway.loadbalancer.server.port=7000"
+      # Lynx at '/lynx'
+      - "traefik.http.routers.dev-lynx.rule=PathPrefix(`/lynx`)"
+      - "traefik.http.routers.dev-lynx.entrypoints=websecure"
+      - "traefik.http.routers.dev-lynx.tls=true"
+      - "traefik.http.middlewares.dev-lynx-redirect.redirectregex.regex=^/lynx/?$"
+      - "traefik.http.middlewares.dev-lynx-redirect.redirectregex.replacement=/lynx/main.lynx.bundle?fullscreen=true"
+      - "traefik.http.middlewares.dev-lynx-redirect.redirectregex.permanent=false"
+      - "traefik.http.routers.dev-lynx.middlewares=dev-lynx-redirect@docker"
+      - "traefik.http.services.dev-lynx.loadbalancer.server.port=3000"
+
+  traefik:
+    image: traefik:v3.5.1
+    command:
+      - "--entrypoints.websecure.address=:5173"
+      - "--entrypoints.websecure.http3=true"
+      - "--log.level=INFO"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+    ports:
+      - "5173:5173/tcp"
+      - "5173:5173/udp"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./apps/web/certs:/certs:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    depends_on:
+      dev-all:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-host.rule=HostRegexp(`traefik\\..+`)"
+      - "traefik.http.routers.traefik-host.entrypoints=websecure"
+      - "traefik.http.routers.traefik-host.tls=true"
+      - "traefik.http.routers.traefik-host.service=api@internal"

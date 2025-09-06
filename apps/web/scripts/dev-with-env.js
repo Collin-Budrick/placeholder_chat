@@ -29,6 +29,11 @@ try {
       const firstLan = lanAddrs[0];
       const hosts = ['localhost', '127.0.0.1', '::1'];
       if (firstLan) hosts.push(firstLan);
+      // Also include host-provided LAN hints when running in Docker
+      const extra = [process.env.PUBLIC_IP, process.env.HMR_HOST].filter(Boolean);
+      for (const h of extra) {
+        if (h && !hosts.includes(h)) hosts.push(h);
+      }
       process.env.MKCERT_HOSTS = hosts.join(',');
       try {
         console.log(`[dev-env] mkcert hosts: ${process.env.MKCERT_HOSTS}`);
@@ -78,11 +83,35 @@ const summary = {
   DOCKER_TRAEFIK: process.env.DOCKER_TRAEFIK,
 };
 try { console.log('[dev-env] Summary:', summary); } catch {}
+try {
+  const pub = process.env.PUBLIC_IP || 'localhost';
+  // Traefik terminates TLS on 5173 for LAN access
+  console.log(`[dev-env] Public URL via Traefik: https://${pub}:5173/`);
+} catch {}
 
-const child = spawn('vite', ['--mode', 'ssr', '--host', '0.0.0.0', '--port', process.env.PORT || '5174'], {
+// Ensure local node_modules/.bin are on PATH when invoked outside a package runner
+try {
+  const sep = process.platform === 'win32' ? ';' : ':';
+  const extraBins = [
+    path.resolve(process.cwd(), 'node_modules', '.bin'),
+    path.resolve(process.cwd(), 'apps', 'web', 'node_modules', '.bin'),
+  ];
+  process.env.PATH = `${extraBins.join(sep)}${sep}${process.env.PATH ?? ''}`;
+} catch {}
+
+const useBun = !!(process.versions && (process.versions.bun || process.env.BUN_RUNTIME === '1'));
+const noSSR = process.env.NO_SSR === '1';
+const cmd = useBun ? 'bunx' : 'vite';
+const baseArgs = ['--host', '0.0.0.0', '--port', process.env.PORT || '5174'];
+const args = useBun
+  ? ['vite', ...(noSSR ? [] : ['--mode', 'ssr']), ...baseArgs]
+  : [ ...(noSSR ? [] : ['--mode', 'ssr']), ...baseArgs ];
+const viteCwd = path.resolve(process.cwd(), 'apps/web');
+const child = spawn(cmd, args, {
   stdio: 'inherit',
   env: process.env,
   shell: process.platform === 'win32',
+  cwd: viteCwd,
 });
 
 child.on('exit', (code, signal) => {

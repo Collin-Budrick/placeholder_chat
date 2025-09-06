@@ -1,4 +1,4 @@
-import { component$, $ } from '@builder.io/qwik';
+import { component$, $, useSignal, useVisibleTask$ } from '@builder.io/qwik';
 import type { DocumentHead } from '@builder.io/qwik-city';
 // import { useLocation } from '@builder.io/qwik-city';
 import { AuthCard } from '../../components/auth/AuthCard';
@@ -11,19 +11,34 @@ export default component$(() => {
   // const loc = useLocation();
   const signOut = useSignOut();
 
-  // No SSR redirects (SSG-only). Perform an immediate client redirect if no auth cookie.
-  // This runs before hydration and avoids flashing a placeholder.
+  // SSG-only gate using resumability: reveal after confirming a session client-side.
+  const show = useSignal(false);
+  useVisibleTask$(async () => {
+    try {
+      const res = await fetch('/auth/session', { credentials: 'same-origin' });
+      if (res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json && Object.keys(json || {}).length) {
+          show.value = true;
+          try { sessionStorage.removeItem('postLogin'); } catch {}
+          return;
+        }
+      }
+    } catch {}
+    try {
+      const p = location.pathname + location.search;
+      location.replace('/login?callbackUrl=' + encodeURIComponent(p));
+    } catch {}
+  });
 
   const displayName =
     session.value?.user?.name ?? (session.value?.user?.email ? session.value.user.email.split('@')[0] : 'there');
   const role = (session.value as any)?.role ?? (session.value?.user as any)?.role;
 
-  // Do not render a blocking placeholder; client script below handles redirect.
-
+  // Render SSG markup; reveal content once `show` is true after resume.
   return (
-    <main hidden class="min-h-screen flex items-center justify-center p-6">
-      {/* Early client-only guard: if arriving from /login, reveal immediately; otherwise redirect to /login */}
-      <script dangerouslySetInnerHTML={`(function(){try{var p=location.pathname+location.search;var ref=document.referrer||'';var fromLogin=false;try{fromLogin=new URL(ref,location.href).pathname.indexOf('/login')===0;}catch(e){}if(fromLogin){try{sessionStorage.removeItem('postLogin');}catch(e){}var s=document.currentScript;var m=s&&s.parentElement;if(m)m.removeAttribute('hidden');return;}location.replace('/login?callbackUrl='+encodeURIComponent(p));}catch(e){}})()`} />
+    <main class="min-h-screen flex items-center justify-center p-6">
+      {show.value ? (
       <AuthCard title="Profile">
         <h3 class="text-xl font-semibold text-center mb-2">Hi {displayName}</h3>
         <p class="text-sm text-center text-slate-200 mb-4">Manage your account</p>
@@ -76,6 +91,11 @@ export default component$(() => {
           </div>
         )}
       </AuthCard>
+      ) : (
+        <div class="text-sm text-base-content/70" aria-busy="true" role="status">
+          Loading your profile…
+        </div>
+      )}
     </main>
   );
 });

@@ -195,7 +195,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
     // (These are expected when Node built-ins are referenced from server-only modules.)
     logLevel: 'warn',
     plugins: [
-      qwikCity(),
+      qwikCity({ trailingSlash: false }),
       qwikVite(),
       tsconfigPaths({ root: "." }),
       solid({
@@ -233,15 +233,36 @@ export default defineConfig(({ command, mode }): UserConfig => {
       // Bind Vite inside container on 5174; Traefik listens on 5173
       port: 5174,
       strictPort: true,
-      // Allow LAN-friendly DNS aliases like nip.io / sslip.io and localhost/IP
-      allowedHosts: [
-        '.nip.io',
-        '.sslip.io',
-        'localhost',
-        '127.0.0.1',
-        '192.168.1.19',
-        '192.168.1.19.nip.io',
-      ],
+      // Ensure absolute URLs (if generated) use the LAN IP when set
+      origin: process.env.PUBLIC_ORIGIN || process.env.LAN_DEV_URL || undefined,
+      // Allow LAN-friendly DNS aliases and hosts configured via env
+      allowedHosts:
+        process.env.DOCKER_TRAEFIK === '1'
+          ? undefined
+          : (() => {
+              const parseHost = (u?: string) => {
+                if (!u) return null;
+                try { return new URL(u).hostname; } catch { return u.replace(/^https?:\/\//, '').replace(/:\d+.*$/, ''); }
+              };
+              const envHosts = [
+                parseHost(process.env.VITE_PUBLIC_HOST),
+                parseHost(process.env.WEB_FORCE_URL),
+                parseHost(process.env.DEV_SERVER_URL),
+                parseHost(process.env.LAN_DEV_URL),
+                parseHost(process.env.PUBLIC_ORIGIN),
+                parseHost(process.env.PUBLIC_HOST),
+                parseHost(process.env.PUBLIC_IP),
+              ].filter((v): v is string => !!v && v.length > 0);
+              const base = [
+                '.nip.io',
+                '.sslip.io',
+                'localhost',
+                '127.0.0.1',
+              ];
+              const set = new Set<string>(base);
+              for (const h of envHosts) set.add(h);
+              return Array.from(set);
+            })(),
       https: resolveHttpsOptions(),
       headers: {
         // Don't cache the server response in dev mode
@@ -329,11 +350,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
   };
 
   try {
-    const httpsKind = cfg.server?.https
-      ? (cfg.server.https === true ? 'mkcert/auto' : (cfg.server.https === false ? 'disabled' : 'file/selfsigned'))
-      : 'disabled';
-    const hmr = cfg.server?.hmr === false ? 'disabled' : JSON.stringify(cfg.server?.hmr ?? {});
-    console.log(`[vite-config] server: port=${cfg.server?.port} https=${httpsKind} hmr=${hmr} docker_traefik=${process.env.DOCKER_TRAEFIK ?? ''}`);
+    const httpsVal: any = (cfg as any)?.server?.https;
+    const httpsKind =
+      httpsVal === true
+        ? 'mkcert/auto'
+        : httpsVal === false || typeof httpsVal === 'undefined'
+          ? 'disabled'
+          : 'file/selfsigned';
+    const hmrConf: any = (cfg as any)?.server?.hmr;
+    const hmr = hmrConf === false ? 'disabled' : JSON.stringify(hmrConf ?? {});
+    console.log(`[vite-config] server: port=${(cfg as any)?.server?.port} https=${httpsKind} hmr=${hmr} docker_traefik=${process.env.DOCKER_TRAEFIK ?? ''}`);
   } catch {}
 
   return cfg;

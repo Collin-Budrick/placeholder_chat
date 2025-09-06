@@ -73,10 +73,17 @@ export default component$(() => {
         </div>
         <div class="mt-4" ref={formWrap}>
           <AuthCard borderless>
-            <form preventdefault:submit action="/auth/callback/credentials" method="post" onSubmit$={$ (async (ev: Event) => {
+            <form id="login-form" preventdefault:submit method="post" onSubmit$={$ (async (ev: Event) => {
               try {
-                const form = ev.currentTarget as HTMLFormElement | null;
-                if (!form) return;
+                // Resolve the real HTMLFormElement robustly across browsers/Qwik wrappers
+                const byId = (globalThis?.document?.getElementById?.('login-form') ?? null) as HTMLFormElement | null;
+                const fromCurrent = (ev && (ev as any).currentTarget) as HTMLFormElement | null;
+                const fromTargetClosest = ((): HTMLFormElement | null => {
+                  const t = (ev && (ev as any).target) as Element | null;
+                  return t && typeof (t as any).closest === 'function' ? (t as any).closest('form') : null;
+                })();
+                const form: HTMLFormElement | null = (byId && byId.tagName === 'FORM' ? byId : null) || fromCurrent || fromTargetClosest;
+                if (!form || !(form instanceof HTMLFormElement)) return;
                 serverError.value = null;
                 submitting.value = true;
                 // Pre-fade for responsiveness (no VTs)
@@ -86,24 +93,22 @@ export default component$(() => {
                 const username = String(fd.get('username') || '').trim();
                 const password = String(fd.get('password') || '');
                 if (!username || !password) { submitting.value = false; serverError.value = 'Missing credentials'; return; }
-                // Call Auth.js credentials provider server-side; it will in turn hit the gateway
-                const res: any = await (signIn as any)('credentials', {
-                  redirect: false,
-                  username,
-                  password,
-                  callbackUrl: '/profile/',
+                // Call Auth.js credentials provider via Qwik Auth action.
+                // Qwik Auth expects credentials in `options` and handles CSRF + redirect server-side.
+                const res: any = await (signIn as any).submit({
+                  providerId: 'credentials',
+                  options: { redirectTo: '/profile/', username, password },
                 });
-                if (res && (res.ok || res.status === 200)) {
+                if (!res || !res.failed) {
                   // Mark post-login for profile to refresh session if needed
                   try { sessionStorage.setItem('postLogin', '1'); } catch {}
                   // Navigate to profile
                   try { await nav('/profile/'); return; } catch {}
                   // Safety fallback
                   setTimeout(() => { try { globalThis.location.assign('/profile/'); } catch {} }, 50);
-                } else if (res && (res.error || res.status === 401)) {
-                  serverError.value = 'Invalid username or password';
                 } else {
-                  serverError.value = `Login failed${res && res.status ? ` (${res.status})` : ''}`;
+                  // res.failed true → useSignIn returned a validation or auth error
+                  serverError.value = (res?.message as string) || 'Invalid username or password';
                 }
               } catch (e: any) {
                 serverError.value = e?.message || 'Login failed';
@@ -112,7 +117,7 @@ export default component$(() => {
                 const el = authContainer.value; if (el) el.classList.remove('auth-fade-out');
               }
             })}>
-              <input type="hidden" name="callbackUrl" value="/profile" />
+              <input type="hidden" name="callbackUrl" value="/profile/" />
               {/* No server-side form action; we call signIn.submit in onSubmit$ */}
 
               {serverError.value && (

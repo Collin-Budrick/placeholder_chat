@@ -279,40 +279,44 @@ async function findDevUrl() {
   throw new Error(`Timed out waiting for Vite dev server on hosts ${hosts.join(', ')} ports ${start}-${end}`);
 }
 
-(async () => {
-  try {
-    const url = await findDevUrl();
-    // Announce the dev URL(s) clearly for the web app
+if (process.env.NO_DESKTOP !== '1' && process.env.SKIP_DESKTOP !== '1' && process.env.DOCKER_RUNNER !== '1') {
+  (async () => {
     try {
-      const u = new URL(url);
-      const scheme = u.protocol.replace(':', '');
-      const port = u.port || (scheme === 'https' ? '443' : '80');
-      const loopbacks = ['localhost', '127.0.0.1'];
-      const lanHosts = getLocalHosts().filter((h) => !loopbacks.includes(h));
-      const localUrl = `${scheme}://localhost:${port}/`;
-      const networkUrls = Array.from(new Set(lanHosts)).map((h) => `${scheme}://${h}:${port}/`);
-      const lines = [
-        `[web] Dev server ready: ${url}`,
-        `[web] Local:   ${localUrl}`,
-        ...(networkUrls.length ? [`[web] Network: ${networkUrls[0]}`] : []),
-        ...(networkUrls.slice(1).map((n) => `          ${n}`)),
-      ].join('\n');
-      writeLines('stdout', 'WEB', Buffer.from(lines + '\n'));
-    } catch {}
-    // Also inform the desktop runner
-    writeLines('stdout', 'DESK', Buffer.from(`[desktop:auto] Using dev URL ${url}\n`));
-    const env = { ...process.env, TAURI_DEV_URL: url };
-    const desk = spawnTagged('DESK', 'cargo', ['run', '-p', 'desktop_app'], { cwd: repoRoot, env });
-    procs.push(desk);
-    desk.on('exit', (code) => {
-      exited += 1;
-      if (code && code !== 0) exitCode = code;
-      if (exited === procs.length) cleanupAndExit(exitCode);
-    });
-  } catch (err) {
-    writeLines('stderr', 'DESK', Buffer.from(`[desktop:auto] ${String(err?.message || err)}\n`));
-  }
-})();
+      const url = await findDevUrl();
+      // Announce the dev URL(s) clearly for the web app
+      try {
+        const u = new URL(url);
+        const scheme = u.protocol.replace(':', '');
+        const port = u.port || (scheme === 'https' ? '443' : '80');
+        const loopbacks = ['localhost', '127.0.0.1'];
+        const lanHosts = getLocalHosts().filter((h) => !loopbacks.includes(h));
+        const localUrl = `${scheme}://localhost:${port}/`;
+        const networkUrls = Array.from(new Set(lanHosts)).map((h) => `${scheme}://${h}:${port}/`);
+        const lines = [
+          `[web] Dev server ready: ${url}`,
+          `[web] Local:   ${localUrl}`,
+          ...(networkUrls.length ? [`[web] Network: ${networkUrls[0]}`] : []),
+          ...(networkUrls.slice(1).map((n) => `          ${n}`)),
+        ].join('\n');
+        writeLines('stdout', 'WEB', Buffer.from(lines + '\n'));
+      } catch {}
+      // Also inform the desktop runner
+      writeLines('stdout', 'DESK', Buffer.from(`[desktop:auto] Using dev URL ${url}\n`));
+      const env = { ...process.env, TAURI_DEV_URL: url };
+      const desk = spawnTagged('DESK', 'cargo', ['run', '-p', 'desktop_app'], { cwd: repoRoot, env });
+      procs.push(desk);
+      desk.on('exit', (code) => {
+        exited += 1;
+        if (code && code !== 0) exitCode = code;
+        if (exited === procs.length) cleanupAndExit(exitCode);
+      });
+    } catch (err) {
+      writeLines('stderr', 'DESK', Buffer.from(`[desktop:auto] ${String(err?.message || err)}\n`));
+    }
+  })();
+} else {
+  writeLines('stdout', 'DESK', Buffer.from('[desktop:auto] Skipped desktop runner in this environment\n'));
+}
 
 let exitCode = 0;
 let exited = 0;
