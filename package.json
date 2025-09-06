@@ -43,6 +43,10 @@
     "docker:devall": "docker compose -f docker-compose.dev-all.yml up",
     "docker:dev": "bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.dev-web.yml up --build",
     "docker:prod": "bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.prod.yml up --build",
+    "docker:build:gateway:dev": "DOCKER_BUILDKIT=1 bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.dev-web.yml build gateway",
+    "docker:build:gateway:prod": "DOCKER_BUILDKIT=1 bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.prod.yml build gateway",
+    "docker:rebuild-gateway": "DOCKER_BUILDKIT=1 bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.dev-web.yml build --no-cache gateway && docker compose -f docker-compose.prod.yml build --no-cache gateway",
+    "docker:cache:prune": "bun scripts/docker-cache-prune.mjs --all",
     "mkcert:lan": "bun scripts/mkcert-lan.mjs"
   },
   "packageManager": "pnpm@10.15.1+sha512.34e538c329b5553014ca8e8f4535997f96180a1d0f614339357449935350d924e22f8614682191264ec33d1462ac21561aff97f6bb18065351c162c7e8f6de67"

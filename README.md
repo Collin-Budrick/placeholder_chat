@@ -61,16 +61,66 @@ TLS options:
 
 ## Run With Docker
 
-This repo includes a Traefik gateway and dev containers for the web app and Lynx tool. To run the stack with HTTPS on port 5173 (and HTTP/3/UDP when supported), use the base compose file plus the HTTP/3 overlay:
+This repo includes Bun-driven helper scripts and Compose files for both dev (with HMR) and prod (SSG preview) behind Traefik with HTTPS on port `5173`.
+
+### Docker + Bun Scripts
+
+Recommended first-time setup for trusted HTTPS on your LAN (Windows PowerShell step is optional but recommended):
 
 ```sh
-docker compose -f docker-compose.yml -f docker-compose.h3.yml up -d --force-recreate
+# 1) Generate a LAN-trusted dev certificate with mkcert (host machine)
+bun run mkcert:lan
+
+# 2) Open firewall for TCP/UDP 5173 (Windows)
+pwsh scripts/windows-open-ports.ps1 -Port 5173
+
+# 3) Launch dev (web + gateway + Traefik, HTTPS via 5173)
+bun run docker:dev
 ```
 
-Notes:
-- Traefik listens on `5173/tcp` and `5173/udp`. Visit `https://localhost:5173/` or `https://<your-lan-ip>:5173/`.
-- Dev certificates are mounted from `apps/web/certs` (self-signed). Your browser may prompt to trust them.
-- To stop the stack: `docker compose down` (use the same `-f` files if needed).
+Open `https://<your-lan-ip>:5173/` from phones/laptops on the same network. The web app proxies `/api` to the Rust gateway inside Docker.
+
+Available scripts (Bun only):
+
+```sh
+# Write PUBLIC_IP/HMR_HOST into .env (called by other scripts automatically)
+bun run docker:env
+
+# Dev: web (Vite+HMR), gateway, Traefik (HTTPS 5173); direct Vite HTTP at 5174
+bun run docker:dev
+
+# Prod preview: SSG web on 5174, Traefik fronts HTTPS on 5173, gateway behind /api
+bun run docker:prod
+
+# Build gateway images with BuildKit + cargo-chef cache
+bun run docker:build:gateway:dev   # dev base (sccache, cargo)
+bun run docker:build:gateway:prod  # minimal runtime image
+
+# Force a clean rebuild of gateway images (still benefits from cache mounts)
+bun run docker:rebuild-gateway
+
+# Safely prune caches (prompts): BuildKit + named volumes (cargo-*/sccache)
+bun run docker:cache:prune
+# Non-interactive examples:
+bun scripts/docker-cache-prune.mjs --buildkit --yes
+bun scripts/docker-cache-prune.mjs --volumes  --yes
+bun scripts/docker-cache-prune.mjs --all      --dry-run
+
+# Legacy/advanced (optional)
+bun run docker:up      # base compose
+bun run docker:uph3    # base + HTTP/3 overlay
+bun run docker:devall  # monolithic dev-all compose
+```
+
+Ports and endpoints:
+- HTTPS entry (Traefik): `5173/tcp` (and `5173/udp` for HTTP/3). Visit `https://localhost:5173/` or `https://<LAN-IP>:5173/`.
+- Vite dev server (HTTP): `5174` (direct access: `http://localhost:5174/`).
+- Gateway service: proxied at `https://<LAN-IP>:5173/api`.
+
+TLS/certificates:
+- `bun run mkcert:lan` installs mkcert’s local CA (host) and generates `apps/web/certs/dev.(crt|key)` covering `localhost`, `127.0.0.1`, and your `PUBLIC_IP` from `.env`.
+- Traefik loads that cert and serves HTTPS for both dev and prod composes.
+- For other devices, install mkcert’s root CA on those devices to avoid warnings (`mkcert -CAROOT`).
 
 ## Documentation
 

@@ -59,17 +59,20 @@ services:
 
   # Rust Gateway (dev API)
   gateway:
-    image: rustlang/rust:nightly
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+      target: dev-base
     working_dir: /workspace
     command: >
       /bin/bash -lc "set -euo pipefail \
-      && apt-get update \
-      && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends capnproto pkg-config libssl-dev build-essential ca-certificates \
-      && update-ca-certificates \
-      && /usr/local/cargo/bin/cargo --version \
-      && /usr/local/cargo/bin/cargo run --manifest-path apps/gateway/Cargo.toml"
+      && cargo --version \
+      && sccache --start-server || true \
+      && cargo run --manifest-path apps/gateway/Cargo.toml"
     environment:
       RUST_LOG: info
+      RUSTC_WRAPPER: "/usr/local/cargo/bin/sccache"
+      SCCACHE_DIR: "/sccache"
       # Allow the dev site origins over HTTPS on 5173
       CORS_ALLOW_ORIGINS: "https://localhost:5173,https://127.0.0.1:5173,https://${PUBLIC_IP:-127.0.0.1}:5173"
       # Also allow any IP-based origin on port 5173 (LAN/public IPs)
@@ -82,6 +85,7 @@ services:
       - cargo-registry:/usr/local/cargo/registry
       - cargo-git:/usr/local/cargo/git
       - cargo-target:/workspace/target
+      - sccache:/sccache
     healthcheck:
       test: ["CMD-SHELL", "/bin/bash -lc 'exec 3<>/dev/tcp/127.0.0.1/7000 && echo -e \"GET /healthz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q ok <&3' "]
       interval: 5s
@@ -131,3 +135,4 @@ volumes:
   cargo-registry:
   cargo-git:
   cargo-target:
+  sccache:

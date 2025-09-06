@@ -47,27 +47,16 @@ services:
 
   # Rust Gateway (prod mode — same binary run as dev for now)
   gateway:
-    image: rustlang/rust:nightly
-    working_dir: /workspace
-    command: >
-      /bin/bash -lc "set -euo pipefail \
-      && apt-get update \
-      && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends capnproto pkg-config libssl-dev build-essential ca-certificates \
-      && update-ca-certificates \
-      && /usr/local/cargo/bin/cargo --version \
-      && /usr/local/cargo/bin/cargo run --manifest-path apps/gateway/Cargo.toml --release"
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
     environment:
       RUST_LOG: info
       # Allow HTTPS origins on 5173 (LAN IP via Traefik)
       CORS_ALLOW_ORIGINS: "https://localhost:5173,https://127.0.0.1:5173,https://${PUBLIC_IP:-127.0.0.1}:5173"
       CORS_ALLOW_ANY_IP_PORTS: "5173"
       GATEWAY_ADDR: 0.0.0.0:7000
-    volumes:
-      - ./:/workspace
-      # Cache Cargo registry, git index, and build artifacts across runs
-      - cargo-registry:/usr/local/cargo/registry
-      - cargo-git:/usr/local/cargo/git
-      - cargo-target:/workspace/target
+    # Runtime image contains only the compiled binary; no volumes needed
     healthcheck:
       test: ["CMD-SHELL", "/bin/bash -lc 'exec 3<>/dev/tcp/127.0.0.1/7000 && echo -e \"GET /healthz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q ok <&3' "]
       interval: 5s
