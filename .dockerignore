@@ -1,0 +1,28 @@
+# Ignore massive JS package trees and build outputs
+node_modules
+**/node_modules
+apps/**/node_modules
+apps/web/dist
+apps/web/server
+apps/web/logs
+apps/lynx/dist
+dist
+logs
+test-results
+.temp
+.pnpm-store
+
+# Rust build output (we use Docker volumes / BuildKit mounts instead)
+target
+**/target
+
+# VCS and editor files
+.git
+.git/*
+.DS_Store
+*.swp
+*.swo
+
+# Certificates (mounted at runtime, not needed for gateway build context)
+apps/web/certs/*
+

@@ -62,13 +62,7 @@ services:
     build:
       context: .
       dockerfile: docker/gateway.Dockerfile
-      target: dev-base
     working_dir: /workspace
-    command: >
-      /bin/bash -lc "set -euo pipefail \
-      && cargo --version \
-      && sccache --start-server || true \
-      && cargo run --manifest-path apps/gateway/Cargo.toml"
     environment:
       RUST_LOG: info
       RUSTC_WRAPPER: "/usr/local/cargo/bin/sccache"
@@ -79,13 +73,7 @@ services:
       CORS_ALLOW_ANY_IP_PORTS: "5173"
       # Bind on container network
       GATEWAY_ADDR: 0.0.0.0:7000
-    volumes:
-      - ./:/workspace
-      # Cache Cargo registry, git index, and build artifacts across runs
-      - cargo-registry:/usr/local/cargo/registry
-      - cargo-git:/usr/local/cargo/git
-      - cargo-target:/workspace/target
-      - sccache:/sccache
+    volumes: []
     healthcheck:
       test: ["CMD-SHELL", "/bin/bash -lc 'exec 3<>/dev/tcp/127.0.0.1/7000 && echo -e \"GET /healthz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q ok <&3' "]
       interval: 5s
