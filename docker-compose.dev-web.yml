@@ -8,7 +8,6 @@ services:
     working_dir: /workspace/apps/web
     command: >
       sh -lc "bun install --ignore-scripts \
-      && bun run build:ssg \
       && exec bun run build:ssg:watch"
     environment:
       CHOKIDAR_USEPOLLING: "0"
@@ -33,7 +32,7 @@ services:
     depends_on:
       - ssg-build
     command: >
-      sh -lc "bunx vite preview --host 0.0.0.0 --strictPort --port 5174 --outDir dist"
+      sh -lc "node ./scripts/preview.express.cjs"
     environment:
       # Run preview over HTTP internally; Traefik terminates TLS
       NO_HTTPS: "1"
@@ -42,17 +41,39 @@ services:
     labels:
       - "traefik.enable=true"
       # Web (Vite preview) at '/'
-      - "traefik.http.routers.dev-web.rule=PathPrefix(`/`)"
+      # Match any host on the websecure entrypoint to avoid 404 when using bare IPs
+      - "traefik.http.routers.dev-web.rule=HostRegexp(`{any:.+}`) && PathPrefix(`/`)"
       - "traefik.http.routers.dev-web.entrypoints=websecure"
       - "traefik.http.routers.dev-web.tls=true"
-      - "traefik.http.routers.dev-web.middlewares=dev-web-headers@docker"
+      # Middlewares (docker-defined + file-defined)
+      # - dev-compress@docker ensures gzip even if file provider is inactive
+      # - dev-cache-html@docker sets document Cache-Control
+      # - security_headers@file adds CSP/COOP/etc; dev-web-headers adds HSTS/Alt-Svc
+      - "traefik.http.routers.dev-web.middlewares=dev-compress@docker,security_headers@file,dev-cache-html@docker,dev-web-headers@docker"
       - "traefik.http.middlewares.dev-web-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
       - "traefik.http.middlewares.dev-web-headers.headers.stsSeconds=63072000"
       - "traefik.http.middlewares.dev-web-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.dev-web-headers.headers.stsPreload=true"
       - "traefik.http.middlewares.dev-web-headers.headers.forceSTSHeader=true"
+      # Docker-defined gzip and header middlewares
+      - "traefik.http.middlewares.dev-compress.compress=true"
+      # Document headers (Cache-Control + Vary) placed on dev-web-headers (which we already apply and is known-good)
+      - "traefik.http.middlewares.dev-web-headers.headers.customResponseHeaders.Cache-Control=public, max-age=600, stale-while-revalidate=86400"
+      - "traefik.http.middlewares.dev-web-headers.headers.customResponseHeaders.Vary=Accept-Encoding"
       - "traefik.http.routers.dev-web.priority=10"
       - "traefik.http.services.dev-web.loadbalancer.server.port=5174"
+      # Secondary router for long-lived cached assets
+      - "traefik.http.routers.dev-web-assets.rule=HostRegexp(`{any:.+}`) && (PathPrefix(`/assets`) || PathPrefix(`/build`) || Path(`/theme-init.js`))"
+      - "traefik.http.routers.dev-web-assets.entrypoints=websecure"
+      - "traefik.http.routers.dev-web-assets.tls=true"
+      - "traefik.http.routers.dev-web-assets.priority=100"
+      - "traefik.http.routers.dev-web-assets.service=dev-web"
+      - "traefik.http.routers.dev-web-assets.middlewares=dev-compress@docker,dev-asset-headers@docker"
+      - "traefik.http.middlewares.dev-asset-headers.headers.customResponseHeaders.Cache-Control=public, max-age=31536000, immutable"
+      - "traefik.http.middlewares.dev-asset-headers.headers.customResponseHeaders.Vary=Accept-Encoding"
+      - "traefik.http.middlewares.dev-asset-headers.headers.stsSeconds=63072000"
+      - "traefik.http.middlewares.dev-asset-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.dev-asset-headers.headers.stsPreload=true"
 
   # Rust Gateway (dev API)
   gateway:
@@ -88,6 +109,8 @@ services:
       - "traefik.http.routers.dev-gateway.tls=true"
       # Ensure API route wins over generic web route
       - "traefik.http.routers.dev-gateway.priority=200"
+      # Also compress API responses via Traefik
+      - "traefik.http.routers.dev-gateway.middlewares=compress@file"
       - "traefik.http.services.dev-gateway.loadbalancer.server.port=7000"
 
   # Traefik (dev TLS/proxy)
@@ -126,4 +149,3 @@ volumes:
   cargo-git:
   cargo-target:
   sccache:
-

@@ -27,7 +27,58 @@ errorOnDuplicatesPkgDeps(devDependencies, dependencies);
  */
 
 export default defineConfig(({ command, mode }): UserConfig => {
+  const isProdBuild = command === 'build' && (mode === 'production' || process.env.NODE_ENV === 'production');
   const extraPlugins: any[] = [];
+  // Add preview-time headers (cache + compression) to improve Lighthouse in preview/proxy setups
+  const previewHeadersPlugin = () => {
+    return {
+      name: 'preview-headers',
+      // Vite 5/7 preview server hook
+      configurePreviewServer(server: any) {
+        try {
+          // Optional gzip compression for text assets in preview
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const compression = require('compression');
+          if (compression) server.middlewares.use(compression());
+        } catch {}
+        const assetRe = /\.(?:js|mjs|css|json|xml|txt|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i;
+        server.middlewares.use((req: any, res: any, next: any) => {
+          try {
+            const url: string = (req.originalUrl || req.url || '/') as string;
+            const isAsset = assetRe.test(url) || url.startsWith('/assets/') || url.startsWith('/build/');
+            if (isAsset) {
+              res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+            } else {
+              res.setHeader('Cache-Control', 'public, max-age=600, stale-while-revalidate=86400');
+            }
+            // Helpful defaults
+            res.setHeader('Vary', 'Accept-Encoding');
+            res.setHeader('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+            // Security headers for preview (static serving)
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+            res.setHeader('X-Frame-Options', 'DENY');
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+            const csp = [
+              "default-src 'self'",
+              "base-uri 'self'",
+              "object-src 'none'",
+              "frame-ancestors 'none'",
+              "img-src 'self' data: blob:",
+              "font-src 'self' data:",
+              "style-src 'self' 'unsafe-inline'",
+              "script-src 'self'",
+              "connect-src 'self'",
+            ].join('; ');
+            res.setHeader('Content-Security-Policy', csp);
+          } catch {}
+          next();
+        });
+      },
+    } as any;
+  };
   const resolveHttpsOptions = () => {
     // Honor explicit disable first (used by prod preview proxy)
     if (process.env.NO_HTTPS === '1') return false as any;
@@ -150,35 +201,50 @@ export default defineConfig(({ command, mode }): UserConfig => {
     }
   } catch (e) {}
   try {
-    // @ts-ignore
-    const { visualizer } = require('rollup-plugin-visualizer');
-    extraPlugins.push(
-      visualizer?.({
-        filename: 'dist/stats.html',
-        template: 'treemap',
-        gzipSize: true,
-        brotliSize: true,
-        open: false,
-      }) ?? undefined,
-    );
+    if (command === 'build') {
+      // @ts-ignore
+      const { visualizer } = require('rollup-plugin-visualizer');
+      extraPlugins.push(
+        visualizer?.({
+          filename: 'dist/stats.html',
+          template: 'treemap',
+          gzipSize: true,
+          brotliSize: true,
+          open: false,
+        }) ?? undefined,
+      );
+    }
   } catch (e) {}
   try {
-    // @ts-ignore
-    const compression = require("vite-plugin-compression2");
-    extraPlugins.push(
-      compression.default?.({
-        algorithm: "gzip",
-        ext: ".gz",
-        threshold: 10240,
-      }) ?? compression({ algorithm: "gzip", ext: ".gz", threshold: 10240 }),
-    );
+    if (command === 'build') {
+      // @ts-ignore
+      const compression = require("vite-plugin-compression2");
+      // Gzip
+      extraPlugins.push(
+        compression.default?.({
+          algorithm: "gzip",
+          ext: ".gz",
+          threshold: 10240,
+        }) ?? compression({ algorithm: "gzip", ext: ".gz", threshold: 10240 }),
+      );
+      // Brotli
+      extraPlugins.push(
+        compression.default?.({
+          algorithm: "brotliCompress",
+          ext: ".br",
+          threshold: 10240,
+        }) ?? compression({ algorithm: "brotliCompress", ext: ".br", threshold: 10240 }),
+      );
+    }
   } catch (e) {}
   try {
-    // @ts-ignore
-    const inspect = require("vite-plugin-inspect");
-    extraPlugins.push(
-      inspect && inspect.default ? inspect.default() : inspect(),
-    );
+    if (command === 'serve') {
+      // @ts-ignore
+      const inspect = require("vite-plugin-inspect");
+      extraPlugins.push(
+        inspect && inspect.default ? inspect.default() : inspect(),
+      );
+    }
   } catch (e) {}
   try {
     // @ts-ignore
@@ -191,6 +257,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
     }
   } catch (e) {}
   const cfg: UserConfig = {
+    resolve: {
+      alias: {
+        // Avoid bundling Node's undici into the browser; map to a tiny shim
+        undici: join(__dirname, 'src', 'shims', 'undici.browser.mjs'),
+      },
+    },
     // Suppress Vite's informational "externalized for browser compatibility" logs
     // (These are expected when Node built-ins are referenced from server-only modules.)
     logLevel: 'warn',
@@ -203,6 +275,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
         include: ["src/solid/**/*.{tsx,jsx}"],
       }),
       ...extraPlugins,
+      // Improve cache/compression headers when using `vite preview` or Traefik preview proxy
+      previewHeadersPlugin(),
       tailwindcss(),
       partytownVite({ dest: join(__dirname, "dist", "~partytown") }),
     ],
@@ -210,7 +284,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
     optimizeDeps: {
       // Put problematic deps that break bundling here, mostly those with binaries.
       // For example ['better-sqlite3'] if you use that in server functions.
-      exclude: [],
+      exclude: ['undici'],
     },
     /**
      * This is an advanced setting. It improves the bundling of your server code. To use it, make sure you understand when your consumed packages are dependencies or dev dependencies. (otherwise things will break in production)
@@ -326,8 +400,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
       },
     },
     build: {
-      // Generate source maps for production builds to aid debugging and Lighthouse
+      // Enable sourcemaps for production builds to aid debugging and Lighthouse insights
       sourcemap: true,
+      // Avoid nuking dist when using parallel --watch processes (client + SSG)
+      emptyOutDir: process.env.VITE_WATCH === '1' ? false : true,
       // Reduce spurious warnings and split big vendor deps
       chunkSizeWarningLimit: 4096,
       rollupOptions: {

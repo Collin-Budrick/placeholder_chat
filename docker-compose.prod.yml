@@ -36,14 +36,26 @@ services:
       - "traefik.http.routers.web.rule=PathPrefix(`/`)"
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.tls=true"
-      - "traefik.http.routers.web.middlewares=web-headers@docker"
+      - "traefik.http.routers.web.middlewares=web-compress@docker,security_headers@file,web-headers@docker,web-cache-html@docker"
       - "traefik.http.middlewares.web-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
       - "traefik.http.middlewares.web-headers.headers.stsSeconds=63072000"
       - "traefik.http.middlewares.web-headers.headers.stsIncludeSubdomains=true"
       - "traefik.http.middlewares.web-headers.headers.stsPreload=true"
       - "traefik.http.middlewares.web-headers.headers.forceSTSHeader=true"
+      - "traefik.http.middlewares.web-compress.compress=true"
+      - "traefik.http.middlewares.web-cache-html.headers.customResponseHeaders.Cache-Control=public, max-age=600, stale-while-revalidate=86400"
+      - "traefik.http.middlewares.web-cache-html.headers.customResponseHeaders.Vary=Accept-Encoding"
       - "traefik.http.routers.web.priority=10"
       - "traefik.http.services.web.loadbalancer.server.port=5174"
+      # Asset router for long-cache and compression
+      - "traefik.http.routers.web-assets.rule=PathPrefix(`/assets`) || PathPrefix(`/build`) || Path(`/theme-init.js`)"
+      - "traefik.http.routers.web-assets.entrypoints=websecure"
+      - "traefik.http.routers.web-assets.tls=true"
+      - "traefik.http.routers.web-assets.priority=100"
+      - "traefik.http.routers.web-assets.service=web"
+      - "traefik.http.routers.web-assets.middlewares=web-compress@docker,web-cache-asset@docker"
+      - "traefik.http.middlewares.web-cache-asset.headers.customResponseHeaders.Cache-Control=public, max-age=31536000, immutable"
+      - "traefik.http.middlewares.web-cache-asset.headers.customResponseHeaders.Vary=Accept-Encoding"
 
   # Rust Gateway (prod mode — same binary run as dev for now)
   gateway:

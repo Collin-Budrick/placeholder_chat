@@ -9,3 +9,30 @@ tls:
       defaultCertificate:
         certFile: /certs/dev.crt
         keyFile: /certs/dev.key
+
+# Keep only reusable middlewares here. Routing to the preview server is handled
+# by Docker labels on the ssg-preview service to avoid cross-provider conflicts.
+http:
+  middlewares:
+    compress:
+      compress: {}
+    headers_long_cache:
+      headers:
+        customResponseHeaders:
+          Cache-Control: "public, max-age=31536000, immutable"
+          Vary: "Accept-Encoding"
+    headers_html_cache:
+      headers:
+        customResponseHeaders:
+          Cache-Control: "public, max-age=600, stale-while-revalidate=86400"
+          Vary: "Accept-Encoding"
+    security_headers:
+      headers:
+        customResponseHeaders:
+          # Leave CSP to the app layer so it can attach a per-request nonce
+          Cross-Origin-Opener-Policy: "same-origin"
+          Cross-Origin-Resource-Policy: "same-origin"
+          Cross-Origin-Embedder-Policy: "require-corp"
+          X-Frame-Options: "DENY"
+          X-Content-Type-Options: "nosniff"
+          Referrer-Policy: "strict-origin-when-cross-origin"

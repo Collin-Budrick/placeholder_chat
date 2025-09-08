@@ -30,6 +30,7 @@ use axum::{
 };
 // axum::http::Request is used below in middleware signatures
 use axum::http::Request;
+use axum::extract::DefaultBodyLimit;
 use anyhow::Result;
 use axum::http::{HeaderMap, StatusCode};
 use axum::http::header::{ACCEPT, CONTENT_TYPE, AUTHORIZATION, HeaderName};
@@ -49,7 +50,8 @@ use auth::create_jwt;
 use axum::Json;
 use std::collections::HashMap;
 use serde_json::{json, Value};
-use std::io::Write;
+// async I/O for logfile writes/reads
+use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 use std::fs as stdfs;
 
@@ -66,6 +68,11 @@ use rand::RngCore;
 // Observability & CORS
 use tower_http::trace::TraceLayer;
 use tower_http::cors::CorsLayer;
+use tower_http::compression::CompressionLayer;
+use tower::timeout::TimeoutLayer;
+use axum::error_handling::HandleErrorLayer;
+use tower::{BoxError, ServiceBuilder};
+use std::time::Duration;
 use axum::http::Method;
 // Response type used to rebuild responses after reading body
 use axum::response::Response;
@@ -408,7 +415,7 @@ async fn main() -> Result<()> {
         .route_layer(middleware::from_fn(csrf_middleware));
 
     // Core router: non-auth/dev routes remain on root. Merge grouped routers.
-    let app: Router = Router::new()
+    let base: Router = Router::new()
         .route("/", get(root))
         .route("/healthz", get(|| async { "ok" }))
         .route("/ws", get(ws_handler))
@@ -434,13 +441,37 @@ async fn main() -> Result<()> {
         .merge(auth_routes)
         .merge(auth_protected)
         .merge(admin_routes)
-        // Attach request/response middleware layers
-        // Log POST bodies (dev-friendly); keep above Trace so body is available to handlers
-        .layer(middleware::from_fn(log_post_body_middleware))
-        .layer(TraceLayer::new_for_http())
-        .layer(cors_layer)
-        .layer(middleware::from_fn_with_state(state.clone(), rate_limit_middleware))
         .with_state(state.clone());
+
+    // Attach request/response middleware layers
+    // Order: rate-limit -> CORS -> trace -> compression -> timeout (with handler) -> body limit
+    let body_limit: usize = std::env::var("BODY_LIMIT_BYTES")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(1 * 1024 * 1024); // 1 MiB default
+    async fn handle_timeout_error(err: BoxError) -> Response {
+        if err.is::<tower::timeout::error::Elapsed>() {
+            (StatusCode::REQUEST_TIMEOUT, "request timed out").into_response()
+        } else {
+            (StatusCode::INTERNAL_SERVER_ERROR, "internal error").into_response()
+        }
+    }
+    let timeout_stack = ServiceBuilder::new()
+        .layer(HandleErrorLayer::new(handle_timeout_error))
+        .layer(TimeoutLayer::new(Duration::from_secs(10)));
+
+    let mut app: Router = base
+        .layer(middleware::from_fn_with_state(state.clone(), rate_limit_middleware))
+        .layer(cors_layer)
+        .layer(TraceLayer::new_for_http())
+        .layer(CompressionLayer::new())
+        .layer(timeout_stack)
+        .layer(DefaultBodyLimit::max(body_limit));
+
+    // Optional: verbose POST body logging (expensive) — enabled only when LOG_POST_BODY=1
+    if std::env::var("LOG_POST_BODY").ok().as_deref() == Some("1") {
+        app = app.layer(middleware::from_fn(log_post_body_middleware));
+    }
 
     // Bind address to listen on. Default is 0.0.0.0:7000 or override with GATEWAY_ADDR env var.
     let addr: SocketAddr = std::env::var("GATEWAY_ADDR")
@@ -724,9 +755,10 @@ async fn log_post_body_middleware(req: Request<Body>, next: Next) -> impl IntoRe
 /// Collect frontend logs posted by the SSG web app.
 /// Writes NDJSON entries to logs/frontend-api.log
 async fn api_frontend_logs(Json(mut entry): Json<Value>) -> impl IntoResponse {
-    // Ensure logs directory exists
+    use tokio::fs as afs;
+    // Ensure logs directory exists (async)
     let log_dir = std::path::Path::new("logs");
-    if let Err(e) = stdfs::create_dir_all(log_dir) {
+    if let Err(e) = afs::create_dir_all(log_dir).await {
         tracing::error!("failed to create logs dir: {:?}", e);
     }
     let log_path = log_dir.join("frontend-api.log");
@@ -740,9 +772,12 @@ async fn api_frontend_logs(Json(mut entry): Json<Value>) -> impl IntoResponse {
         Ok(s) => s + "\n",
         Err(_) => "{}\n".to_string(),
     };
-    match stdfs::OpenOptions::new().create(true).append(true).open(&log_path) {
+    match afs::OpenOptions::new().create(true).append(true).open(&log_path).await {
         Ok(mut fh) => {
-            let _ = fh.write_all(line.as_bytes());
+            if let Err(e) = fh.write_all(line.as_bytes()).await {
+                tracing::error!("failed to write log line: {:?}", e);
+                return (StatusCode::INTERNAL_SERVER_ERROR, "write-failed").into_response();
+            }
             (StatusCode::NO_CONTENT, "").into_response()
         }
         Err(e) => {
@@ -755,7 +790,7 @@ async fn api_frontend_logs(Json(mut entry): Json<Value>) -> impl IntoResponse {
 /// Return the current frontend logs (text)
 async fn get_frontend_logs() -> impl IntoResponse {
     let log_path = std::path::Path::new("logs").join("frontend-api.log");
-    match stdfs::read_to_string(&log_path) {
+    match tokio::fs::read_to_string(&log_path).await {
         Ok(txt) => (
             StatusCode::OK,
             [(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")],

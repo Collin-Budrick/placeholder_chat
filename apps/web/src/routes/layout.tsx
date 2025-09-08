@@ -63,6 +63,34 @@ export const onRequest: RequestHandler = (ev) => {
     ev.headers.set('X-Content-Type-Options', 'nosniff');
     ev.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     ev.headers.set('X-Frame-Options', 'DENY');
+    // Security: COOP/COEP for origin isolation (safe for our current asset usage)
+    ev.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
+    ev.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+    ev.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
+    // Reasonable default CSP for Qwik static pages in dev/preview. Keep inline scripts out (theme-init is external).
+    // Note: Adjust connect-src if you call APIs on other origins.
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "style-src 'self' 'unsafe-inline'",
+      "script-src 'self'",
+      "connect-src 'self'",
+      // Allow preconnect hints to public CDNs without fetching actual assets
+      // If you fetch from a CDN, add it to connect-src and its scheme to default-src as needed.
+    ].join('; ');
+    ev.headers.set('Content-Security-Policy', csp);
+    // CDN cache hint for edge caches (no impact if no CDN in front)
+    if (/\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(p)) {
+      ev.headers.set('Surrogate-Control', 'max-age=31536000, immutable');
+    } else if (p.endsWith('/q-data.json')) {
+      ev.headers.set('Surrogate-Control', 'max-age=120');
+    } else {
+      ev.headers.set('Surrogate-Control', 'max-age=600');
+    }
   } catch {
     // ignore
   }
@@ -70,14 +98,31 @@ export const onRequest: RequestHandler = (ev) => {
 
 // Explicit list of static routes to prerender at build time
 // (handy for environments without a crawler during build).
-export const onStaticGenerate = () => ({
-  routes: [
+export const onStaticGenerate = () => {
+  const base = [
     '/',
     '/about',
     '/contact',
+    '/integrations',
     '/login',
     '/signup',
-    //'/profile',
-    // Exclude dynamic/SSR or auth-protected pages from prerender.
-  ],
-});
+  ];
+  try {
+    // Allow partial SSG runs by providing a CSV of routes via env.
+    // Examples: SSG_ONLY_ROUTES="/contact" or SSG_ONLY_ROUTES="/about,/contact"
+    const onlyRaw = (typeof process !== 'undefined' && (process as any).env?.SSG_ONLY_ROUTES) || '';
+    if (onlyRaw && typeof onlyRaw === 'string') {
+      const norm = (s: string) => {
+        let v = s.trim();
+        if (!v) return '';
+        if (!v.startsWith('/')) v = '/' + v;
+        // drop trailing slash except for root
+        if (v.length > 1 && v.endsWith('/')) v = v.slice(0, -1);
+        return v;
+      };
+      const only = Array.from(new Set(onlyRaw.split(/[\s,]+/).map(norm).filter(Boolean)));
+      if (only.length > 0) return { routes: only };
+    }
+  } catch { /* ignore */ }
+  return { routes: base };
+};

@@ -93,7 +93,25 @@ export default component$(() => {
   // No manual VT on click: rely on Qwik auto-VT
   const onAccountClick = $(async () => {
     try {
-      // SSG: directly ask the gateway if we have a session cookie
+      // Fast-path: if we're already on an auth page, don't ping the backend
+      const path = (globalThis?.location?.pathname || '').toLowerCase();
+      if (path.startsWith('/login') || path.startsWith('/signup')) {
+        await nav('/login');
+        return;
+      }
+
+      // If there is clearly no session cookie, avoid a backend probe to prevent a 401 log
+      let hasSession = false;
+      try {
+        const ck = String((globalThis as any)?.document?.cookie || '');
+        hasSession = /(?:^|;\s*)(session|session_token)=/.test(ck);
+      } catch { /* ignore */ }
+      if (!hasSession) {
+        await nav('/login');
+        return;
+      }
+
+      // Otherwise, ask the gateway if we have a session cookie
       let goProfile = false;
       try {
         const gw = await fetch('/api/auth/me', {

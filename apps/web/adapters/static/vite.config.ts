@@ -6,6 +6,8 @@ export default extendConfig(baseConfig as any, () => {
   return {
     build: {
       ssr: true,
+      // Enable sourcemaps for SSR/static build to aid debugging and diagnostics
+      sourcemap: true,
       rollupOptions: {
         input: ["@qwik-city-plan"],
       },

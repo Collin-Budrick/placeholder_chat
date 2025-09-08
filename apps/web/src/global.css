@@ -3,6 +3,9 @@
 /* Load Tailwind plugins (Tailwind v4 style) */
 @plugin "daisyui";
 @plugin "tailwindcss-animate";
+/* Fallback include: In some preview/proxy setups Tailwind's @plugin processing can be skipped.
+   Import DaisyUI's prebuilt CSS to ensure components (e.g., .btn) and theme variables exist. */
+/* Note: avoid importing full DaisyUI bundle here to keep CSS small. */
 /* Include Panda CSS (styled-system) so token variables are available */
 @import "../styled-system/styles.css";
 
@@ -207,8 +210,10 @@ html[data-theme='white'] .bottom-nav-surface::before { opacity: .55; }
 html[data-theme='dark'] .bottom-nav-surface::before,
 html[data-theme='oled'] .bottom-nav-surface::before { opacity: .85; }
 
-/* Normalize H1 font-size inside sectioning content to avoid UA changes.
-   Headings inside article/aside/nav/section/main should have an explicit size. */
+/* Normalize H1 font-size to avoid UA changes.
+   Set a sensible default, utility classes (e.g., text-4xl) will override where used. */
+h1 { font-size: 2em; line-height: 1.2; }
+/* Keep an explicit size inside sectioning content for consistency across browsers. */
 article h1, aside h1, nav h1, section h1, main h1 { font-size: 1.5rem; line-height: 1.25; }
 
 /* Prefer true backdrop blur when supported */
