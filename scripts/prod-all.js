@@ -74,7 +74,7 @@ async function main() {
     console.error('[prod:all] Web client build failed');
     process.exit(r.code);
   }
-  // Static adapter prerender build
+  // Static adapter prerender build (Qwik resumability SSG)
   r = await run('bun', ['x', 'vite', 'build', '-c', 'adapters/static/vite.config.ts'], { cwd: webDir });
   if (r.code !== 0) {
     console.error('[prod:all] Static site generation failed');

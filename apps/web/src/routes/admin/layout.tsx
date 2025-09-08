@@ -1,19 +1,50 @@
-import { component$, Slot } from '@builder.io/qwik';
+import { component$, Slot, useSignal, useVisibleTask$ } from '@builder.io/qwik';
 import type { RequestHandler } from '@builder.io/qwik-city';
+import { useNavigate } from '@builder.io/qwik-city';
+import { logApi } from '~/lib/log';
 
-/**
- * Admin layout guard - runs server-side for every /admin/* route.
- * Redirects to /login if no session or if role !== 'admin'.
- */
-export const onRequest: RequestHandler = (ev) => {
-  const session = ev.sharedMap.get('session');
-  const role = session?.user?.role ?? session?.role;
-  if (!session || new Date(session.expires) < new Date() || role !== 'admin') {
-    throw ev.redirect(302, `/login?callbackUrl=${encodeURIComponent(ev.url.pathname + ev.url.search)}`);
-  }
-};
+// SSG-only: do not run server redirects for admin during static generation.
+// Client-side gate in this file handles auth/role checks after hydration.
+export const onRequest: RequestHandler = () => {};
 
 export default component$(() => {
-  // Render child routes inside the admin layout.
-  return <Slot />;
+  const nav = useNavigate();
+  const ready = useSignal(false);
+
+  // Client-side gate for SSG: validate session and admin role via gateway
+  useVisibleTask$(async () => {
+    const from = (globalThis?.location?.pathname || '/admin') + (globalThis?.location?.search || '');
+    try {
+      const res = await fetch('/api/auth/me', { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+      if (res.ok) {
+        const user = await res.json().catch(() => null);
+        const role = user && typeof user === 'object' ? (user.role as string | undefined) : undefined;
+        if (role === 'admin') {
+          ready.value = true;
+          try { await logApi({ phase: 'response', url: '/api/auth/me', status: res.status, client: { path: from }, message: 'admin: allow' }); } catch {}
+          return;
+        }
+        try { await logApi({ phase: 'error', url: '/api/auth/me', status: res.status, client: { path: from }, message: 'admin: not-admin' }); } catch {}
+      } else {
+        try { await logApi({ phase: 'error', url: '/api/auth/me', status: res.status, client: { path: from }, message: 'admin: unauthorized' }); } catch {}
+      }
+    } catch (e: any) {
+      try { await logApi({ phase: 'error', url: '/api/auth/me', client: { path: from }, message: 'admin: session check failed ' + String(e?.message || e) }); } catch {}
+    }
+    const to = '/login?callbackUrl=' + encodeURIComponent(from);
+    try { await logApi({ phase: 'request', url: to, client: { path: from }, message: 'redirect: admin -> login' }); } catch {}
+    try { await nav(to); } catch { try { location.replace(to); } catch {} }
+  });
+
+  return (
+    <>
+      {ready.value ? (
+        <Slot />
+      ) : (
+        <main class="min-h-screen grid place-items-center p-6" aria-busy>
+          <div class="text-sm text-base-content/70">Checking admin access…</div>
+        </main>
+      )}
+    </>
+  );
 });

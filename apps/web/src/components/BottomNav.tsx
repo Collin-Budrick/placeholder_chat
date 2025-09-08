@@ -1,15 +1,16 @@
 import { component$, $, useSignal, useOnDocument, useOnWindow, useTask$ } from '@builder.io/qwik';
 import { useLocation, Link, useNavigate } from '@builder.io/qwik-city';
-import { useSession } from '~/routes/plugin@auth';
  // ThemeToggle import temporarily disabled for SSG symbol debug
 import ThemeToggle from '~/components/ThemeToggle';
+import { logApi } from '~/lib/log';
 import { LanguageToggle } from '~/components/LanguageToggle';
 import { LuHome, LuInfo, LuMail, LuUser } from '@qwikest/icons/lucide';
 
 export default component$(() => {
   const loc = useLocation();
   const nav = useNavigate();
-  const session = useSession();
+  // Avoid importing the auth plugin on the client to prevent AsyncLocalStorage warnings
+  // and potential client-bundle issues on pages like /signup before any login occurs.
 
   const isActive = (path: string | ((p: string) => boolean)) => {
     const p = typeof path === 'string' ? path : undefined;
@@ -92,15 +93,19 @@ export default component$(() => {
   // No manual VT on click: rely on Qwik auto-VT
   const onAccountClick = $(async () => {
     try {
-      const res = await fetch('/auth/session', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } as any });
-      if (res.ok) {
-        const j = await res.json().catch(() => null);
-        if (j && j.user) { await nav('/profile'); return; }
-      }
-      await nav('/login');
-    } catch {
-      await nav('/login');
-    }
+      // SSG: directly ask the gateway if we have a session cookie
+      let goProfile = false;
+      try {
+        const gw = await fetch('/api/auth/me', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' } as any,
+        });
+        goProfile = gw.ok;
+      } catch { /* ignore; treat as not logged in */ }
+      try { await logApi({ phase: 'request', url: goProfile ? '/profile' : '/login', message: 'nav: account click' }); } catch {}
+      await nav(goProfile ? '/profile' : '/login');
+    } catch { await nav('/login'); }
   });
 
   // Position the selector under the active nav item and animate on route/resize
@@ -237,7 +242,7 @@ export default component$(() => {
               </Link>
             </li>
             <li>
-              <Link href={session.value ? '/profile/' : '/login/'} prefetch preventdefault:click aria-current={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'page' : undefined}
+              <Link href={'/login/'} prefetch preventdefault:click aria-current={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'page' : undefined}
                  aria-disabled={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'true' : undefined}
                  tabIndex={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? -1 : undefined}
                  class={`nav-item nav-link ${isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'is-active' : ''}`}

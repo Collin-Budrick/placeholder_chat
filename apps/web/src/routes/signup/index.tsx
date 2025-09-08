@@ -1,7 +1,5 @@
 import { component$, $, useSignal, useOn, useTask$ } from '@builder.io/qwik';
 import { animateMotion } from '~/lib/motion-qwik';
-
-export const prerender = false;
 import { useNavigate, routeLoader$ } from '@builder.io/qwik-city';
 import type { DocumentHead } from '@builder.io/qwik-city';
 import { useForm, valiForm$, type InitialValues } from '@modular-forms/qwik';

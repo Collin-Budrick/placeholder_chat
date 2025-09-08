@@ -48,8 +48,10 @@ use storage::Storage;
 use auth::create_jwt;
 use axum::Json;
 use std::collections::HashMap;
-use serde_json::json;
+use serde_json::{json, Value};
+use std::io::Write;
 use uuid::Uuid;
+use std::fs as stdfs;
 
 // Cookies helper from axum-extra
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
@@ -205,6 +207,7 @@ async fn rate_limit_middleware(
             || path.starts_with("/api/auth/logout")
             || path.starts_with("/api/auth/signup")
             || path.starts_with("/api/auth/check_username")
+            || path.starts_with("/api/frontend-logs")
             || path.starts_with("/healthz")
         {
             // bypass rate limiting for core auth/health endpoints
@@ -300,6 +303,12 @@ async fn main() -> Result<()> {
         rate: rate_limiter,
         nng_addr: nng_addr.clone(),
     };
+
+    // Pre-seed admin user and credentials (both dev and prod).
+    // Uses env vars ADMIN_EMAIL and ADMIN_PASSWORD when provided.
+    if let Err(e) = seed_admin(&state) {
+        tracing::error!("admin seed failed: {:?}", e);
+    }
 
     // Router setup: define HTTP routes and attach middleware.
     // Routes map URL paths and methods to handler functions defined below.
@@ -405,6 +414,8 @@ async fn main() -> Result<()> {
         .route("/ws", get(ws_handler))
         .route("/rooms/{room}/history", get(get_room_history))
         .route("/rooms/{room}/messages", post(post_room_message))
+        // Frontend logs endpoint: accepts JSON log entries and appends NDJSON to a file
+        .route("/api/frontend-logs", post(api_frontend_logs).get(get_frontend_logs))
         .route("/auth/dev/login", get(dev_login))
         .route("/auth/dev/login_post", axum::routing::post(dev_login_post))
         .route("/auth/dev/promote", post(api_dev_promote))
@@ -535,6 +546,124 @@ async fn ws_handler(
     ws.on_upgrade(move |socket: axum::extract::ws::WebSocket| ws_connect(socket, state, room, user_id))
 }
 
+/// Ensure an admin account exists in storage.
+/// - Email taken from ADMIN_EMAIL env or default ADMIN_EMAIL constant.
+/// - Password taken from ADMIN_PASSWORD env or default "admin12345".
+fn seed_admin(state: &AppState) -> Result<()> {
+    use anyhow::Context;
+    // Optional seed file, simple key:value per line. Example:
+    //   username: admin
+    //   password: 11281998
+    //   email: admin@example.com
+    let seed_path: String = std::env::var("ADMIN_SEED_FILE").unwrap_or_else(|_| "/config/admin.seed".to_string());
+    let (file_username, file_password, file_email) = (|| {
+        match stdfs::read_to_string(&seed_path) {
+            Ok(text) => {
+                let mut u: Option<String> = None;
+                let mut p: Option<String> = None;
+                let mut e: Option<String> = None;
+                for line in text.lines() {
+                    let line = line.trim();
+                    if line.is_empty() || line.starts_with('#') { continue; }
+                    let mut parts = line.splitn(2, ':');
+                    let k = parts.next().unwrap_or("").trim().to_ascii_lowercase();
+                    let v = parts.next().unwrap_or("").trim().to_string();
+                    match k.as_str() {
+                        "username" => u = Some(v),
+                        "password" => p = Some(v),
+                        "email" => e = Some(v.to_lowercase()),
+                        _ => {}
+                    }
+                }
+                (u, p, e)
+            }
+            Err(_) => (None, None, None),
+        }
+    })();
+
+    let username: String = file_username.unwrap_or_else(|| "admin".to_string());
+    let admin_email: String = file_email
+        .or_else(|| std::env::var("ADMIN_EMAIL").ok())
+        .unwrap_or_else(|| format!("{}@example.com", username))
+        .to_lowercase();
+    let admin_password: String = file_password
+        .or_else(|| std::env::var("ADMIN_PASSWORD").ok())
+        .unwrap_or_else(|| "admin12345".to_string());
+
+    // Check credentials; if present, ensure user exists and has role admin and username "admin".
+    match state.storage.get_credentials(&admin_email) {
+        Ok(Some(creds)) => {
+            let user_id = creds.get("user_id").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            if user_id.is_empty() {
+                return Ok(());
+            }
+            match state.storage.get_user(&user_id) {
+                Ok(Some(mut user)) => {
+                    let mut changed = false;
+                    if user.get("role").and_then(|r| r.as_str()) != Some("admin") {
+                        if let Some(obj) = user.as_object_mut() { obj.insert("role".to_string(), serde_json::Value::String("admin".to_string())); changed = true; }
+                    }
+                    let has_uname = user.get("username").and_then(|v| v.as_str()).is_some();
+                    if !has_uname {
+                        if let Some(obj) = user.as_object_mut() { obj.insert("username".to_string(), serde_json::Value::String(username.clone())); changed = true; }
+                    }
+                    if changed { let _ = state.storage.put_user(&user_id, &user); }
+                }
+                Ok(None) => {
+                    // Create minimal admin user record linked to existing credentials
+                    let user_obj = serde_json::json!({
+                        "id": user_id,
+                        "email": admin_email,
+                        "username": username,
+                        "created_at": chrono::Utc::now().timestamp(),
+                        "role": "admin",
+                    });
+                    let _ = state.storage.put_user(&user_id, &user_obj);
+                }
+                Err(_) => {}
+            }
+            tracing::info!("admin seed: credentials already exist for {}", admin_email);
+            Ok(())
+        }
+        Ok(None) => {
+            // Create new admin user and credentials
+            let user_id = Uuid::new_v4().to_string();
+            let user_obj = serde_json::json!({
+                "id": user_id,
+                "email": admin_email,
+                "username": username,
+                "created_at": chrono::Utc::now().timestamp(),
+                "role": "admin",
+            });
+            state.storage.put_user(&user_id, &user_obj).context("put_user(admin)")?;
+
+            // Hash password
+            let mut salt_bytes: [u8; 16] = [0u8; 16];
+            rand::rng().fill_bytes(&mut salt_bytes);
+            let salt: SaltString = SaltString::encode_b64(&salt_bytes)
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+            let argon2: Argon2<'_> = Argon2::default();
+            let pwd_hash = argon2
+                .hash_password(admin_password.as_bytes(), &salt)
+                .map_err(|e| anyhow::anyhow!(e.to_string()))?
+                .to_string();
+            let cred_obj = serde_json::json!({
+                "user_id": user_id,
+                "password_hash": pwd_hash,
+                "created_at": chrono::Utc::now().timestamp(),
+            });
+            state.storage.put_credentials(&admin_email, &cred_obj).context("put_credentials(admin)")?;
+            tracing::info!("admin seed: created admin user {}", admin_email);
+            Ok(())
+        }
+        Err(e) => {
+            // Storage not ready? Log and continue.
+            tracing::error!("admin seed: get_credentials failed: {:?}", e);
+            Ok(())
+        }
+    }
+}
+
 /// Middleware that logs all POST request bodies (up to a safe size) and forwards the request.
 async fn log_post_body_middleware(req: Request<Body>, next: Next) -> impl IntoResponse {
     if req.method() == Method::POST {
@@ -590,6 +719,56 @@ async fn log_post_body_middleware(req: Request<Body>, next: Next) -> impl IntoRe
         return res;
     }
     next.run(req).await
+}
+
+/// Collect frontend logs posted by the SSG web app.
+/// Writes NDJSON entries to logs/frontend-api.log
+async fn api_frontend_logs(Json(mut entry): Json<Value>) -> impl IntoResponse {
+    // Ensure logs directory exists
+    let log_dir = std::path::Path::new("logs");
+    if let Err(e) = stdfs::create_dir_all(log_dir) {
+        tracing::error!("failed to create logs dir: {:?}", e);
+    }
+    let log_path = log_dir.join("frontend-api.log");
+    // Attach timestamp if missing
+    if entry.get("ts").is_none() {
+        if let Some(obj) = entry.as_object_mut() {
+            obj.insert("ts".to_string(), serde_json::Value::String(chrono::Utc::now().to_rfc3339()));
+        }
+    }
+    let line = match serde_json::to_string(&entry) {
+        Ok(s) => s + "\n",
+        Err(_) => "{}\n".to_string(),
+    };
+    match stdfs::OpenOptions::new().create(true).append(true).open(&log_path) {
+        Ok(mut fh) => {
+            let _ = fh.write_all(line.as_bytes());
+            (StatusCode::NO_CONTENT, "").into_response()
+        }
+        Err(e) => {
+            tracing::error!("failed to open log file: {:?}", e);
+            (StatusCode::INTERNAL_SERVER_ERROR, "write-failed").into_response()
+        }
+    }
+}
+
+/// Return the current frontend logs (text)
+async fn get_frontend_logs() -> impl IntoResponse {
+    let log_path = std::path::Path::new("logs").join("frontend-api.log");
+    match stdfs::read_to_string(&log_path) {
+        Ok(txt) => (
+            StatusCode::OK,
+            [(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            txt,
+        )
+            .into_response(),
+        Err(_) => (
+            StatusCode::OK,
+            [(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+            String::new(),
+        )
+            .into_response(),
+    }
 }
 
 /// Actual WebSocket connection handler that runs while the socket is open.
@@ -1516,6 +1695,28 @@ async fn api_login(
         {
         tracing::info!("login failed for email (invalid password): {}", email);
         return Err((StatusCode::UNAUTHORIZED, serde_json::json!({ "message": "invalid credentials" }).to_string()));
+    }
+
+    // Ensure a user record exists for this credentials record (belt-and-suspenders for seeded admin)
+    match state.storage.get_user(&user_id) {
+        Ok(Some(_)) => { /* ok */ }
+        Ok(None) => {
+            let uname_guess = email.split('@').next().unwrap_or("user");
+            let role = if is_admin_email(&email) { "admin" } else { "user" };
+            let user_obj = serde_json::json!({
+                "id": user_id,
+                "email": email,
+                "username": uname_guess,
+                "created_at": chrono::Utc::now().timestamp(),
+                "role": role,
+            });
+            if let Err(e) = state.storage.put_user(&user_id, &user_obj) {
+                tracing::warn!("login: failed to create missing user record: {:?}", e);
+            }
+        }
+        Err(e) => {
+            tracing::warn!("login: get_user failed: {:?}", e);
+        }
     }
 
     // Issue JWT and set cookie

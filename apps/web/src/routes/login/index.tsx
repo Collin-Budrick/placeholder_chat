@@ -1,9 +1,7 @@
 import { component$, useSignal, $, useOn, useTask$ } from '@builder.io/qwik';
 import { animateMotion } from '~/lib/motion-qwik';
-
-export const prerender = false;
 import { useNavigate } from '@builder.io/qwik-city';
-import { useSignIn } from '~/routes/plugin@auth';
+import { logApi } from '~/lib/log';
 import type { DocumentHead } from '@builder.io/qwik-city';
 import { AuthCard } from '../../components/auth/AuthCard';
 import TypeTitle from '~/components/TypeTitle';
@@ -14,7 +12,6 @@ import BackButton from '~/components/BackButton';
 
 export default component$(() => {
   const nav = useNavigate();
-  const signIn = useSignIn();
   const titleText = useSignal<string>('Log in');
   const eraseKey = useSignal<number | null>(null);
   const formWrap = useSignal<HTMLElement>();
@@ -93,24 +90,28 @@ export default component$(() => {
                 const username = String(fd.get('username') || '').trim();
                 const password = String(fd.get('password') || '');
                 if (!username || !password) { submitting.value = false; serverError.value = 'Missing credentials'; return; }
-                // Call Auth.js credentials provider via Qwik Auth action.
-                // Qwik Auth expects credentials in `options` and handles CSRF + redirect server-side.
-                const res: any = await (signIn as any).submit({
-                  providerId: 'credentials',
-                  options: { redirectTo: '/profile/', username, password },
+                // Directly call the gateway (via Traefik) in SSG/prod. The gateway sets a 'session' cookie.
+                const res = await fetch('/api/auth/login', {
+                  method: 'POST',
+                  credentials: 'same-origin',
+                  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                  body: JSON.stringify({ username, password }),
                 });
-                if (!res || !res.failed) {
+                if (res.ok) {
                   // Mark post-login for profile to refresh session if needed
                   try { sessionStorage.setItem('postLogin', '1'); } catch {}
+                  try { await logApi({ phase: 'request', url: '/profile/', message: 'redirect: login success -> /profile' }); } catch {}
                   // Navigate to profile
                   try { await nav('/profile/'); return; } catch {}
                   // Safety fallback
                   setTimeout(() => { try { globalThis.location.assign('/profile/'); } catch {} }, 50);
                 } else {
                   // res.failed true → useSignIn returned a validation or auth error
-                  serverError.value = (res?.message as string) || 'Invalid username or password';
+                  try { await logApi({ phase: 'error', url: '/api/auth/login', status: res.status, message: 'login failed' }); } catch {}
+                  serverError.value = (res as any)?.message || 'Invalid username or password';
                 }
               } catch (e: any) {
+                try { await logApi({ phase: 'error', url: '/api/auth/login', message: 'login exception ' + String(e?.message || e) }); } catch {}
                 serverError.value = e?.message || 'Login failed';
               } finally {
                 submitting.value = false;

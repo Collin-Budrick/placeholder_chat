@@ -109,8 +109,8 @@ export async function logApi(entry: LogEntry): Promise<void> {
       entry.client.userAgent = navigator.userAgent;
     }
 
-    // POST to our server-side collector (same-origin). Use _frontend-logs to avoid Vite /api proxy.
-    await fetch('/_frontend-logs', {
+    // SSG-only: ship logs to the gateway via /api so Traefik can proxy them.
+    await fetch('/api/frontend-logs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',

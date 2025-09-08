@@ -5,7 +5,8 @@ export const prerender = true;
 
 export default component$(() => (
   <main class="min-h-screen p-6">
-    <h1 class="text-2xl font-semibold">Contact</h1>
+    <h1 class="text-2xl font-semibold">Contact
+    </h1>
   </main>
 ));
 

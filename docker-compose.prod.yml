@@ -52,11 +52,15 @@ services:
       dockerfile: docker/gateway.Dockerfile
     environment:
       RUST_LOG: info
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@example.com}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin12345}"
       # Allow HTTPS origins on 5173 (LAN IP via Traefik)
       CORS_ALLOW_ORIGINS: "https://localhost:5173,https://127.0.0.1:5173,https://${PUBLIC_IP:-127.0.0.1}:5173"
       CORS_ALLOW_ANY_IP_PORTS: "5173"
       GATEWAY_ADDR: 0.0.0.0:7000
-    # Runtime image contains only the compiled binary; no volumes needed
+    # Mount admin seed file for initial admin creation
+    volumes:
+      - ./apps/gateway/admin.seed:/config/admin.seed:ro
     healthcheck:
       test: ["CMD-SHELL", "/bin/bash -lc 'exec 3<>/dev/tcp/127.0.0.1/7000 && echo -e \"GET /healthz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q ok <&3' "]
       interval: 5s

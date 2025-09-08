@@ -1,7 +1,6 @@
-import { component$, useSignal, $, type QRL } from '@builder.io/qwik';
+import { component$, useSignal, $, useVisibleTask$, type QRL } from '@builder.io/qwik';
 import { routeLoader$, type RequestEventLoader } from '@builder.io/qwik-city';
 import type { DocumentHead } from '@builder.io/qwik-city';
-import { useSession } from '~/routes/plugin@auth';
 import { csrfHeader } from '../../../lib/csrf';
 
 // --- types ---
@@ -43,10 +42,11 @@ export const useUsersLoader = routeLoader$<{
   const cookieHeader = ev.request.headers.get('cookie') ?? '';
   const headers: Record<string, string> = { Accept: 'application/json' };
   if (cookieHeader) headers['cookie'] = cookieHeader;
-  // If Auth.js populated a session on the request, forward its gateway token as a Bearer header.
-  const sharedSession = ev.sharedMap.get('session') as any;
-  if (sharedSession && sharedSession.gateway) {
-    headers['Authorization'] = `Bearer ${sharedSession.gateway}`;
+
+  // If no cookies are present (static generation or cold deep-link without auth),
+  // avoid contacting the gateway during SSG and let the client fetch after hydration.
+  if (!cookieHeader) {
+    return { users: [] };
   }
 
   // Server-side fetch to the gateway to list admin users.
@@ -93,13 +93,8 @@ export default component$(() => {
 
   // Local reactive copy of users so we can update the UI immediately after actions (promote/demote/delete).
   const users = useSignal<User[]>(loader.value?.users ?? []);
-  const session = useSession();
-
-  // Return an auth headers object; wrapped in $ so it is safe to call from other $ handlers.
-  const withAuth = $(() => {
-    const t = (session.value as any)?.gateway ?? null;
-    return { Accept: 'application/json', ...(t ? { Authorization: `Bearer ${t}` } : {}) };
-  });
+  // Headers helper for same-origin cookie auth + CSRF for unsafe methods.
+  const baseHeaders = $(() => ({ Accept: 'application/json' as const }));
 
   // busy holds the ID of the user currently being acted upon (or null).
   // This is used to disable buttons for that row and show transient state.
@@ -134,8 +129,8 @@ export default component$(() => {
     if (!id) return;
     busy.value = id;
     try {
-      const headersWithAuth = { ...(await withAuth()), ...csrfHeader() };
-      const res = await api(`/api/admin/users/${id}`, { method: 'DELETE', headers: headersWithAuth });
+      const headers = { ...(await baseHeaders()), ...csrfHeader() };
+      const res = await api(`/api/admin/users/${id}`, { method: 'DELETE', headers });
       if (res.status === 204) {
         users.value = users.value.filter((u) => u.id !== id);
         await showToast('User deleted');
@@ -155,10 +150,10 @@ export default component$(() => {
   const promote = $(async (id: string) => {
     if (!confirm('Promote this user to admin?')) return;
     busy.value = id;
-    const headersWithAuth = { ...(await withAuth()), ...csrfHeader() };
+    const headers = { ...(await baseHeaders()), ...csrfHeader() };
     const res = await api(`/api/admin/users/${id}/promote`, {
       method: 'POST',
-      headers: headersWithAuth,
+      headers,
     });
       if (res.ok) {
       users.value = users.value.map((u) => (u.id === id ? { ...u, role: 'admin' } : u));
@@ -176,10 +171,10 @@ export default component$(() => {
   const demote = $(async (id: string) => {
     if (!confirm('Demote this admin to user?')) return;
     busy.value = id;
-    const headersWithAuth = { ...(await withAuth()), ...csrfHeader() };
+    const headers = { ...(await baseHeaders()), ...csrfHeader() };
     const res = await api(`/api/admin/users/${id}/demote`, {
       method: 'POST',
-      headers: headersWithAuth,
+      headers,
     });
     if (res.ok) {
       users.value = users.value.map((u) => (u.id === id ? { ...u, role: 'user' } : u));
@@ -195,6 +190,21 @@ export default component$(() => {
 
   // True when loader returned an error during server-side fetch.
   const isError = !!loader.value?.error;
+
+  // Client fetch after hydration if the loader didn't populate (SSG deep-link)
+  useVisibleTask$(async () => {
+    try {
+      if (!users.value || users.value.length === 0) {
+        const res = await api('/api/admin/users', { method: 'GET', headers: await baseHeaders() });
+        const ct = res.headers.get('content-type') || '';
+        const isJSON = ct.includes('application/json');
+        const payload: any = isJSON ? await res.json().catch(() => null) : null;
+        if (res.ok && Array.isArray(payload)) {
+          users.value = payload as User[];
+        }
+      }
+    } catch { /* ignore; layout guard will redirect if not authorized */ }
+  });
 
   return (
     <main class="min-h-screen p-6">
