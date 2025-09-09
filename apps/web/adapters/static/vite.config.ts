@@ -6,6 +6,8 @@ export default extendConfig(baseConfig as any, () => {
   return {
     build: {
       ssr: true,
+      // Keep SSR/prerender output separate from client assets
+      outDir: 'server',
       // Enable sourcemaps for SSR/static build to aid debugging and diagnostics
       sourcemap: true,
       rollupOptions: {

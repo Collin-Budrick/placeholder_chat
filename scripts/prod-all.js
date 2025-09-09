@@ -69,13 +69,13 @@ async function main() {
   } catch {}
   // Build for SSG using Bunx Vite always (avoid Node runner and local vite path)
   // Client build
-  let r = await run('bun', ['x', 'vite', 'build'], { cwd: webDir });
+  let r = await run('bun', ['x', 'vite', 'build'], { cwd: webDir, env: { ...process.env, BUILD_TARGET: 'client' } });
   if (r.code !== 0) {
     console.error('[prod:all] Web client build failed');
     process.exit(r.code);
   }
   // Static adapter prerender build (Qwik resumability SSG)
-  r = await run('bun', ['x', 'vite', 'build', '-c', 'adapters/static/vite.config.ts'], { cwd: webDir });
+  r = await run('bun', ['x', 'vite', 'build', '-c', 'adapters/static/vite.config.ts'], { cwd: webDir, env: { ...process.env, BUILD_TARGET: 'ssg', ASSET_COMPRESSION: '0' } });
   if (r.code !== 0) {
     console.error('[prod:all] Static site generation failed');
     process.exit(r.code);

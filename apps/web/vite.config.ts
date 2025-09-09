@@ -28,6 +28,7 @@ errorOnDuplicatesPkgDeps(devDependencies, dependencies);
 
 export default defineConfig(({ command, mode }): UserConfig => {
   const isProdBuild = command === 'build' && (mode === 'production' || process.env.NODE_ENV === 'production');
+  const isSsgBuild = process.env.BUILD_TARGET === 'ssg';
   const extraPlugins: any[] = [];
   // Add preview-time headers (cache + compression) to improve Lighthouse in preview/proxy setups
   const previewHeadersPlugin = () => {
@@ -69,7 +70,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
               "img-src 'self' data: blob:",
               "font-src 'self' data:",
               "style-src 'self' 'unsafe-inline'",
-              "script-src 'self'",
+              "script-src 'self' 'unsafe-inline'",
               "connect-src 'self'",
             ].join('; ');
             res.setHeader('Content-Security-Policy', csp);
@@ -146,7 +147,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
           },
         ],
       });
-      console.warn('[https] Using in-memory self-signed development certificate (browser will warn).');
+      if (command !== 'build') {
+        console.warn('[https] Using in-memory self-signed development certificate (browser will warn).');
+      }
       return { key: pems.private, cert: pems.cert, minVersion: 'TLSv1.2', ALPNProtocols: ['http/1.1'] } as any;
     } catch (_e) {
       // As a last resort, allow Vite/plugin to handle
@@ -201,7 +204,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
     }
   } catch (e) {}
   try {
-    if (command === 'build') {
+    if (command === 'build' && process.env.BUILD_TARGET !== 'ssg') {
       // @ts-ignore
       const { visualizer } = require('rollup-plugin-visualizer');
       extraPlugins.push(
@@ -216,25 +219,29 @@ export default defineConfig(({ command, mode }): UserConfig => {
     }
   } catch (e) {}
   try {
-    if (command === 'build') {
+    if (command === 'build' && process.env.BUILD_TARGET !== 'ssg' && process.env.ASSET_COMPRESSION === '1') {
       // @ts-ignore
       const compression = require("vite-plugin-compression2");
-      // Gzip
-      extraPlugins.push(
-        compression.default?.({
-          algorithm: "gzip",
-          ext: ".gz",
-          threshold: 10240,
-        }) ?? compression({ algorithm: "gzip", ext: ".gz", threshold: 10240 }),
-      );
-      // Brotli
-      extraPlugins.push(
-        compression.default?.({
-          algorithm: "brotliCompress",
-          ext: ".br",
-          threshold: 10240,
-        }) ?? compression({ algorithm: "brotliCompress", ext: ".br", threshold: 10240 }),
-      );
+      const wantGzip = process.env.ASSET_GZIP === '1';
+      const wantBrotli = process.env.ASSET_BROTLI === '1' || !wantGzip; // default to brotli-only
+      if (wantGzip) {
+        extraPlugins.push(
+          compression.default?.({
+            algorithm: "gzip",
+            ext: ".gz",
+            threshold: 10240,
+          }) ?? compression({ algorithm: "gzip", ext: ".gz", threshold: 10240 }),
+        );
+      }
+      if (wantBrotli) {
+        extraPlugins.push(
+          compression.default?.({
+            algorithm: "brotliCompress",
+            ext: ".br",
+            threshold: 10240,
+          }) ?? compression({ algorithm: "brotliCompress", ext: ".br", threshold: 10240 }),
+        );
+      }
     }
   } catch (e) {}
   try {
@@ -277,7 +284,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
       ...extraPlugins,
       // Improve cache/compression headers when using `vite preview` or Traefik preview proxy
       previewHeadersPlugin(),
-      tailwindcss(),
+      // Run Tailwind only for the client build to avoid duplicate CSS work/logs in SSG pass
+      ...(isSsgBuild ? [] : [tailwindcss()]),
       partytownVite({ dest: join(__dirname, "dist", "~partytown") }),
     ],
     // This tells Vite which dependencies to pre-build in dev mode.
@@ -426,16 +434,19 @@ export default defineConfig(({ command, mode }): UserConfig => {
   };
 
   try {
-    const httpsVal: any = (cfg as any)?.server?.https;
-    const httpsKind =
-      httpsVal === true
-        ? 'mkcert/auto'
-        : httpsVal === false || typeof httpsVal === 'undefined'
-          ? 'disabled'
-          : 'file/selfsigned';
-    const hmrConf: any = (cfg as any)?.server?.hmr;
-    const hmr = hmrConf === false ? 'disabled' : JSON.stringify(hmrConf ?? {});
-    console.log(`[vite-config] server: port=${(cfg as any)?.server?.port} https=${httpsKind} hmr=${hmr} docker_traefik=${process.env.DOCKER_TRAEFIK ?? ''}`);
+    // Only log server config in non-build commands to avoid duplicate lines during dual builds
+    if (command !== 'build') {
+      const httpsVal: any = (cfg as any)?.server?.https;
+      const httpsKind =
+        httpsVal === true
+          ? 'mkcert/auto'
+          : httpsVal === false || typeof httpsVal === 'undefined'
+            ? 'disabled'
+            : 'file/selfsigned';
+      const hmrConf: any = (cfg as any)?.server?.hmr;
+      const hmr = hmrConf === false ? 'disabled' : JSON.stringify(hmrConf ?? {});
+      console.log(`[vite-config] server: port=${(cfg as any)?.server?.port} https=${httpsKind} hmr=${hmr} docker_traefik=${process.env.DOCKER_TRAEFIK ?? ''}`);
+    }
   } catch {}
 
   return cfg;

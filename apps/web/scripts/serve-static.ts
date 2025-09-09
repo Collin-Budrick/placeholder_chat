@@ -108,7 +108,7 @@ const server = Bun.serve({
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
             "style-src 'self' 'unsafe-inline'",
-            `script-src 'self' 'nonce-${nonce}'`,
+            `script-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
             "connect-src 'self'",
           ].join('; ');
           try {
@@ -144,7 +144,7 @@ const server = Bun.serve({
             "img-src 'self' data: blob:",
             "font-src 'self' data:",
             "style-src 'self' 'unsafe-inline'",
-            "script-src 'self'",
+            "script-src 'self' 'unsafe-inline'",
             "connect-src 'self'",
           ].join('; ');
         }

@@ -5,10 +5,6 @@ services:
     build:
       context: .
       dockerfile: docker/web.Dockerfile
-    working_dir: /workspace
-    command: >
-      sh -lc "bun install --ignore-scripts \
-      && exec bun ./scripts/prod-all.js"
     environment:
       AUTH_TRUST_HOST: "true"
       # Lock server to 5174 so healthcheck/Traefik match
@@ -16,10 +12,6 @@ services:
       HOST: "0.0.0.0"
       # Provide a stable origin for Qwik SSG (LAN HTTPS via Traefik)
       SITE_ORIGIN: "https://${PUBLIC_IP:-127.0.0.1}:5173"
-    volumes:
-      - ./:/workspace
-      - /workspace/node_modules
-      - /workspace/apps/web/node_modules
     # Expose static server directly when running without Traefik
     ports:
       - "5174:5174"
