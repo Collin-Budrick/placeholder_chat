@@ -123,7 +123,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
       try {
         const relKey = path.relative(process.cwd(), keyFile);
         const relCert = path.relative(process.cwd(), certFile);
-        console.log(`[https] Using TLS key/cert from ${relKey} / ${relCert}`);
+        // Only announce certs when running the dev server; suppress during vite build/watch to reduce noise
+        if (command !== 'build') {
+          console.log(`[https] Using TLS key/cert from ${relKey} / ${relCert}`);
+        }
       } catch {}
       return { key: fs.readFileSync(keyFile), cert: fs.readFileSync(certFile), minVersion: 'TLSv1.2', ALPNProtocols: ['http/1.1'] } as any;
     }
@@ -158,9 +161,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
   };
   // Optional plugins: load if present
   try {
-    // @ts-ignore
-    const { VitePWA } = require("@vite-pwa/qwik");
-    extraPlugins.push(VitePWA({ registerType: "auto" }));
+    // Load PWA only for production client builds (avoid SW caching in dev/SSG)
+    if (isProdBuild && !isSsgBuild) {
+      // @ts-ignore
+      const { VitePWA } = require("@vite-pwa/qwik");
+      extraPlugins.push(VitePWA({ registerType: "auto" }));
+    }
   } catch (e) {}
   try {
     if (process.env.USE_MKCERT === '1') {

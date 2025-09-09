@@ -12,6 +12,12 @@ services:
     environment:
       CHOKIDAR_USEPOLLING: "0"
       AUTH_TRUST_HOST: "true"
+      # Signal to SSG watcher that client watch is running separately
+      CLIENT_WATCH: "1"
+      # Faster change detection for Docker bind mounts (ms)
+      WATCH_POLL_INTERVAL_MS: "100"
+      # Lower Vite verbosity to reduce banner/noise in watch output
+      VITE_LOG_LEVEL: "warn"
       # Ensure SSG uses the same origin as Traefik for absolute URLs
       SITE_ORIGIN: "https://${PUBLIC_IP:-127.0.0.1}:5173"
     volumes:
@@ -28,28 +34,36 @@ services:
     build:
       context: .
       dockerfile: docker/web.Dockerfile
-    working_dir: /workspace/apps/web
+    # Runner image CMD expects to run from /workspace
+    working_dir: /workspace
     depends_on:
       - ssg-build
-    command: >
-      sh -lc "node ./scripts/preview.express.cjs"
+    # Use image CMD (Bun static server) to avoid double start
     environment:
       # Run preview over HTTP internally; Traefik terminates TLS
       NO_HTTPS: "1"
+      # Enable server-push live reload via SSE
+      LIVE_RELOAD_SSE: "1"
     volumes:
       - dist-cache:/workspace/apps/web/dist:ro
+    healthcheck:
+      test: ["CMD-SHELL", "bun -e \"try{const r=await fetch('http://127.0.0.1:5174/index.html');process.exit(r.status<500?0:1)}catch(e){process.exit(1)}\" "]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 30s
     labels:
       - "traefik.enable=true"
       # Web (Vite preview) at '/'
-      # Match any host on the websecure entrypoint to avoid 404 when using bare IPs
-      - "traefik.http.routers.dev-web.rule=HostRegexp(`{any:.+}`) && PathPrefix(`/`)"
+      # Match any path on the websecure entrypoint; use file provider for TLS settings
+      - "traefik.http.routers.dev-web.rule=PathPrefix(`/`)"
       - "traefik.http.routers.dev-web.entrypoints=websecure"
       - "traefik.http.routers.dev-web.tls=true"
       # Middlewares (docker-defined + file-defined)
       # - dev-compress@docker ensures gzip even if file provider is inactive
       # - dev-cache-html@docker sets document Cache-Control
       # - security_headers@file adds CSP/COOP/etc; dev-web-headers adds HSTS/Alt-Svc
-      - "traefik.http.routers.dev-web.middlewares=dev-compress@docker,security_headers@file,dev-cache-html@docker,dev-web-headers@docker"
+      - "traefik.http.routers.dev-web.middlewares=dev-compress@docker,security_headers@file,dev-web-headers@docker"
       - "traefik.http.middlewares.dev-web-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
       - "traefik.http.middlewares.dev-web-headers.headers.stsSeconds=63072000"
       - "traefik.http.middlewares.dev-web-headers.headers.stsIncludeSubdomains=true"
@@ -57,18 +71,28 @@ services:
       - "traefik.http.middlewares.dev-web-headers.headers.forceSTSHeader=true"
       # Docker-defined gzip and header middlewares
       - "traefik.http.middlewares.dev-compress.compress=true"
-      # Document headers (Cache-Control + Vary) placed on dev-web-headers (which we already apply and is known-good)
-      - "traefik.http.middlewares.dev-web-headers.headers.customResponseHeaders.Cache-Control=public, max-age=600, stale-while-revalidate=86400"
-      - "traefik.http.middlewares.dev-web-headers.headers.customResponseHeaders.Vary=Accept-Encoding"
+      # Let the Bun preview server set per-path Cache-Control; avoid overriding HTML freshness in dev
       - "traefik.http.routers.dev-web.priority=10"
       - "traefik.http.services.dev-web.loadbalancer.server.port=5174"
+      # SSE router for live-reload: avoid compression to prevent HTTP/2 PROTOCOL_ERROR
+      - "traefik.http.routers.dev-web-sse.rule=Path(`/__ssg-events`)"
+      - "traefik.http.routers.dev-web-sse.entrypoints=websecure"
+      - "traefik.http.routers.dev-web-sse.tls=true"
+      - "traefik.http.routers.dev-web-sse.priority=300"
+      - "traefik.http.routers.dev-web-sse.service=dev-web"
+      - "traefik.http.routers.dev-web-sse.middlewares=security_headers@file,dev-sse-headers@docker"
+      - "traefik.http.middlewares.dev-sse-headers.headers.customResponseHeaders.Cache-Control=no-cache, no-transform"
+      - "traefik.http.middlewares.dev-sse-headers.headers.customResponseHeaders.Vary=Accept-Encoding"
+      - "traefik.http.middlewares.dev-sse-headers.headers.customResponseHeaders.X-Accel-Buffering=no"
+      - "traefik.http.middlewares.dev-sse-headers.headers.customResponseHeaders.Alt-Svc="
+      - "traefik.http.middlewares.dev-sse-headers.headers.customResponseHeaders.Content-Type=text/event-stream"
       # Secondary router for long-lived cached assets
-      - "traefik.http.routers.dev-web-assets.rule=HostRegexp(`{any:.+}`) && (PathPrefix(`/assets`) || PathPrefix(`/build`) || Path(`/theme-init.js`))"
+      - "traefik.http.routers.dev-web-assets.rule=(PathPrefix(`/assets`) || PathPrefix(`/build`) || Path(`/theme-init.js`))"
       - "traefik.http.routers.dev-web-assets.entrypoints=websecure"
       - "traefik.http.routers.dev-web-assets.tls=true"
       - "traefik.http.routers.dev-web-assets.priority=100"
       - "traefik.http.routers.dev-web-assets.service=dev-web"
-      - "traefik.http.routers.dev-web-assets.middlewares=dev-compress@docker,dev-asset-headers@docker"
+      - "traefik.http.routers.dev-web-assets.middlewares=dev-compress@docker,dev-asset-headers@docker,headers_long_cache@file"
       - "traefik.http.middlewares.dev-asset-headers.headers.customResponseHeaders.Cache-Control=public, max-age=31536000, immutable"
       - "traefik.http.middlewares.dev-asset-headers.headers.customResponseHeaders.Vary=Accept-Encoding"
       - "traefik.http.middlewares.dev-asset-headers.headers.stsSeconds=63072000"
@@ -118,7 +142,6 @@ services:
     image: traefik:v3.5.1
     command:
       - "--entrypoints.websecure.address=:5173"
-      - "--entrypoints.websecure.http3=true"
       - "--log.level=INFO"
       - "--api.dashboard=true"
       - "--providers.docker=true"
@@ -132,8 +155,10 @@ services:
       - ./apps/web/certs:/certs:ro
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     depends_on:
-      - ssg-preview
-      - gateway
+      ssg-preview:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik-host.rule=HostRegexp(`traefik\\..+`)"

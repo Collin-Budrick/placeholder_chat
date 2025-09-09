@@ -84,7 +84,7 @@ export default component$(() => {
 
         {role.value === 'admin' && (
           <div class="mt-4">
-            <Link href="/admin/users" class="btn btn-outline btn-sm w-full" aria-label="Manage Users">
+            <Link href="/admin/users/" class="btn btn-outline btn-sm w-full" aria-label="Manage Users">
               Manage Users
             </Link>
           </div>

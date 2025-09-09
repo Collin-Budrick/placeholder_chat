@@ -145,6 +145,51 @@ app.get(["/", "/index.html", /.*\.html$/], (req, res, next) => {
   }
 });
 
+// Extensionless route handler: serve directory index.html for pretty URLs
+// Example: /admin/users -> dist/admin/users/index.html (with CSP nonce injection)
+app.get(/^\/(?!assets\/|build\/|theme-init\.js|.*\.[a-z0-9]+($|\?)).*/i, (req, res, next) => {
+  try {
+    const rel = req.path.replace(/^\/+/, '');
+    const file = path.join(distDir, rel, 'index.html');
+    if (!fs.existsSync(file)) return next();
+    let html = fs.readFileSync(file, 'utf8');
+    const nonce = Buffer.from(require('crypto').randomBytes(16)).toString('base64');
+    html = html.replace(/<script(?![^>]*\bsrc=)([^>]*)>/gi, (m, g1) => `<script${g1} nonce="${nonce}">`);
+    try {
+      const poly = `<script nonce="${nonce}">(function(){try{var w=window; if(w && !('AsyncLocalStorage' in w)){w.AsyncLocalStorage=function(){this.getStore=function(){return void 0}; this.run=function(_s,cb){try{return typeof cb==='function'?cb():void 0;}catch(_){return void 0}}; this.enterWith=function(){}}}}catch(e){}})();</script>`;
+      html = html.replace(/<head[^>]*>/i, (m)=> m + poly);
+    } catch {}
+    try {
+      const linkRe = /<link[^>]+rel=["']stylesheet["'][^>]+href=["']([^"']*assets\/[^"]+-style\.css)["'][^>]*>/i;
+      const m = html.match(linkRe);
+      if (m && m[1]) {
+        const cssHref = m[1].replace(/^\//, '');
+        const cssAbs = path.join(distDir, cssHref);
+        if (fs.existsSync(cssAbs)) {
+          const css = fs.readFileSync(cssAbs, 'utf8');
+          html = html.replace(linkRe, `<style>${css}</style>`);
+        }
+      }
+    } catch {}
+    const csp = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'none'",
+      "img-src 'self' data: blob:",
+      "font-src 'self' data:",
+      "style-src 'self' 'unsafe-inline'",
+      `script-src 'self' 'nonce-${nonce}'`,
+      "connect-src 'self'",
+    ].join('; ');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Security-Policy', csp);
+    return res.status(200).send(html);
+  } catch (e) {
+    return next();
+  }
+});
+
 // Static serving fallback
 app.use(express.static(distDir, { fallthrough: true, etag: true, extensions: ['html'] }));
 // SPA-ish fallback to index.html with CSP nonce injection

@@ -1,4 +1,6 @@
 import { component$, Slot } from '@builder.io/qwik';
+import fs from 'node:fs';
+import path from 'node:path';
 import type { RequestHandler } from '@builder.io/qwik-city';
 import ScrollProgress from '~/components/ScrollProgress';
 import ScrollReveals from '~/components/ScrollReveals';
@@ -108,6 +110,18 @@ export const onStaticGenerate = () => {
     '/signup',
   ];
   try {
+    // Highest priority: explicit routes file (written by watcher)
+    const file = (typeof process !== 'undefined' && (process as any).env?.SSG_ROUTES_FILE) as string | undefined;
+    if (file) {
+      try {
+        const p = path.resolve(file);
+        const raw = fs.readFileSync(p, 'utf8');
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length > 0) {
+          return { routes: Array.from(new Set(arr.map((s: string) => (s && s[0] !== '/' ? '/' + s : s)))) };
+        }
+      } catch {}
+    }
     // Allow partial SSG runs by providing a CSV of routes via env.
     // Examples: SSG_ONLY_ROUTES="/contact" or SSG_ONLY_ROUTES="/about,/contact"
     const onlyRaw = (typeof process !== 'undefined' && (process as any).env?.SSG_ONLY_ROUTES) || '';
