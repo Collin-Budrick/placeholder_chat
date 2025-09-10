@@ -6,6 +6,23 @@ import { logApi } from '~/lib/log';
 import { LanguageToggle } from '~/components/LanguageToggle';
 import { LuHome, LuInfo, LuMail, LuUser } from '@qwikest/icons/lucide';
 
+// Canonical route mapping and order used to decide slide direction.
+// Placed at module scope so it is serializable in Qwik event closures.
+const ORDER = ['/', '/about', '/contact', '/login', '/signup', '/profile'] as const;
+const canon = (p: string): typeof ORDER[number] => {
+  if (!p) return '/';
+  // Normalize trailing slash (except root)
+  let path = p;
+  try { path = String(p); } catch { /* ignore */ }
+  if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+  if (path.startsWith('/login')) return '/login';
+  if (path.startsWith('/signup')) return '/signup';
+  if (path.startsWith('/profile')) return '/profile';
+  if (path.startsWith('/about')) return '/about';
+  if (path.startsWith('/contact')) return '/contact';
+  return '/';
+};
+
 export default component$(() => {
   const loc = useLocation();
   const nav = useNavigate();
@@ -22,6 +39,21 @@ export default component$(() => {
   const selectorRef = useSignal<HTMLElement | null>(null);
   const ulRef = useSignal<HTMLElement | null>(null);
   const prevIndex = useSignal<number>(-1);
+  const warmed = useSignal<boolean>(false);
+  const navBusy = useSignal<boolean>(false);
+
+  // Prefetch route data (and trigger Qwik's internal preloads) to smooth the very first nav
+  const prefetchRoute = $((path: string) => {
+    try {
+      const url = new URL(path, loc.url.href);
+      // Ensure trailing slash (except root) for q-data URL shape
+      const p = url.pathname === '/' ? '/' : (url.pathname.endsWith('/') ? url.pathname : url.pathname + '/');
+      const q = p + 'q-data.json';
+      // Low-priority warmup
+      fetch(q, { credentials: 'same-origin' }).catch(() => {});
+    } catch { /* ignore */ }
+  });
+
 
   // Pointer-down handler: animate selector immediately on user tap/click
   const onPointerDown = $((index: number) => {
@@ -68,19 +100,9 @@ export default component$(() => {
 
     // Also compute nav direction and set flags for VT CSS (Qwik auto-VT will use them)
     try {
-      const anchors = Array.from(ul.querySelectorAll<HTMLAnchorElement>('a.nav-link[href^="/"]'));
-      const normalize = (p: string) => (p.endsWith('/') && p !== '/' ? p.slice(0, -1) : p);
-      const curPath = normalize(loc.url.pathname || '/');
-      let curIdx = -1; let bestLen = -1;
-      anchors.forEach((a, i) => {
-        let base = '/';
-        try { base = normalize(new URL(a.href, loc.url.href).pathname || '/'); } catch { base = a.getAttribute('href') || '/'; }
-        if (base === '/') {
-          if (curPath === '/' && bestLen < 1) { curIdx = i; bestLen = 1; }
-        } else if (curPath === base || curPath.startsWith(base + '/')) {
-          if (base.length > bestLen) { bestLen = base.length; curIdx = i; }
-        }
-      });
+      // Map current path to one of ORDER entries, and compare to target index
+      const cur = canon(loc.url.pathname || '/');
+      const curIdx = ORDER.indexOf(cur as any);
       if (curIdx >= 0 && index !== curIdx) {
         const dir = index > curIdx ? 'right' as const : 'left' as const;
         const root = document.documentElement;
@@ -88,15 +110,47 @@ export default component$(() => {
         root.setAttribute('data-vt-dir', dir);
       }
     } catch { /* ignore */ }
+
+    // Kick off prefetch for the intended route to improve first-click smoothness
+    try {
+      const targets: string[] = ['/', '/about', '/contact', '/login', '/signup'];
+      const t = targets[index];
+      if (t) prefetchRoute(t);
+    } catch { /* ignore */ }
   });
 
   // No manual VT on click: rely on Qwik auto-VT
   const onAccountClick = $(async () => {
     try {
+      // Direction is set on pointerdown by onPointerDown/VTGlobal
+
       // Fast-path: if we're already on an auth page, don't ping the backend
       const path = (globalThis?.location?.pathname || '').toLowerCase();
       if (path.startsWith('/login') || path.startsWith('/signup')) {
-        await nav('/login');
+        const startVT: any = (document as any).startViewTransition;
+        if (typeof startVT === 'function') {
+          try {
+            const root = document.documentElement;
+            const current = canon(loc.url.pathname || '/');
+            const fromIdx = ORDER.indexOf(current as any);
+            const toIdx = ORDER.indexOf('/login');
+            root.setAttribute('data-vt-nav', '1');
+            root.setAttribute('data-vt-dir', toIdx > fromIdx ? 'right' : 'left');
+            root.setAttribute('data-vt-target', 'login');
+          } catch { /* ignore */ }
+          const tx = startVT(async () => { try { await nav('/login'); } catch { /* ignore */ } });
+          Promise.resolve(tx?.finished).finally(() => {
+            try {
+              const root = document.documentElement;
+              root.removeAttribute('data-vt-nav');
+              root.removeAttribute('data-vt-dir');
+              root.removeAttribute('data-vt-effect');
+              root.removeAttribute('data-vt-target');
+            } catch { /* ignore */ }
+          });
+        } else {
+          await nav('/login');
+        }
         return;
       }
 
@@ -107,7 +161,30 @@ export default component$(() => {
         hasSession = /(?:^|;\s*)(session|session_token)=/.test(ck);
       } catch { /* ignore */ }
       if (!hasSession) {
-        await nav('/login');
+        const startVT: any = (document as any).startViewTransition;
+        if (typeof startVT === 'function') {
+          try {
+            const root = document.documentElement;
+            const current = canon(loc.url.pathname || '/');
+            const fromIdx = ORDER.indexOf(current as any);
+            const toIdx = ORDER.indexOf('/login');
+            root.setAttribute('data-vt-nav', '1');
+            root.setAttribute('data-vt-dir', toIdx > fromIdx ? 'right' : 'left');
+            root.setAttribute('data-vt-target', 'login');
+          } catch { /* ignore */ }
+          const tx = startVT(async () => { try { await nav('/login'); } catch { /* ignore */ } });
+          Promise.resolve(tx?.finished).finally(() => {
+            try {
+              const root = document.documentElement;
+              root.removeAttribute('data-vt-nav');
+              root.removeAttribute('data-vt-dir');
+              root.removeAttribute('data-vt-effect');
+              root.removeAttribute('data-vt-target');
+            } catch { /* ignore */ }
+          });
+        } else {
+          await nav('/login');
+        }
         return;
       }
 
@@ -122,7 +199,34 @@ export default component$(() => {
         goProfile = gw.ok;
       } catch { /* ignore; treat as not logged in */ }
       try { await logApi({ phase: 'request', url: goProfile ? '/profile' : '/login', message: 'nav: account click' }); } catch {}
-      await nav(goProfile ? '/profile' : '/login');
+
+      const to = goProfile ? '/profile' : '/login';
+      const startVT: any = (document as any).startViewTransition;
+      if (typeof startVT === 'function') {
+        try {
+          const root = document.documentElement;
+          const targetCanon = canon(to);
+          const name = targetCanon === '/' ? 'home' : targetCanon.replace(/^\//, '');
+          const current = canon(loc.url.pathname || '/');
+          const fromIdx = ORDER.indexOf(current as any);
+          const toIdx = ORDER.indexOf(targetCanon as any);
+          root.setAttribute('data-vt-nav', '1');
+          root.setAttribute('data-vt-dir', toIdx > fromIdx ? 'right' : 'left');
+          root.setAttribute('data-vt-target', name);
+        } catch { /* ignore */ }
+        const tx = startVT(async () => { try { await nav(to); } catch { /* ignore */ } });
+        Promise.resolve(tx?.finished).finally(() => {
+          try {
+            const root = document.documentElement;
+            root.removeAttribute('data-vt-nav');
+            root.removeAttribute('data-vt-dir');
+            root.removeAttribute('data-vt-effect');
+            root.removeAttribute('data-vt-target');
+          } catch { /* ignore */ }
+        });
+      } else {
+        await nav(to);
+      }
     } catch { await nav('/login'); }
   });
 
@@ -189,6 +293,81 @@ export default component$(() => {
     // external blur overlay removed per request
   });
 
+  // Manual navigation with View Transitions for bottom-nav links
+  const navigateWithVT = $((index: number, toHref: string) => {
+    try {
+      // Respect reduced motion: skip VT
+      try {
+        if (globalThis.matchMedia && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          void nav(toHref);
+          navBusy.value = false;
+          return;
+        }
+      } catch { /* ignore */ }
+      const root = document.documentElement;
+      const current = canon(loc.url.pathname || '/');
+      const fromIdx = ORDER.indexOf(current as any);
+      const dir = (fromIdx >= 0 && index !== fromIdx) ? (index > fromIdx ? 'right' : 'left') : undefined;
+      if (dir) {
+        root.setAttribute('data-vt-nav', '1');
+        root.setAttribute('data-vt-dir', dir);
+      }
+      // Hint target for CSS smoothing (e.g., login)
+      try {
+        const targetCanon = canon(toHref);
+        const name = targetCanon === '/' ? 'home' : targetCanon.replace(/^\//, '');
+        root.setAttribute('data-vt-target', name);
+      } catch { /* ignore */ }
+      const startVT: any = (document as any).startViewTransition;
+      if (typeof startVT === 'function') {
+        const tx = startVT(async () => { try { await nav(toHref); } catch { /* ignore */ } });
+        // Clean flags when done, and release busy state
+        Promise.resolve((tx && tx.finished) || Promise.resolve()).finally(() => {
+          try {
+            root.removeAttribute('data-vt-nav');
+            root.removeAttribute('data-vt-dir');
+            root.removeAttribute('data-vt-effect');
+            root.removeAttribute('data-vt-target');
+          } catch { /* ignore */ }
+          navBusy.value = false;
+        });
+      } else {
+        // Fallback without VT
+        void nav(toHref);
+        navBusy.value = false;
+      }
+    } catch {
+      try { void nav(toHref); } catch { /* ignore */ }
+      navBusy.value = false;
+    }
+  });
+
+  // Combined pointerdown handler: animate selector + start VT nav on primary, unmodified clicks
+  const onNavPointerDown = $((ev: PointerEvent, _el: HTMLAnchorElement, index: number, toHref: string) => {
+    try { onPointerDown(index); } catch { /* ignore */ }
+    try {
+      const e = ev as PointerEvent;
+      // Only left-button, no modifier keys
+      if ((e as any).button !== 0 || (e as any).metaKey || (e as any).ctrlKey || (e as any).shiftKey || (e as any).altKey) return;
+    } catch { /* ignore */ }
+    if (navBusy.value) return;
+    navBusy.value = true;
+    try { navigateWithVT(index, toHref); } catch { navBusy.value = false; }
+  });
+
+  // Keyboard activation handler for accessibility: Enter/Space triggers VT nav
+  const onNavKeyDown = $((ev: KeyboardEvent, _el: HTMLAnchorElement, index: number, toHref: string) => {
+    try {
+      const e = ev as KeyboardEvent;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (navBusy.value) return;
+        navBusy.value = true;
+        navigateWithVT(index, toHref);
+      }
+    } catch { /* ignore */ }
+  });
+
   // Initial placement: schedule update now and also when the document becomes ready.
   // Always register the document listener (must be called unconditionally).
   useOnDocument('DOMContentLoaded', $(() => {
@@ -196,6 +375,20 @@ export default component$(() => {
       ? (window as any).requestAnimationFrame.bind(window)
       : ((fn: any) => setTimeout(fn, 0));
     raf(() => update());
+    // Warm common routes once on first paint
+    if (!warmed.value) {
+      warmed.value = true;
+      const run = () => {
+        try {
+          prefetchRoute('/');
+          prefetchRoute('/about');
+          prefetchRoute('/contact');
+          prefetchRoute('/login');
+          prefetchRoute('/signup');
+        } catch { /* ignore */ }
+      };
+      try { (window as any).requestIdleCallback ? (window as any).requestIdleCallback(run, { timeout: 1500 }) : setTimeout(run, 300); } catch { setTimeout(run, 300); }
+    }
   }));
 
   // React to route/path changes to keep selector accurate
@@ -230,42 +423,49 @@ export default component$(() => {
               <div ref={el => selectorRef.value = el} class="bottom-nav-selector" />
             </li>
             <li>
-              <Link href="/" prefetch aria-current={isActive('/') ? 'page' : undefined}
-                  aria-disabled={isActive('/') ? 'true' : undefined}
-                  tabIndex={isActive('/') ? -1 : undefined}
-                  class={`nav-item nav-link ${isActive('/') ? 'is-active' : ''}`}
-                  onPointerDown$={() => onPointerDown(0)}
-                  aria-label="Home">
+              <Link href="/" prefetch preventdefault:click aria-current={isActive('/') ? 'page' : undefined}
+                   aria-disabled={isActive('/') ? 'true' : undefined}
+                   tabIndex={isActive('/') ? -1 : undefined}
+                   class={`nav-item nav-link ${isActive('/') ? 'is-active' : ''}`}
+                  onPointerDown$={$((ev, el) => onNavPointerDown(ev as any, el as any, 0, '/'))}
+                  onKeyDown$={$((ev, el) => onNavKeyDown(ev as any, el as any, 0, '/'))}
+                  onClick$={$((e) => { e.preventDefault(); })}
+                   aria-label="Home">
                 <LuHome class="w-7 h-7" />
               </Link>
             </li>
             <li>
-              <Link href="/about/" prefetch aria-current={isActive('/about') ? 'page' : undefined}
-                  aria-disabled={isActive('/about') ? 'true' : undefined}
-                  tabIndex={isActive('/about') ? -1 : undefined}
-                  class={`nav-item nav-link ${isActive('/about') ? 'is-active' : ''}`}
-                  onPointerDown$={() => onPointerDown(1)}
-                  aria-label="About">
+              <Link href="/about" prefetch preventdefault:click aria-current={isActive('/about') ? 'page' : undefined}
+                   aria-disabled={isActive('/about') ? 'true' : undefined}
+                   tabIndex={isActive('/about') ? -1 : undefined}
+                   class={`nav-item nav-link ${isActive('/about') ? 'is-active' : ''}`}
+                  onPointerDown$={$((ev, el) => onNavPointerDown(ev as any, el as any, 1, '/about/'))}
+                  onKeyDown$={$((ev, el) => onNavKeyDown(ev as any, el as any, 1, '/about/'))}
+                  onClick$={$((e) => { e.preventDefault(); })}
+                   aria-label="About">
                 <LuInfo class="w-7 h-7" />
               </Link>
             </li>
             <li>
-              <Link href="/contact/" prefetch aria-current={isActive('/contact') ? 'page' : undefined}
-                  aria-disabled={isActive('/contact') ? 'true' : undefined}
-                  tabIndex={isActive('/contact') ? -1 : undefined}
-                  class={`nav-item nav-link ${isActive('/contact') ? 'is-active' : ''}`}
-                  onPointerDown$={() => onPointerDown(2)}
-                  aria-label="Contact">
+              <Link href="/contact" prefetch preventdefault:click aria-current={isActive('/contact') ? 'page' : undefined}
+                   aria-disabled={isActive('/contact') ? 'true' : undefined}
+                   tabIndex={isActive('/contact') ? -1 : undefined}
+                   class={`nav-item nav-link ${isActive('/contact') ? 'is-active' : ''}`}
+                  onPointerDown$={$((ev, el) => onNavPointerDown(ev as any, el as any, 2, '/contact/'))}
+                  onKeyDown$={$((ev, el) => onNavKeyDown(ev as any, el as any, 2, '/contact/'))}
+                  onClick$={$((e) => { e.preventDefault(); })}
+                   aria-label="Contact">
                 <LuMail class="w-7 h-7" />
               </Link>
             </li>
             <li>
-              <Link href={'/login/'} prefetch preventdefault:click aria-current={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'page' : undefined}
+              <Link href={'/login'} prefetch preventdefault:click aria-current={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'page' : undefined}
                  aria-disabled={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'true' : undefined}
                  tabIndex={isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? -1 : undefined}
                  class={`nav-item nav-link ${isActive((p)=>p.startsWith('/profile')||p.startsWith('/signup')||p.startsWith('/login')) ? 'is-active' : ''}`}
                  data-alias="/login,/signup"
                  onPointerDown$={() => onPointerDown(3)}
+                 onKeyDown$={$((e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAccountClick(); } })}
                  onClick$={onAccountClick}
                  aria-label="Account">
                 <LuUser class="w-7 h-7" />

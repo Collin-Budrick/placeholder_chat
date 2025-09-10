@@ -20,31 +20,35 @@ article h1, aside h1, nav h1, section h1, main h1 { font-size: 1.5rem; line-heig
 /* Minimal View Transitions for page slides */
 /* Ensure the root participates (override any injected resets) */
 html { view-transition-name: root !important; }
-#content { view-transition-name: page; contain: paint; }
+#content { view-transition-name: page; contain: paint; will-change: transform; transform: translateZ(0); backface-visibility: hidden; }
 
-@keyframes vt-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
-@keyframes vt-out-left { from { transform: translateX(0); } to { transform: translateX(-100%); } }
-@keyframes vt-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-@keyframes vt-out-right { from { transform: translateX(0); } to { transform: translateX(100%); } }
+@keyframes vt-in-right { from { transform: translateX(100%); opacity: .96; } to { transform: translateX(0); opacity: 1; } }
+@keyframes vt-out-left { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-100%); opacity: .96; } }
+@keyframes vt-in-left { from { transform: translateX(-100%); opacity: .96; } to { transform: translateX(0); opacity: 1; } }
+@keyframes vt-out-right { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: .96; } }
 
 /* Slide in from the right when target icon is to the right */
 html[data-vt-nav="1"][data-vt-dir="right"]::view-transition-old(page),
 html[data-vt-nav="1"][data-vt-dir="right"] ::view-transition-old(page) {
   animation: vt-out-left 420ms cubic-bezier(.22,.9,.37,1) both;
+  backface-visibility: hidden; transform: translateZ(0);
 }
 html[data-vt-nav="1"][data-vt-dir="right"]::view-transition-new(page),
 html[data-vt-nav="1"][data-vt-dir="right"] ::view-transition-new(page) {
   animation: vt-in-right 420ms cubic-bezier(.22,.9,.37,1) both;
+  backface-visibility: hidden; transform: translateZ(0);
 }
 
 /* Slide in from the left when target icon is to the left */
 html[data-vt-nav="1"][data-vt-dir="left"]::view-transition-old(page),
 html[data-vt-nav="1"][data-vt-dir="left"] ::view-transition-old(page) {
   animation: vt-out-right 420ms cubic-bezier(.22,.9,.37,1) both;
+  backface-visibility: hidden; transform: translateZ(0);
 }
 html[data-vt-nav="1"][data-vt-dir="left"]::view-transition-new(page),
 html[data-vt-nav="1"][data-vt-dir="left"] ::view-transition-new(page) {
   animation: vt-in-left 420ms cubic-bezier(.22,.9,.37,1) both;
+  backface-visibility: hidden; transform: translateZ(0);
 }
 
 /* Fade effect for profile and logout navigations */
@@ -61,6 +65,9 @@ html[data-vt-effect="fade"] ::view-transition-new(page) {
 
 /* Hide incoming login DOM while VT is running to prevent pre-flash */
 html[data-vt-target="login"][data-vt-nav="1"] #login-root { visibility: hidden !important; opacity: 0 !important; }
+/* Hide incoming page DOM during VT to avoid double-paint and flashes.
+   We scope to when a vt target is set so non-VT updates don't blank content. */
+/* Avoid globally hiding incoming content. Let VT snapshots render for smoothness. */
 
 /* Disable UA root cross-fade during nav slides; animate only page */
 html[data-vt-nav="1"]::view-transition-old(root),

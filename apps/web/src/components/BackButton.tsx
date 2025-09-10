@@ -9,6 +9,54 @@ type BackButtonProps = {
   sizeClass?: string; // e.g., 'size-9'
 };
 
+// Stable module-scope QRL for back navigation to avoid HMR QRL churn
+export const backNav = $((ev: Event) => {
+  try {
+    const el = (ev?.currentTarget || ev?.target) as HTMLElement | null;
+    const fallback = (el?.getAttribute('data-fallback') || '/') as string;
+    const root = document.documentElement;
+    root.setAttribute('data-vt-nav', '1');
+    root.setAttribute('data-vt-dir', 'left');
+    try { root.setAttribute('data-vt-target', 'back'); } catch { /* ignore */ }
+    // Respect reduced motion: no VT, just navigate
+    try {
+      if (globalThis.matchMedia && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (globalThis.history && globalThis.history.length > 1) {
+          globalThis.history.back();
+        } else {
+          globalThis.location.assign(fallback || '/');
+        }
+        return;
+      }
+    } catch { /* ignore */ }
+    const go = () => {
+      try {
+        if (globalThis.history && globalThis.history.length > 1) {
+          globalThis.history.back();
+        } else {
+          globalThis.location.assign(fallback || '/');
+        }
+      } catch {
+        try { globalThis.location.assign(fallback || '/'); } catch { /* ignore */ }
+      }
+    };
+    const startVT: any = (document as any).startViewTransition;
+    if (typeof startVT === 'function') {
+      const tx = startVT(go);
+      Promise.resolve(tx?.finished).finally(() => {
+        try {
+          root.removeAttribute('data-vt-nav');
+          root.removeAttribute('data-vt-dir');
+          root.removeAttribute('data-vt-effect');
+          root.removeAttribute('data-vt-target');
+        } catch { /* ignore */ }
+      });
+    } else {
+      go();
+    }
+  } catch { /* ignore */ }
+});
+
 export const BackButton = component$((props: BackButtonProps) => {
   const nav = useNavigate();
   const loc = useLocation();
@@ -27,6 +75,20 @@ export const BackButton = component$((props: BackButtonProps) => {
   const hoverDistance = props.hoverDistance ?? 284;
   const sizeCls = props.sizeClass ?? 'size-9';
   const aria = props.ariaLabel ?? 'Go back';
+
+  // Single press handler to reduce number of QRL chunks
+  // Single QRL for all pointer/keyboard press events; infer kind from event.type
+  const onPress = $((ev: any) => {
+    try {
+      const t = String((ev && ev.type) || '').toLowerCase();
+      if (t === 'pointerdown') backPressed.value = true;
+      else if (t === 'pointerup' || t === 'pointerleave' || t === 'blur' || t === 'keyup') backPressed.value = false;
+      else if (t === 'keydown') {
+        const e = ev as KeyboardEvent;
+        if (e.key === 'Enter' || e.key === ' ') backPressed.value = true;
+      }
+    } catch { /* ignore */ }
+  });
 
   // Proximity reveal for the back button: show circle only when cursor is very close
   useOnWindow('pointermove', $((ev: Event) => {
@@ -118,59 +180,7 @@ export const BackButton = component$((props: BackButtonProps) => {
     } catch { /* ignore */ }
   }));
 
-  const onClick = $(() => {
-    const fallback = props.fallbackHref ?? '/';
-    try {
-      const isProtected = (p: string) => p.startsWith('/profile') || p.startsWith('/admin');
-      const startBackNav = async (to: string) => {
-        try {
-          // Arm View Transitions to slide right->left for back nav
-          const root = document.documentElement;
-          root.setAttribute('data-vt-nav', '1');
-          root.setAttribute('data-vt-dir', 'left');
-        } catch { /* ignore */ }
-        try { await nav(to); } catch { /* ignore */ }
-      };
-      // On the login page, prefer a safe fallback to avoid bouncing back to a protected route
-      const path = loc?.url?.pathname || '';
-      const stored = (() => { try { return sessionStorage.getItem('vt:last') || ''; } catch { return ''; } })();
-      const lastPublic = (() => { try { return sessionStorage.getItem('vt:lastPublic') || ''; } catch { return ''; } })();
-      const sameOriginRef = (() => { try { const r = document.referrer ? new URL(document.referrer) : null; return r && r.origin === location.origin ? (r.pathname + r.search + r.hash) : ''; } catch { return ''; } })();
-      const prev = stored || sameOriginRef;
-
-      const isAuthPage = path.startsWith('/login') || path.startsWith('/signup');
-      if (isAuthPage) {
-        // On auth pages, never bounce between /login <-> /signup.
-        // Prefer a last known public route; fall back to '/'.
-        const refIsProtected = isProtected(sameOriginRef);
-        const refIsAuth = sameOriginRef.startsWith('/login') || sameOriginRef.startsWith('/signup');
-        const safeRef = sameOriginRef && !refIsProtected && !refIsAuth ? sameOriginRef : '';
-        const target = (lastPublic && !isProtected(lastPublic)) ? lastPublic : (safeRef || fallback);
-        void startBackNav(target);
-        return;
-      }
-
-      // Non-auth pages: prefer real back when available, but skip protected routes
-      const prevIsAuth = prev.startsWith('/login') || prev.startsWith('/signup');
-      const prevIsProtected = isProtected(prev);
-      if (globalThis.history && globalThis.history.length > 1 && prev && prev !== path && !prevIsAuth && !prevIsProtected) {
-        try {
-          const root = document.documentElement;
-          root.setAttribute('data-vt-nav', '1');
-          root.setAttribute('data-vt-dir', 'left');
-        } catch { /* ignore */ }
-        globalThis.history.back();
-        return;
-      }
-      if (prev && prev !== path && !prevIsAuth && !prevIsProtected) {
-        void startBackNav(prev);
-      } else if (lastPublic && !isProtected(lastPublic)) {
-        void startBackNav(lastPublic);
-      } else {
-        void startBackNav(fallback);
-      }
-    } catch { try { void nav(fallback); } catch { /* ignore */ } }
-  });
+  // Removed complex onClick logic in favor of stable module-scope backNav
 
   return (
     <button
@@ -178,13 +188,14 @@ export const BackButton = component$((props: BackButtonProps) => {
       aria-label={aria}
       class={`group relative inline-flex ${sizeCls} items-center justify-center rounded-full text-base-content/70 hover:text-base-content/90 transition-all focus:outline-none ${props.class || ''}`}
       ref={(el) => (backBtn.value = el as HTMLButtonElement)}
-      onPointerDown$={$(() => { backPressed.value = true; })}
-      onPointerUp$={$(() => { backPressed.value = false; })}
-      onPointerLeave$={$(() => { backPressed.value = false; })}
-      onBlur$={$(() => { backPressed.value = false; })}
-      onKeyDown$={$((e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') backPressed.value = true; })}
-      onKeyUp$={$(() => { backPressed.value = false; })}
-      onClick$={onClick}
+      onPointerDown$={onPress}
+      onPointerUp$={onPress}
+      onPointerLeave$={onPress}
+      onBlur$={onPress}
+      onKeyDown$={onPress}
+      onKeyUp$={onPress}
+      data-fallback={props.fallbackHref ?? '/'}
+      onClick$={backNav}
     >
       <svg
         width="22"
