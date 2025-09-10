@@ -188,7 +188,7 @@ export const Hero = component$(() => {
         <div ref={h1Ref}>
           <TypeTitle
             text={titleText.value}
-            class="text-4xl md:text-6xl font-extrabold tracking-tight text-balance"
+            class="text-5xl md:text-7xl lg:text-9xl leading-tight font-extrabold tracking-tight text-balance"
             speedMs={typingSpeed}
             idleMs={cycleIdleMs}
             startDelayMs={200}

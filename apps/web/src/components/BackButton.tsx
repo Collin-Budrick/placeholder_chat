@@ -1,5 +1,5 @@
 import { component$, useSignal, $, useOnWindow } from '@builder.io/qwik';
-import { useNavigate, useLocation } from '@builder.io/qwik-city';
+import { useLocation, useNavigate } from '@builder.io/qwik-city';
 
 type BackButtonProps = {
   class?: string;
@@ -10,14 +10,24 @@ type BackButtonProps = {
 };
 
 // Stable module-scope QRL for back navigation to avoid HMR QRL churn
-export const backNav = $((ev: Event) => {
+export const backNav = $((ev: Event, elParam?: Element) => {
   try {
-    const el = (ev?.currentTarget || ev?.target) as HTMLElement | null;
-    const fallback = (el?.getAttribute('data-fallback') || '/') as string;
+    const el = (elParam as Element | undefined)
+      || ((ev && (ev as any).currentTarget) as Element | null)
+      || ((ev && (ev as any).target && typeof (ev as any).target.closest === 'function') ? (ev as any).target.closest('button') : null);
+    const getAttr = (name: string) => {
+      try { return (el && (el as any).getAttribute) ? (el as any).getAttribute(name) : null; } catch { return null; }
+    };
+    const fallback = (getAttr('data-fallback') || '/') as string;
+    const target = (getAttr('data-target') || '') as string;
+    const force = (getAttr('data-force') || '') === '1';
     const root = document.documentElement;
     root.setAttribute('data-vt-nav', '1');
     root.setAttribute('data-vt-dir', 'left');
-    try { root.setAttribute('data-vt-target', 'back'); } catch { /* ignore */ }
+    try {
+      const vtTarget = (getAttr('data-vt-target') || 'back') as string;
+      root.setAttribute('data-vt-target', vtTarget);
+    } catch { /* ignore */ }
     // Respect reduced motion: no VT, just navigate
     try {
       if (globalThis.matchMedia && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -31,7 +41,12 @@ export const backNav = $((ev: Event) => {
     } catch { /* ignore */ }
     const go = () => {
       try {
+        if (force && target) {
+          globalThis.location.assign(target);
+          return;
+        }
         if (globalThis.history && globalThis.history.length > 1) {
+          // Use history when available; otherwise fall back
           globalThis.history.back();
         } else {
           globalThis.location.assign(fallback || '/');
@@ -58,8 +73,8 @@ export const backNav = $((ev: Event) => {
 });
 
 export const BackButton = component$((props: BackButtonProps) => {
-  const nav = useNavigate();
   const loc = useLocation();
+  const nav = useNavigate();
   const backBtn = useSignal<HTMLButtonElement>();
   const backOverlay = useSignal<HTMLElement>();
   const backPressed = useSignal(false);
@@ -182,6 +197,72 @@ export const BackButton = component$((props: BackButtonProps) => {
 
   // Removed complex onClick logic in favor of stable module-scope backNav
 
+  // Compute explicit target for auth pages:
+  // - On /signup -> always go to /login with a left slide
+  // - On /login  -> always go to /
+  // - Else: fall back to history, with provided fallbackHref or '/'
+  const path = (loc.url.pathname || '').toLowerCase();
+  const isSignup = path === '/signup' || path === '/signup/';
+  const isLogin = path === '/login' || path === '/login/';
+  const explicitTarget = isSignup ? '/login' : (isLogin ? '/' : null);
+
+  // Component-scoped explicit nav for SPA + VT when target is known
+  const goExplicit = $(async (ev: Event, elParam?: Element) => {
+    try {
+      const el = (elParam as Element | undefined)
+        || ((ev && (ev as any).currentTarget) as Element | null)
+        || ((ev && (ev as any).target && typeof (ev as any).target.closest === 'function') ? (ev as any).target.closest('button') : null);
+      const dsTarget = String((() => { try { return (el && (el as any).getAttribute) ? (el as any).getAttribute('data-target') : ''; } catch { return ''; } })() || '').trim();
+      const to = dsTarget || explicitTarget || props.fallbackHref || '/';
+      const root = document.documentElement;
+      const before = (globalThis?.location?.pathname || '') as string;
+      let forced = false;
+      const forceIfNoChange = () => {
+        if (forced) return;
+        try {
+          const now = (globalThis?.location?.pathname || '') as string;
+          if (now === before) {
+            forced = true;
+            globalThis.location.assign(to);
+          }
+        } catch { /* ignore */ }
+      };
+      try {
+        root.setAttribute('data-vt-nav', '1');
+        root.setAttribute('data-vt-dir', 'left');
+        if (isSignup || to === '/login') root.setAttribute('data-vt-target', 'login');
+      } catch { /* ignore */ }
+      const startVT: any = (document as any).startViewTransition;
+      if (typeof startVT === 'function') {
+        const tx = startVT(async () => {
+          try {
+            await nav(to);
+          } catch (e) {
+            try { globalThis.location.assign(to); } catch { /* ignore */ }
+          }
+        });
+        await Promise.resolve(tx?.finished).catch(() => {});
+        // Safety: if SPA nav didn't change path, force hard nav
+        setTimeout(forceIfNoChange, 120);
+        try {
+          root.removeAttribute('data-vt-nav');
+          root.removeAttribute('data-vt-dir');
+          root.removeAttribute('data-vt-effect');
+          root.removeAttribute('data-vt-target');
+        } catch { /* ignore */ }
+      } else {
+        try { await nav(to); } catch { try { globalThis.location.assign(to); } catch { /* ignore */ } }
+        // Safety: if SPA nav didn't change path, force hard nav
+        setTimeout(forceIfNoChange, 80);
+      }
+    } catch (e) {
+      try {
+        const to = explicitTarget || props.fallbackHref || '/';
+        globalThis.location.assign(to);
+      } catch { /* ignore */ }
+    }
+  });
+
   return (
     <button
       type="button"
@@ -194,8 +275,11 @@ export const BackButton = component$((props: BackButtonProps) => {
       onBlur$={onPress}
       onKeyDown$={onPress}
       onKeyUp$={onPress}
-      data-fallback={props.fallbackHref ?? '/'}
-      onClick$={backNav}
+      data-fallback={props.fallbackHref ?? (isSignup ? '/login' : (isLogin ? '/' : '/'))}
+      data-target={explicitTarget ?? ''}
+      data-force={explicitTarget ? '1' : ''}
+      data-vt-target={isSignup ? 'login' : ''}
+      onClick$={explicitTarget ? goExplicit : backNav}
     >
       <svg
         width="22"

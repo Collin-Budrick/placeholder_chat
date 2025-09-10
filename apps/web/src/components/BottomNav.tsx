@@ -54,6 +54,35 @@ export default component$(() => {
     } catch { /* ignore */ }
   });
 
+  // Warm auth routes in the background for instant nav from public pages
+  useTask$(() => {
+    if (typeof window === 'undefined') return;
+    const p = loc.url.pathname || '/';
+    // Only warm from public, light pages
+    if (p.startsWith('/login') || p.startsWith('/signup')) return;
+    const idle = (globalThis as any).requestIdleCallback || ((fn: any) => setTimeout(fn, 250));
+    idle(() => {
+      try { prefetchRoute('/login'); } catch {}
+      try { prefetchRoute('/signup'); } catch {}
+    });
+  });
+
+  // Idle module-preload for auth routes: fetch route chunks ahead of time
+  useTask$(() => {
+    if (typeof window === 'undefined') return;
+    const p = loc.url.pathname || '/';
+    if (p.startsWith('/login') || p.startsWith('/signup')) return;
+    const conn: any = (navigator as any)?.connection || (navigator as any)?.mozConnection || (navigator as any)?.webkitConnection;
+    if (conn?.saveData) return; // respect Data Saver
+    const slow = typeof conn?.effectiveType === 'string' && /^(slow-2g|2g)$/.test(conn.effectiveType);
+    if (slow) return;
+    const idle = (globalThis as any).requestIdleCallback || ((fn: any) => setTimeout(fn, 400));
+    idle(async () => {
+      try { await import('~/routes/login/index'); } catch {}
+      try { await import('~/routes/signup/index'); } catch {}
+    });
+  });
+
 
   // Pointer-down handler: animate selector immediately on user tap/click
   const onPointerDown = $((index: number) => {

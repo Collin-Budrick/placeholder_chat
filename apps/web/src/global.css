@@ -13,9 +13,11 @@
 html, body, #root {
   height: 100%;
 }
-/* Heading defaults previously injected inline in root.tsx to satisfy UA changes */
-h1 { font-size: 2em; line-height: 1.2; }
-article h1, aside h1, nav h1, section h1, main h1 { font-size: 1.5rem; line-height: 1.25; }
+/* Heading defaults in base layer so utilities can override */
+@layer base {
+  h1 { font-size: 2em; line-height: 1.2; }
+  article h1, aside h1, nav h1, section h1, main h1 { font-size: 1.5rem; line-height: 1.25; }
+}
 /* Enable CSS View Transitions for page-level animations */
 /* Minimal View Transitions for page slides */
 /* Ensure the root participates (override any injected resets) */
@@ -220,11 +222,7 @@ html[data-theme='white'] .bottom-nav-surface::before { opacity: .55; }
 html[data-theme='dark'] .bottom-nav-surface::before,
 html[data-theme='oled'] .bottom-nav-surface::before { opacity: .85; }
 
-/* Normalize H1 font-size to avoid UA changes.
-   Set a sensible default, utility classes (e.g., text-4xl) will override where used. */
-h1 { font-size: 2em; line-height: 1.2; }
-/* Keep an explicit size inside sectioning content for consistency across browsers. */
-article h1, aside h1, nav h1, section h1, main h1 { font-size: 1.5rem; line-height: 1.25; }
+/* (moved) h1 normalization lives in @layer base above so Tailwind utilities win */
 
 /* Prefer true backdrop blur when supported */
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {

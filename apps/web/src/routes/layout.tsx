@@ -53,11 +53,26 @@ export const onRequest: RequestHandler = (ev) => {
   try {
     const url = new URL(ev.request.url);
     const p = url.pathname || '/';
-    // Cache headers: long cache for assets, modest for HTML and data
-    if (/\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(p)) {
+    // Quiet dev/preview SSG pings to avoid SSR logs
+    if (p === '/__ssg-ping') {
+      try { ev.headers.set('Cache-Control', 'no-store'); } catch {}
+      try { return ev.text(204, ''); } catch { return; }
+    }
+    // Cache headers: strong for assets, and warmer for auth pages to improve perceived speed
+    const isAsset = /\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(p);
+    const isQData = p.endsWith('/q-data.json');
+    const isAuthPage = p === '/login' || p === '/login/' || p === '/signup' || p === '/signup/';
+    const isAuthQData = p === '/login/q-data.json' || p === '/signup/q-data.json';
+    if (isAsset) {
       ev.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-    } else if (p.endsWith('/q-data.json')) {
+    } else if (isAuthQData) {
+      // Warm auth data a bit longer so clicking Account feels instant
+      ev.headers.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=604800');
+    } else if (isQData) {
       ev.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=600');
+    } else if (isAuthPage) {
+      // Cache the HTML for login/signup a bit to avoid refetch hitches between public pages
+      ev.headers.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=604800');
     } else {
       ev.headers.set('Cache-Control', 'public, max-age=600, stale-while-revalidate=86400');
     }
@@ -97,10 +112,14 @@ export const onRequest: RequestHandler = (ev) => {
     ).join('; ');
     ev.headers.set('Content-Security-Policy', csp);
     // CDN cache hint for edge caches (no impact if no CDN in front)
-    if (/\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(p)) {
+    if (isAsset) {
       ev.headers.set('Surrogate-Control', 'max-age=31536000, immutable');
-    } else if (p.endsWith('/q-data.json')) {
+    } else if (isAuthQData) {
+      ev.headers.set('Surrogate-Control', 'max-age=1200');
+    } else if (isQData) {
       ev.headers.set('Surrogate-Control', 'max-age=120');
+    } else if (isAuthPage) {
+      ev.headers.set('Surrogate-Control', 'max-age=1200');
     } else {
       ev.headers.set('Surrogate-Control', 'max-age=600');
     }

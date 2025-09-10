@@ -10,6 +10,9 @@ services:
       # Lock server to 5174 so healthcheck/Traefik match
       PORT: "5174"
       HOST: "0.0.0.0"
+      # Disable live-reload in prod runner to allow bfcache (no WebSocket/SSE)
+      LIVE_RELOAD: "0"
+      LIVE_RELOAD_SSE: "0"
       # Provide a stable origin for Qwik SSG (LAN HTTPS via Traefik)
       SITE_ORIGIN: "https://${PUBLIC_IP:-127.0.0.1}:5173"
     # Expose static server directly when running without Traefik
