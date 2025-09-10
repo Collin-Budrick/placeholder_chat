@@ -1,4 +1,4 @@
-import { component$, useSignal, useTask$, useOn, $ } from "@builder.io/qwik";
+import { component$, useSignal, useTask$, useOn, $, noSerialize, type NoSerialize } from "@builder.io/qwik";
 
 /**
  * Simple Motion One demo using the `motion` package.
@@ -11,7 +11,7 @@ export const MotionOneDemo = component$(() => {
   const wrapperRef = useSignal<HTMLDivElement>();
 
   const started = useSignal(false);
-  const cleanupRef = useSignal<(() => void) | null>(null);
+  const cleanupRef = useSignal<NoSerialize<() => void> | null>(null);
 
   const start$ = $(async () => {
     if (started.value) return;
@@ -94,11 +94,11 @@ export const MotionOneDemo = component$(() => {
       };
       el.addEventListener('click', onClick);
 
-      cleanupRef.value = () => {
+      cleanupRef.value = noSerialize(() => {
         try { idle.stop?.(); } catch { /* ignore */ }
         try { el.removeEventListener('pointerenter', onEnter); } catch { /* ignore */ }
         try { el.removeEventListener('click', onClick); } catch { /* ignore */ }
-      };
+      });
     } catch { /* ignore */ }
   });
 

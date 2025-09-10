@@ -21,6 +21,9 @@ export default component$(() => {
         {/* Connection hints for CDN assets used by integrations (e.g., Lottie demos) */}
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
         <RouterHead />
+        {/* Prefetch auth route data so login/signup feel instant */}
+        <link rel="prefetch" href="/login/q-data.json" as="fetch" crossOrigin="anonymous" />
+        <link rel="prefetch" href="/signup/q-data.json" as="fetch" crossOrigin="anonymous" />
         {/* Heading defaults moved to global.css to avoid inline <style> and JSX escape warnings. */}
         {/* Load small theme/lang initializer as an external file so a strict CSP can be enforced without inline allowances. */}
         <script src={`${import.meta.env.BASE_URL}theme-init.js`} defer />

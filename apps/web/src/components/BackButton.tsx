@@ -1,6 +1,21 @@
 import { component$, useSignal, $, useOnWindow } from '@builder.io/qwik';
 import { useLocation, useNavigate } from '@builder.io/qwik-city';
 
+// Keep ORDER/canon at module scope so Qwik can serialize QRLs that reference them
+const ORDER = ['/', '/about', '/contact', '/login', '/signup', '/profile'] as const;
+const canon = (p: string): typeof ORDER[number] => {
+  if (!p) return '/';
+  let path = p;
+  try { path = String(p); } catch { /* ignore */ }
+  if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+  if (path.startsWith('/login')) return '/login';
+  if (path.startsWith('/signup')) return '/signup';
+  if (path.startsWith('/profile')) return '/profile';
+  if (path.startsWith('/about')) return '/about';
+  if (path.startsWith('/contact')) return '/contact';
+  return '/';
+};
+
 type BackButtonProps = {
   class?: string;
   ariaLabel?: string;
@@ -22,11 +37,12 @@ export const backNav = $((ev: Event, elParam?: Element) => {
     const target = (getAttr('data-target') || '') as string;
     const force = (getAttr('data-force') || '') === '1';
     const root = document.documentElement;
+    // Default back gesture: slide left (previous)
     root.setAttribute('data-vt-nav', '1');
     root.setAttribute('data-vt-dir', 'left');
     try {
       const vtTarget = (getAttr('data-vt-target') || 'back') as string;
-      root.setAttribute('data-vt-target', vtTarget);
+      if (vtTarget) root.setAttribute('data-vt-target', vtTarget);
     } catch { /* ignore */ }
     // Respect reduced motion: no VT, just navigate
     try {
@@ -228,9 +244,23 @@ export const BackButton = component$((props: BackButtonProps) => {
         } catch { /* ignore */ }
       };
       try {
+        // Determine slide direction based on ORDER like the nav does
+        const current = canon(loc.url.pathname || '/');
+        const targetCanon = canon(to);
+        const fromIdx = ORDER.indexOf(current as any);
+        const toIdx = ORDER.indexOf(targetCanon as any);
+        const dir = (fromIdx >= 0 && toIdx >= 0 && fromIdx !== toIdx)
+          ? (toIdx > fromIdx ? 'right' : 'left')
+          : 'left'; // default left
         root.setAttribute('data-vt-nav', '1');
-        root.setAttribute('data-vt-dir', 'left');
-        if (isSignup || to === '/login') root.setAttribute('data-vt-target', 'login');
+        root.setAttribute('data-vt-dir', dir);
+        // Name target for CSS hints (e.g., login hiding)
+        const name = targetCanon === '/' ? 'home' : targetCanon.replace(/^\//, '');
+        root.setAttribute('data-vt-target', name);
+        // Match VTGlobal special fade for profile transitions
+        if (current === '/profile' || targetCanon === '/profile') {
+          root.setAttribute('data-vt-effect', 'fade');
+        }
       } catch { /* ignore */ }
       const startVT: any = (document as any).startViewTransition;
       if (typeof startVT === 'function') {
@@ -263,17 +293,46 @@ export const BackButton = component$((props: BackButtonProps) => {
     }
   });
 
+  // Pre-arm direction on pointerdown to mirror nav behavior (VTGlobal does this for anchors)
+  const onPreArm = $((ev: Event) => {
+    try {
+      const el = (ev?.currentTarget as Element | null) || (ev?.target as Element | null);
+      const dsTarget = el && (el as any).getAttribute ? String((el as any).getAttribute('data-target') || '') : '';
+      const to = dsTarget || explicitTarget || '';
+      const root = document.documentElement;
+      if (!to) {
+        // No explicit target (history back): default to left slide
+        root.setAttribute('data-vt-nav', '1');
+        root.setAttribute('data-vt-dir', 'left');
+        return;
+      }
+      const current = canon(loc.url.pathname || '/');
+      const targetCanon = canon(to);
+      const fromIdx = ORDER.indexOf(current as any);
+      const toIdx = ORDER.indexOf(targetCanon as any);
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+      const dir = toIdx > fromIdx ? 'right' : 'left';
+      root.setAttribute('data-vt-nav', '1');
+      root.setAttribute('data-vt-dir', dir);
+      const name = targetCanon === '/' ? 'home' : targetCanon.replace(/^\//, '');
+      root.setAttribute('data-vt-target', name);
+      if (current === '/profile' || targetCanon === '/profile') {
+        root.setAttribute('data-vt-effect', 'fade');
+      }
+    } catch { /* ignore */ }
+  });
+
   return (
     <button
       type="button"
       aria-label={aria}
       class={`group relative inline-flex ${sizeCls} items-center justify-center rounded-full text-base-content/70 hover:text-base-content/90 transition-all focus:outline-none ${props.class || ''}`}
       ref={(el) => (backBtn.value = el as HTMLButtonElement)}
-      onPointerDown$={onPress}
+      onPointerDown$={$((ev)=>{ onPress(ev as any); onPreArm(ev as any); })}
       onPointerUp$={onPress}
       onPointerLeave$={onPress}
       onBlur$={onPress}
-      onKeyDown$={onPress}
+      onKeyDown$={$((ev)=>{ onPress(ev as any); const e = ev as KeyboardEvent; if (e.key === 'Enter' || e.key === ' ') onPreArm(ev as any); })}
       onKeyUp$={onPress}
       data-fallback={props.fallbackHref ?? (isSignup ? '/login' : (isLogin ? '/' : '/'))}
       data-target={explicitTarget ?? ''}

@@ -272,7 +272,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
     }
   } catch (e) {}
   try {
-    if (command === 'serve') {
+    // Opt-in only to avoid extra dev payload unless explicitly enabled
+    if (command === 'serve' && process.env.VITE_INSPECT === '1') {
       // @ts-ignore
       const inspect = require("vite-plugin-inspect");
       extraPlugins.push(
@@ -291,8 +292,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
     }
   } catch (e) {}
   const cfg: UserConfig = {
-    // Use esbuild to drop dev statements in production builds only
-    esbuild: command === 'build' ? { drop: ['console', 'debugger'], legalComments: 'none' } : undefined,
+    // Use esbuild to drop dev statements in production builds; disable sourcemaps in dev for lighter responses
+    esbuild:
+      command === 'build'
+        ? { drop: ['console', 'debugger'], legalComments: 'none' }
+        : { sourcemap: false },
     resolve: {
       alias: {
         // Avoid bundling Node's undici into the browser; map to a tiny shim
@@ -327,7 +331,25 @@ export default defineConfig(({ command, mode }): UserConfig => {
     optimizeDeps: {
       // Put problematic deps that break bundling here, mostly those with binaries.
       // For example ['better-sqlite3'] if you use that in server functions.
-      exclude: ['undici'],
+      // Also exclude Qwik core/city so the optimizer can transform $(), component$, etc.
+      exclude: ['undici', '@builder.io/qwik', '@builder.io/qwik-city'],
+      // Minify prebundled deps in dev to cut payload size
+      esbuildOptions: {
+        minify: true,
+        sourcemap: false,
+        target: 'es2020',
+      },
+      // Force prebundle commonly-used heavy deps (but NOT Qwik packages)
+      include: [
+        '@qwikest/icons/lucide',
+        'preact',
+        'preact/compat',
+        'preact/jsx-runtime',
+        'motion',
+        '@faker-js/faker',
+        'valibot',
+        'lottie-web/build/player/lottie_light',
+      ],
     },
     /**
      * This is an advanced setting. It improves the bundling of your server code. To use it, make sure you understand when your consumed packages are dependencies or dev dependencies. (otherwise things will break in production)
@@ -418,14 +440,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
                 // omit host so the client uses window.location.hostname
                 clientPort: 5173, // Traefik public port
                 port: 5174,       // internal Vite port
+                overlay: false,
               }
             : process.env.VITE_PUBLIC_HOST
               ? {
                   host: process.env.VITE_PUBLIC_HOST.replace(/^https?:\/\//, "").replace(/\/$/, ""),
                   protocol: 'wss',
                   clientPort: 443,
+                  overlay: false,
                 }
-              : undefined,
+              : { overlay: false },
       // Improve reliability of file watching on Windows/WSL bind mounts
       watch: {
         usePolling: true,
@@ -489,6 +513,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
         },
       },
     },
+    // Disable CSS sourcemaps in dev to reduce served bytes
+    css: { devSourcemap: false },
   };
 
   try {

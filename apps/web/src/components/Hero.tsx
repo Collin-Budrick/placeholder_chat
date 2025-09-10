@@ -108,13 +108,15 @@ export const Hero = component$(() => {
 
     const idleCb = (window as any).requestIdleCallback;
     if (idleCb) {
+      // In dev, give idle a soft timeout to avoid touching LCP path
       idleCbId = idleCb(() => {
         void start();
-      });
+      }, { timeout: import.meta.env.DEV ? 800 : 200 });
     } else {
+      // Fallback: defer a bit longer in dev so motion loads post-LCP
       clearId = window.setTimeout(() => {
         void start();
-      }, 200);
+      }, import.meta.env.DEV ? 600 : 200);
     }
 
     return () => {

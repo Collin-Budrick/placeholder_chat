@@ -15,10 +15,10 @@ export default component$(() => {
         Quick demos wired up for Lenis, Lottie, Panda, and Faker.
       </p>
       <div class="grid gap-8 md:grid-cols-2">
-        <FakerDemo />
-        <LottieDemo />
+        {import.meta.env.DEV ? <FakerDemo client:idle /> : <FakerDemo />}
+        {import.meta.env.DEV ? <LottieDemo client:idle /> : <LottieDemo />}
         <PandaDemo />
-        <MotionOneDemo />
+        {import.meta.env.DEV ? <MotionOneDemo client:idle /> : <MotionOneDemo />}
         <DaisyButtonsDemo />
         <div class="space-y-2">
           <h2 class="text-xl font-semibold">Preact Island</h2>
