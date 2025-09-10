@@ -224,6 +224,7 @@ export const Hero = component$(() => {
             Learn more
           </a>
         </div>
+        {/** Preact Counter moved to Integrations page */}
       </div>
     </section>
   );

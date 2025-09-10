@@ -1,35 +1,43 @@
-import { component$, useSignal, useTask$, isServer, useOn, $ } from "@builder.io/qwik";
+import { component$, useTask$, isServer, useOn, $, useSignal } from "@builder.io/qwik";
 
 export const LottieDemo = component$(() => {
   const host = useSignal<HTMLDivElement>();
-  const started = (globalThis as any).__lottie_started ||= { v: false } as { v: boolean };
-
   const start$ = $(async () => {
     if (isServer) return;
     if (typeof window === 'undefined') return;
-    if (started.v) return;
-    const el = host.value; if (!el) return; // triggers will try again
-    started.v = true;
+    const el = host.value; if (!el) return;
     try {
-      const lottie = await (async () => {
-        const w = window as any;
-        if (w.lottie) return w.lottie;
-        await new Promise<void>((resolve, reject) => {
-          const s = document.createElement('script');
-          s.src = 'https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie_light.min.js';
-          s.async = true; s.crossOrigin = 'anonymous';
-          s.onload = () => resolve(); s.onerror = () => reject(new Error('lottie load failed'));
-          document.head.appendChild(s);
-        });
-        return (window as any).lottie;
-      })();
-      (lottie as any).loadAnimation({
+      const mod: any = await import('lottie-web/build/player/lottie_light');
+      const src = `${import.meta.env.BASE_URL}lottie/demo.json`;
+      let animationData: any | undefined = undefined;
+      try {
+        const r = await fetch(src, { headers: { 'accept': 'application/json' } });
+        if (r.ok && /json/i.test(r.headers.get('content-type') || '')) {
+          animationData = await r.json();
+        }
+      } catch { /* ignore fetch errors; fallback to path */ }
+      const lottieAny: any = (mod && (mod.default ?? mod)) as any;
+      const loadAnimation: any = typeof lottieAny === 'function' ? lottieAny : lottieAny?.loadAnimation;
+      if (typeof loadAnimation !== 'function') return;
+      const anim = loadAnimation({
         container: el,
-        renderer: 'svg',
+        // Canvas renderer avoids some SVG sizing/transform quirks in nested layouts
+        renderer: 'canvas',
         loop: true,
         autoplay: true,
-        path: 'https://assets1.lottiefiles.com/packages/lf20_jcikwtux.json',
+        // Prefer inline data to avoid extra fetch; fallback to path
+        animationData,
+        path: animationData ? undefined : src,
+        rendererSettings: {
+          preserveAspectRatio: 'xMidYMid meet',
+          progressiveLoad: true,
+          clearCanvas: true,
+          // Keep pixel ratio modest for small demo to reduce GPU blit cost
+          dpr: Math.min(window.devicePixelRatio || 1, 2),
+        },
       });
+      // Cleanup on unmount
+      return () => { try { (anim as any)?.destroy?.(); } catch { /* noop */ } };
     } catch { /* noop */ }
   });
 
@@ -41,37 +49,14 @@ export const LottieDemo = component$(() => {
   useTask$(({ cleanup }) => {
     if (isServer) return;
     if (typeof window === 'undefined') return;
-    const el = host.value; if (!el) return;
-
     let cancelled = false;
     let timeoutId: number | undefined;
     let started = false;
+    let disposer: (() => void) | void;
 
     const start = async () => {
-      if (cancelled) return;
-      try {
-        const lottie = await (async () => {
-          const w = window as any;
-          if (w.lottie) return w.lottie;
-          await new Promise<void>((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie_light.min.js';
-            s.async = true; s.crossOrigin = 'anonymous';
-            s.onload = () => resolve(); s.onerror = () => reject(new Error('lottie load failed'));
-            document.head.appendChild(s);
-          });
-          return (window as any).lottie;
-        })();
-        if (cancelled) return;
-        const anim = (lottie as any).loadAnimation({
-          container: el,
-          renderer: 'svg',
-          loop: true,
-          autoplay: true,
-          path: 'https://assets1.lottiefiles.com/packages/lf20_jcikwtux.json',
-        });
-        cleanup(() => { try { anim.destroy?.(); } catch { /* noop */ } });
-      } catch { /* noop */ }
+      if (cancelled || started) return; started = true;
+      try { disposer = await start$(); } catch { /* ignore */ }
     };
 
     const idleCb = (window as any).requestIdleCallback;
@@ -83,13 +68,26 @@ export const LottieDemo = component$(() => {
     cleanup(() => {
       cancelled = true;
       if (timeoutId !== undefined) clearTimeout(timeoutId as any);
+      try { if (typeof disposer === 'function') disposer(); } catch { /* ignore */ }
     });
   });
 
   return (
     <div class="space-y-2">
       <h2 class="text-xl font-semibold">Lottie</h2>
-      <div ref={host} style={{ width: '160px', height: '160px' }} />
+      <div
+        ref={host}
+        class="rounded-xl overflow-hidden"
+        style={{
+          width: '160px',
+          height: '160px',
+          display: 'block',
+          contain: 'content',
+          background: 'transparent',
+          isolation: 'isolate',
+        }}
+        aria-label="Lottie animation"
+      />
     </div>
   );
 });

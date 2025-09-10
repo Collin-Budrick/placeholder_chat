@@ -26,14 +26,24 @@ export default function (opts: RenderToStreamOptions) {
 
   return renderToStream(<Root />, {
     ...opts,
-    // Keep preload pressure conservative to help LCP; Qwik preloader still accelerates TTI
-    preloader: {
-      ssrPreloads: 3,
-      ssrPreloadProbability: 0.8,
-      maxIdlePreloads: 12,
-      preloadProbability: 0.4,
-      debug: false,
-    },
+    // Keep preload pressure conservative; be stricter in production to curb unused JS
+    preloader: ((): any => {
+      const base = {
+        ssrPreloads: 3,
+        ssrPreloadProbability: 0.8,
+        maxIdlePreloads: 12,
+        preloadProbability: 0.4,
+        debug: false,
+      };
+      if (import.meta.env?.DEV) return base;
+      return {
+        ...base,
+        ssrPreloads: 2,
+        ssrPreloadProbability: 0.6,
+        maxIdlePreloads: 6,
+        preloadProbability: 0.25,
+      };
+    })(),
     // Use default streaming, but leave room for early flushes on first chunk
     streaming: {
       inOrder: { strategy: 'auto' }

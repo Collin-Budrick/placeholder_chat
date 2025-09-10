@@ -4,7 +4,17 @@ services:
     image: oven/bun:1
     working_dir: /workspace
     command: >
-      sh -lc "if [ ! -d node_modules ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ]; then echo '[web] installing deps (first run)'; bun install --ignore-scripts; else echo '[web] deps cached; skipping bun install'; fi; bunx tsc -p packages/shared/tsconfig.build.json || true; exec bun apps/web/scripts/dev-with-env.js"
+      sh -lc "\
+      HASH=\$(bun -e \"import { createHash } from 'crypto'; import { readFileSync } from 'fs'; try{process.stdout.write(createHash('sha256').update(readFileSync('bun.lock')).digest('hex'))}catch{}\"); \
+      HASHFILE=node_modules/.bun.lock.hash; \
+      if [ ! -d node_modules ] || [ -z \"\$(ls -A node_modules 2>/dev/null)\" ] || [ ! -f \"$$HASHFILE\" ] || [ \"$$HASH\" != \"\$(cat \"$$HASHFILE\" 2>/dev/null)\" ]; then \
+        echo '[web] installing deps (first run or bun.lock changed)'; \
+        bun install --ignore-scripts && printf \"%s\" \"$$HASH\" > \"$$HASHFILE\"; \
+      else \
+        echo '[web] deps cached; bun.lock unchanged'; \
+      fi; \
+      bunx tsc -p packages/shared/tsconfig.build.json || true; \
+      exec bun apps/web/scripts/dev-with-env.js"
     environment:
       CHOKIDAR_USEPOLLING: "1"
       CHOKIDAR_INTERVAL: "100"

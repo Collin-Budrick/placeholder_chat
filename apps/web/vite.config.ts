@@ -30,6 +30,14 @@ export default defineConfig(({ command, mode }): UserConfig => {
   const isProdBuild = command === 'build' && (mode === 'production' || process.env.NODE_ENV === 'production');
   const isSsgBuild = process.env.BUILD_TARGET === 'ssg';
   const extraPlugins: any[] = [];
+  // Try to load Preact plugin if present; keep optional to avoid hard failure before deps are installed
+  try {
+    // @ts-ignore
+    const preact = require('@preact/preset-vite');
+    if (preact) extraPlugins.push(preact.default ? preact.default() : preact());
+  } catch (e) {
+    // Not installed yet; islands using preact/compat will still work after you install deps
+  }
   // Enable gzip/deflate in dev to improve Lighthouse in docker:dev and direct 5174 access
   const devCompressPlugin = () => {
     return {
@@ -283,10 +291,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
     }
   } catch (e) {}
   const cfg: UserConfig = {
+    // Use esbuild to drop dev statements in production builds only
+    esbuild: command === 'build' ? { drop: ['console', 'debugger'], legalComments: 'none' } : undefined,
     resolve: {
       alias: {
         // Avoid bundling Node's undici into the browser; map to a tiny shim
         undici: join(__dirname, 'src', 'shims', 'undici.browser.mjs'),
+        // React compat to Preact for smaller islands
+        react: 'preact/compat',
+        'react-dom': 'preact/compat',
+        'react/jsx-runtime': 'preact/jsx-runtime',
       },
     },
     // Suppress Vite's informational "externalized for browser compatibility" logs
@@ -455,12 +469,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
       // Reduce spurious warnings and split big vendor deps
       chunkSizeWarningLimit: 4096,
       rollupOptions: {
+        // Be a bit more aggressive with treeshaking for internal modules only
+        treeshake: { moduleSideEffects: 'no-external' },
         external: (id) => id === '/vendor/lottie-player/lottie-player.esm.js',
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
               // Avoid chunking core Qwik libs to preserve SSR init order
               if (id.includes('@builder.io/')) return undefined;
+              // Split Preact + Qwik-React bridge into a dedicated chunk, so it's fetched only when a Preact island runs
+              if (id.includes('preact') || id.includes('@preact') || id.includes('/preact/compat') || id.includes('@builder.io/qwik-react')) return 'vendor-preact';
               if (id.includes('gsap')) return 'vendor-gsap';
               if (id.includes('@lottiefiles')) return 'vendor-lottie';
               if (id.includes('@modular-forms')) return 'vendor-mod-forms';

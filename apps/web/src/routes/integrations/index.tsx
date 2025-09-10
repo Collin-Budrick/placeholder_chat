@@ -5,6 +5,7 @@ import FakerDemo from "../../components/integrations/FakerDemo";
 import PandaDemo from "../../components/integrations/PandaDemo";
 import MotionOneDemo from "../../components/integrations/MotionOneDemo";
 import DaisyButtonsDemo from "../../components/integrations/DaisyButtonsDemo";
+import { PreactCounterIsland } from "../../components/PreactCounterIsland";
 
 export default component$(() => {
   return (
@@ -19,6 +20,10 @@ export default component$(() => {
         <PandaDemo />
         <MotionOneDemo />
         <DaisyButtonsDemo />
+        <div class="space-y-2">
+          <h2 class="text-xl font-semibold">Preact Island</h2>
+          <PreactCounterIsland client:visible />
+        </div>
       </div>
     </section>
   );
