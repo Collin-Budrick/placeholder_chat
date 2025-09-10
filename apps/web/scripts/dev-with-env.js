@@ -2,6 +2,39 @@
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
+// Single-run guard: avoid starting two dev servers if the container/runner
+// inadvertently invokes this script twice.
+import fs from 'node:fs';
+const lockFile = path.resolve(process.cwd(), 'apps/web/.dev.server.lock');
+try {
+  const fd = fs.openSync(lockFile, 'wx');
+  try { fs.writeFileSync(fd, String(process.pid)); } catch {}
+  try {
+    const cleanup = () => {
+      try { fs.unlinkSync(lockFile); } catch {}
+      try { fs.closeSync(fd); } catch {}
+    };
+    process.on('exit', cleanup);
+    process.on('SIGINT', () => { cleanup(); process.exit(0); });
+    process.on('SIGTERM', () => { cleanup(); process.exit(0); });
+  } catch {}
+} catch (e) {
+  // If lock exists, and the PID inside is alive, bail out to prevent duplicate dev servers
+  try {
+    const raw = fs.readFileSync(lockFile, 'utf8');
+    const pid = Number((raw || '').trim());
+    if (Number.isFinite(pid)) {
+      try { process.kill(pid, 0); /* no-op test signal */
+        console.warn('[dev-env] Detected existing dev server (pid', pid, '). Skipping duplicate start.');
+        process.exit(0);
+      } catch {
+        // Stale lock; replace
+        try { fs.unlinkSync(lockFile); } catch {}
+      }
+    }
+  } catch {}
+}
+
 // Load .env.development and .env to pass TLS cert paths and other config to Vite
 try {
   const dotenv = await import('dotenv');

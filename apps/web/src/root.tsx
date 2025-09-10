@@ -21,9 +21,7 @@ export default component$(() => {
         {/* Connection hints for CDN assets used by integrations (e.g., Lottie demos) */}
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
         <RouterHead />
-        {/* Small inline CSS to satisfy upcoming UA change: ensure section-contained h1 has explicit size.
-            Utility classes still override. This avoids Lighthouse deprecation warnings. */}
-        <style>{`h1{font-size:2em;line-height:1.2}article h1,aside h1,nav h1,section h1,main h1{font-size:1.5rem;line-height:1.25}`}</style>
+        {/* Heading defaults moved to global.css to avoid inline <style> and JSX escape warnings. */}
         {/* Load small theme/lang initializer as an external file so a strict CSP can be enforced without inline allowances. */}
         <script src={`${import.meta.env.BASE_URL}theme-init.js`} defer />
       </head>

@@ -86,8 +86,11 @@ Available scripts (Bun only):
 # Write PUBLIC_IP/HMR_HOST into .env (called by other scripts automatically)
 bun run docker:env
 
-# Dev: web (Vite+HMR), gateway, Traefik (HTTPS 5173); direct Vite HTTP at 5174
+# Dev: web (Vite+HMR, SSR), gateway, Traefik (HTTPS 5173); direct Vite HTTP at 5174
 bun run docker:dev
+
+# Dev (SSG + live reload, no HMR): fast static rebuild loop
+bun run docker:dev:ssg
 
 # Prod preview: SSG web on 5174, Traefik fronts HTTPS on 5173, gateway behind /api
 bun run docker:prod

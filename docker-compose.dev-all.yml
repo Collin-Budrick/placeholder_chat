@@ -29,7 +29,7 @@ services:
       - "3000:3000"  # Lynx dev
       - "7000:7000"  # Gateway
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"http=require('http');r=http.get('http://127.0.0.1:5174/');r.on('response', s=>process.exit(s.statusCode<500?0:1));r.on('error', ()=>process.exit(1));\" "]
+      test: ["CMD-SHELL", "bun -e \"try{const r=await fetch('http://127.0.0.1:5174/');process.exit(r.status<500?0:1)}catch(e){process.exit(1)}\" "]
       interval: 5s
       timeout: 3s
       retries: 60

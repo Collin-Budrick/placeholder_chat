@@ -13,6 +13,9 @@
 html, body, #root {
   height: 100%;
 }
+/* Heading defaults previously injected inline in root.tsx to satisfy UA changes */
+h1 { font-size: 2em; line-height: 1.2; }
+article h1, aside h1, nav h1, section h1, main h1 { font-size: 1.5rem; line-height: 1.25; }
 /* Enable CSS View Transitions for page-level animations */
 /* Minimal View Transitions for page slides */
 /* Ensure the root participates (override any injected resets) */

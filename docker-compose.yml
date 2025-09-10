@@ -4,9 +4,7 @@ services:
     image: oven/bun:1
     working_dir: /workspace
     command: >
-      sh -lc "bun install --ignore-scripts \
-      && bunx tsc -p packages/shared/tsconfig.build.json || true \
-      && bun apps/web/scripts/dev-with-env.js"
+      sh -lc "if [ ! -d node_modules ] || [ -z \"$(ls -A node_modules 2>/dev/null)\" ]; then echo '[web] installing deps (first run)'; bun install --ignore-scripts; else echo '[web] deps cached; skipping bun install'; fi; bunx tsc -p packages/shared/tsconfig.build.json || true; exec bun apps/web/scripts/dev-with-env.js"
     environment:
       CHOKIDAR_USEPOLLING: "1"
       CHOKIDAR_INTERVAL: "100"
@@ -24,8 +22,10 @@ services:
       NO_SSR: "1"
     volumes:
       - ./:/workspace
-      - /workspace/node_modules
-      - /workspace/apps/web/node_modules
+      # Persist Bun cache and node_modules across container recreations
+      - bun_cache:/root/.bun
+      - root_node_modules:/workspace/node_modules
+      - web_node_modules:/workspace/apps/web/node_modules
     ports:
       - "5175:5174"
     labels:
@@ -57,6 +57,7 @@ services:
   lynx:
     image: oven/bun:1
     working_dir: /workspace
+    profiles: ["lynx"]
     # Prefer docker-specific dev script if present; fallback to default
     command: >
       sh -lc "bun install && exec bun -C apps/lynx run dev:docker"
@@ -70,8 +71,8 @@ services:
       LYNX_TYPECHECK: "0"
     volumes:
       - ./:/workspace
-      - /workspace/node_modules
-      - /workspace/apps/lynx/node_modules
+      - root_node_modules:/workspace/node_modules
+      - lynx_node_modules:/workspace/apps/lynx/node_modules
     tty: true
     stdin_open: true
     labels:
@@ -101,15 +102,15 @@ services:
 
   # --- Rust Gateway (dev API) ---
   gateway:
-    image: rustlang/rust:nightly
+    # Dev image with build deps preinstalled
+    build:
+      context: .
+      dockerfile: docker/gateway.dev.Dockerfile
+    image: stack-gateway-dev
     working_dir: /workspace
-    # Use full cargo path to avoid PATH issues on some hosts
+    # Command provided by the dev image; keep here for clarity
     command: >
-      /bin/bash -lc "set -euo pipefail \
-      && apt-get update \
-      && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends capnproto pkg-config libssl-dev build-essential ca-certificates \
-      && update-ca-certificates \
-      && /usr/local/cargo/bin/cargo --version \
+      /bin/bash -lc "/usr/local/cargo/bin/cargo --version \
       && /usr/local/cargo/bin/cargo run --manifest-path apps/gateway/Cargo.toml"
     environment:
       RUST_LOG: info
@@ -119,8 +120,14 @@ services:
       CORS_ALLOW_ANY_IP_PORTS: "5173"
       # Bind on container network
       GATEWAY_ADDR: 0.0.0.0:7000
+      # Persist target dir for fast incremental builds
+      CARGO_TARGET_DIR: /workspace/target
+      RUSTC_WRAPPER: /usr/bin/sccache
     volumes:
       - ./:/workspace
+      - cargo_registry:/usr/local/cargo/registry
+      - cargo_git:/usr/local/cargo/git
+      - cargo_target:/workspace/target
     healthcheck:
       test: ["CMD-SHELL", "/bin/bash -lc 'exec 3<>/dev/tcp/127.0.0.1/7000 && echo -e \"GET /healthz HTTP/1.0\\r\\n\\r\\n\" >&3 && grep -q ok <&3' "]
       interval: 5s
@@ -182,8 +189,6 @@ services:
     depends_on:
       web:
         condition: service_healthy
-      lynx:
-        condition: service_started
       gateway:
         condition: service_healthy
     labels:
@@ -193,3 +198,12 @@ services:
       - "traefik.http.routers.traefik-host.entrypoints=websecure"
       - "traefik.http.routers.traefik-host.tls=true"
       - "traefik.http.routers.traefik-host.service=api@internal"
+
+volumes:
+  bun_cache:
+  root_node_modules:
+  web_node_modules:
+  lynx_node_modules:
+  cargo_registry:
+  cargo_git:
+  cargo_target:
