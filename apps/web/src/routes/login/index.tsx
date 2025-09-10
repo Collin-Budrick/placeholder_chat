@@ -26,12 +26,19 @@ export default component$(() => {
     try { titleStartKey.value = Date.now(); } catch { /* ignore */ }
   });
 
-  // Motion One: fade/slide in the whole auth area on visibility
+  // Motion One: fade/slide in the whole auth area on visibility.
+  // Defer the lazy import to idle to keep first paint snappy and avoid
+  // competing with route chunk fetches on initial navigation.
   useOn('qvisible', $(() => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const root = authContainer.value; if (!root) return;
-    void animateMotion(root, { opacity: [0,1], y: [24,0] }, { duration: 0.45, easing: 'cubic-bezier(.22,.9,.37,1)' } as any);
+    const idle = (window as any).requestIdleCallback || ((fn: any) => setTimeout(fn, 250));
+    idle(() => {
+      try {
+        void animateMotion(root, { opacity: [0,1], y: [24,0] }, { duration: 0.45, easing: 'cubic-bezier(.22,.9,.37,1)' } as any);
+      } catch { /* ignore */ }
+    });
     // Kick the TypeTitle to type on arrival
     try { titleStartKey.value = Date.now(); } catch { /* ignore */ }
     // Ensure any previous title-typing cache is cleared for auth pages

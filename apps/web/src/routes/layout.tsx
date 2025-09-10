@@ -5,6 +5,7 @@ import type { RequestHandler } from '@builder.io/qwik-city';
 import ScrollProgress from '~/components/ScrollProgress';
 import ScrollReveals from '~/components/ScrollReveals';
 import BottomNav from '~/components/BottomNav';
+import AuthWarmup from '~/components/AuthWarmup';
 import VTGlobal from '~/components/VTGlobal';
 import LenisProvider from '~/components/integrations/LenisProvider';
 
@@ -35,7 +36,13 @@ export default component$(() => {
       {/* Overlay-based scroll fades (top/bottom) */}
       <div class="viewport-fade top" aria-hidden="true" />
       <div class="viewport-fade bottom" aria-hidden="true" />
-      <BottomNav />
+      {/* Warm auth routes early so /login is instant on click */}
+      <AuthWarmup client:load />
+      {
+        // Defer nav hydration until idle in both dev and prod to keep auth pages light.
+        // Nav still prefetches routes on idle/pointerdown, preserving snappy account clicks.
+      }
+      <BottomNav client:idle />
     </>
   );
 });
