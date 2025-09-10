@@ -30,6 +30,19 @@ export default defineConfig(({ command, mode }): UserConfig => {
   const isProdBuild = command === 'build' && (mode === 'production' || process.env.NODE_ENV === 'production');
   const isSsgBuild = process.env.BUILD_TARGET === 'ssg';
   const extraPlugins: any[] = [];
+  // Enable gzip/deflate in dev to improve Lighthouse in docker:dev and direct 5174 access
+  const devCompressPlugin = () => {
+    return {
+      name: 'dev-compression',
+      configureServer(server: any) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          const compression = require('compression');
+          if (compression) server.middlewares.use(compression());
+        } catch {}
+      },
+    } as any;
+  };
   // Add preview-time headers (cache + compression) to improve Lighthouse in preview/proxy setups
   const previewHeadersPlugin = () => {
     return {
@@ -287,6 +300,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
         ssr: true,
         include: ["src/solid/**/*.{tsx,jsx}"],
       }),
+      // Add dev compression when serving (Traefik also compresses, but this helps when accessing 5174 directly)
+      ...(command === 'serve' ? [devCompressPlugin()] : []),
       ...extraPlugins,
       // Improve cache/compression headers when using `vite preview` or Traefik preview proxy
       previewHeadersPlugin(),
@@ -352,12 +367,31 @@ export default defineConfig(({ command, mode }): UserConfig => {
               return Array.from(set);
             })(),
       https: resolveHttpsOptions(),
-      headers: {
-        // Don't cache the server response in dev mode
-        "Cache-Control": "public, max-age=0",
-        // Add HSTS header (browsers ignore it over HTTP, but Lighthouse checks for presence)
-        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
-      },
+      headers: (() => {
+        const csp = [
+          "default-src 'self'",
+          // Allow inline for dev only (Vite injects inline scripts and some frameworks emit small inlines)
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+          // HMR/websocket + SSR proxy connections
+          "connect-src 'self' ws: wss: http: https:",
+          // Styles often use inline during dev (Tailwind, Qwik style injections)
+          "style-src 'self' 'unsafe-inline'",
+          // Safe asset types
+          "img-src 'self' data: blob:",
+          "font-src 'self' data:",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "frame-ancestors 'none'",
+        ].join('; ');
+        return {
+          // Don't cache the server response in dev mode
+          'Cache-Control': 'public, max-age=0',
+          // Add HSTS header (browsers ignore it over HTTP, but Lighthouse checks for presence)
+          'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
+          // Attach a permissive dev CSP to avoid inline/script blocks during HMR
+          'Content-Security-Policy': csp,
+        } as Record<string, string>;
+      })(),
       // Allow HMR over tunnels if provided via env
       // Allow disabling HMR (and its WebSocket) to verify bfcache locally
       // Usage: NO_HMR=1 npm run dev:web

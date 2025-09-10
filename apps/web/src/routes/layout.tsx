@@ -69,21 +69,32 @@ export const onRequest: RequestHandler = (ev) => {
     ev.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
     ev.headers.set('Cross-Origin-Resource-Policy', 'same-origin');
     ev.headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
-    // Reasonable default CSP for Qwik static pages in dev/preview. Keep inline scripts out (theme-init is external).
-    // Note: Adjust connect-src if you call APIs on other origins.
-    const csp = [
-      "default-src 'self'",
-      "base-uri 'self'",
-      "object-src 'none'",
-      "frame-ancestors 'none'",
-      "img-src 'self' data: blob:",
-      "font-src 'self' data:",
-      "style-src 'self' 'unsafe-inline'",
-      "script-src 'self'",
-      "connect-src 'self'",
-      // Allow preconnect hints to public CDNs without fetching actual assets
-      // If you fetch from a CDN, add it to connect-src and its scheme to default-src as needed.
-    ].join('; ');
+    // CSP: permissive for dev (support Vite HMR inline/eval + WS), stricter for prod/SSG.
+    const isDev = (import.meta as any)?.env?.DEV === true || process.env.NODE_ENV !== 'production';
+    const csp = (isDev
+      ? [
+          "default-src 'self'",
+          "base-uri 'self'",
+          "object-src 'none'",
+          "frame-ancestors 'none'",
+          "img-src 'self' data: blob:",
+          "font-src 'self' data:",
+          "style-src 'self' 'unsafe-inline'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+          "connect-src 'self' ws: wss: http: https:",
+        ]
+      : [
+          "default-src 'self'",
+          "base-uri 'self'",
+          "object-src 'none'",
+          "frame-ancestors 'none'",
+          "img-src 'self' data: blob:",
+          "font-src 'self' data:",
+          "style-src 'self' 'unsafe-inline'",
+          "script-src 'self'",
+          "connect-src 'self'",
+        ]
+    ).join('; ');
     ev.headers.set('Content-Security-Policy', csp);
     // CDN cache hint for edge caches (no impact if no CDN in front)
     if (/\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(p)) {

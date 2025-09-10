@@ -35,7 +35,7 @@ services:
       - "traefik.http.routers.web.entrypoints=websecure"
       - "traefik.http.routers.web.tls=true"
       # Add explicit Alt-Svc header advertising HTTP/3
-      - "traefik.http.routers.web.middlewares=web-headers@docker"
+      - "traefik.http.routers.web.middlewares=web-headers@docker,compress@file"
       - "traefik.http.middlewares.web-headers.headers.customResponseHeaders.Alt-Svc=h3=\":5173\"; ma=86400"
       # Enforce HSTS over HTTPS responses (in addition to app headers)
       - "traefik.http.middlewares.web-headers.headers.stsSeconds=63072000"
@@ -46,7 +46,7 @@ services:
       - "traefik.http.routers.web.priority=10"
       - "traefik.http.services.web.loadbalancer.server.port=5174"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"http=require('http');r=http.get('http://127.0.0.1:5174/');r.on('response', s=>process.exit(s.statusCode<500?0:1));r.on('error', ()=>process.exit(1));\" "]
+      test: ["CMD-SHELL", "bun -e \"try{const r=await fetch('http://127.0.0.1:5174/');process.exit(r.status<500?0:1)}catch(e){process.exit(1)}\" "]
       interval: 5s
       timeout: 3s
       retries: 60
@@ -93,7 +93,7 @@ services:
       - "traefik.http.routers.lynx.priority=100"
       - "traefik.http.services.lynx.loadbalancer.server.port=3000"
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"http=require('http');r=http.get('http://127.0.0.1:3000/');r.on('response', s=>process.exit(s.statusCode<500?0:1));r.on('error', ()=>process.exit(1));\" "]
+      test: ["CMD-SHELL", "bun -e \"try{const r=await fetch('http://127.0.0.1:3000/');process.exit(r.status<500?0:1)}catch(e){process.exit(1)}\" "]
       interval: 5s
       timeout: 3s
       retries: 60
@@ -135,6 +135,7 @@ services:
       - "traefik.http.routers.gateway.tls=true"
       # Ensure API route wins over generic web route
       - "traefik.http.routers.gateway.priority=200"
+      - "traefik.http.routers.gateway.middlewares=compress@file"
       - "traefik.http.services.gateway.loadbalancer.server.port=7000"
 
   # --- Tauri build (Linux target) ---

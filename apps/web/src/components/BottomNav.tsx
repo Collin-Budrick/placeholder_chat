@@ -174,7 +174,7 @@ export default component$(() => {
     const left = actRect.left - ulRect.left;
     const width = actRect.width;
 
-    // Apply width immediately (no width transition) then animate transform for smooth movement.
+    // Apply width immediately (no width transition) then set transform; rely on CSS transitions for smoothing.
     sel.style.width = `${Math.round(width)}px`;
 
     // Use requestAnimationFrame to ensure transform transition picks up the change cleanly.
