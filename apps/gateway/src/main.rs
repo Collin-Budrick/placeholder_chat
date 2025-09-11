@@ -5,7 +5,7 @@
 // - It uses Rust and several libraries to run a web server that handles HTTP
 //   routes and WebSocket connections.
 // - If you know TypeScript: think of this like the `index.ts` that sets up an
-//   Express/Koa/Fastify server, defines routes, middleware, and starts listening.
+//   HTTP server, defines routes, middleware, and starts listening.
 // - The comments aim to explain "what" each piece does and "why" it's here,
 //   not to change any behavior of the program.
 //

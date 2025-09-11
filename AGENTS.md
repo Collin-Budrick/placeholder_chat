@@ -132,9 +132,8 @@ These pointers help agents find the right files quickly. Each entry lists a path
 - `apps/mobile/src/main.rs`: Mobile entry (Rust). Example integration point for tokens and IPC.
 - `apps/mobile/src/tokens.rs` / `apps/mobile/lynx.tokens.css`: Generated design tokens for mobile (Rust/CSS consumers).
 
-### Root Node/Qwik Server
-- `src/plugins/fastify-qwik.ts`: Fastify plugin to serve Qwik build/asset dirs and forward to Qwik City router/notFound.
-- `src/entry.fastify.tsx`: Fastify server entry. Registers plugin and starts the HTTP server.
+### Root Qwik Server
+Static assets are served by Bun in Docker and Vite during development. There is no standalone Node server adapter in this repo.
 
 ### Infra & Docker
 - `docker/web.Dockerfile`: Bun-based builder for Qwik app and static runner image (serves `dist` with Bun).
