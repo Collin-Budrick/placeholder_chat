@@ -123,6 +123,14 @@ export const MotionOneDemo = component$(() => {
             style={{ willChange: "transform" }}
             aria-label="Animated demo box"
             role="button"
+            tabIndex={0}
+            onKeyDown$={$((e: KeyboardEvent) => {
+              const code = e.key || (e as any).code;
+              if (code === 'Enter' || code === ' ' || code === 'Spacebar') {
+                e.preventDefault();
+                try { (e.currentTarget as HTMLElement)?.click?.(); } catch { /* ignore */ }
+              }
+            })}
             title="Click for fireworks"
           />
         </div>

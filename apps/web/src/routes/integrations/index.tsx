@@ -5,6 +5,7 @@ import FakerDemo from "../../components/integrations/FakerDemo";
 import PandaDemo from "../../components/integrations/PandaDemo";
 import MotionOneDemo from "../../components/integrations/MotionOneDemo";
 import DaisyButtonsDemo from "../../components/integrations/DaisyButtonsDemo";
+import GsapDemo from "../../components/integrations/GsapDemo";
 import { PreactCounterIsland } from "../../components/PreactCounterIsland";
 
 export default component$(() => {
@@ -20,6 +21,7 @@ export default component$(() => {
         <PandaDemo />
         {import.meta.env.DEV ? <MotionOneDemo client:idle /> : <MotionOneDemo />}
         <DaisyButtonsDemo />
+        {import.meta.env.DEV ? <GsapDemo client:idle /> : <GsapDemo />}
         <div class="space-y-2">
           <h2 class="text-xl font-semibold">Preact Island</h2>
           <PreactCounterIsland client:visible />

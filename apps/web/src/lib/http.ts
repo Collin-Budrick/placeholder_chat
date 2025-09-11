@@ -14,12 +14,21 @@ if (!isBrowser) {
   baseURL = raw.includes('localhost') ? raw.replace('localhost', '127.0.0.1') : raw;
 }
 
+// Toggle lightweight HTTP logging. Enabled by default in dev, opt-in in prod via VITE_LOG_HTTP=1
+const __env: any = (import.meta as any)?.env || {};
+const LOG_HTTP: boolean = Boolean(
+  __env?.DEV === true ||
+  __env?.VITE_LOG_HTTP === '1' ||
+  (typeof process !== 'undefined' && (process.env?.VITE_LOG_HTTP === '1' || process.env?.LOG_HTTP === '1')),
+);
+
 export const api = ofetch.create({
   baseURL,
   headers: {
     Accept: 'application/json',
   },
   async onResponseError(args: any) {
+    if (!LOG_HTTP) return; // keep silent unless logging enabled
     try {
       // ofetch's handler shape can vary; be defensive with types.
       const { request, response, options } = args || {};
@@ -83,15 +92,20 @@ export async function apiFetch(input: RequestInfo, init?: RequestInit): Promise<
 
   try {
     const response = await fetch(input, init);
-    // clone response to read body for logging without consuming original response
+    // Only log when enabled; avoid heavy body reads for non-text/large payloads
     let respText = '';
-    try {
-      respText = await response.clone().text();
-    } catch {
-      respText = '';
+    if (LOG_HTTP) {
+      const ct = (response.headers.get('content-type') || '').toLowerCase();
+      const lenHeader = response.headers.get('content-length');
+      const len = lenHeader ? parseInt(lenHeader, 10) : NaN;
+      const isTextual = ct.startsWith('application/json') || ct.startsWith('text/');
+      const smallEnough = Number.isFinite(len) ? len <= 64 * 1024 : false; // only when length known and small
+      if (isTextual && smallEnough) {
+        try { respText = await response.clone().text(); } catch { respText = ''; }
+      }
     }
 
-    await logApi({
+    LOG_HTTP && (await logApi({
       phase: 'response',
       url,
       method,
@@ -107,11 +121,11 @@ export async function apiFetch(input: RequestInfo, init?: RequestInit): Promise<
         bodyPreview: respText ? respText.slice(0, 1024) : undefined,
         bodySize: respText ? respText.length : undefined,
       },
-    });
+    }));
 
     return response;
   } catch (err: any) {
-    await logApi({
+    LOG_HTTP && (await logApi({
       phase: 'error',
       url,
       method,
@@ -122,7 +136,7 @@ export async function apiFetch(input: RequestInfo, init?: RequestInit): Promise<
         bodySize: bodyPreview.size,
       },
       message: String(err?.message ?? err),
-    });
+    }));
     throw err;
   }
 }

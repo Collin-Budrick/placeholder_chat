@@ -41,6 +41,11 @@ export default component$(() => {
   const prevIndex = useSignal<number>(-1);
   const warmed = useSignal<boolean>(false);
   const navBusy = useSignal<boolean>(false);
+  // Defer background warmups until the user interacts (reduces unused JS on first paint)
+  const interacted = useSignal<boolean>(false);
+  useOnDocument('pointerdown', $(() => { interacted.value = true; }));
+  useOnDocument('keydown', $(() => { interacted.value = true; }));
+  useOnDocument('touchstart', $(() => { interacted.value = true; }));
 
   // Prefetch route data (and trigger Qwik's internal preloads) to smooth the very first nav
   const prefetchRoute = $((path: string) => {
@@ -57,6 +62,9 @@ export default component$(() => {
   // Warm auth routes in the background for instant nav from public pages
   useTask$(() => {
     if (typeof window === 'undefined') return;
+    // Gate idle warmup until user interacts once
+    const i = interacted.value; // track signal
+    if (!i) return;
     const p = loc.url.pathname || '/';
     // Only warm from public, light pages
     if (p.startsWith('/login') || p.startsWith('/signup')) return;
@@ -70,6 +78,9 @@ export default component$(() => {
   // Idle module-preload for auth routes: fetch route chunks ahead of time
   useTask$(() => {
     if (typeof window === 'undefined') return;
+    // Gate idle warmup until user interacts once
+    const i = interacted.value; // track signal
+    if (!i) return;
     const p = loc.url.pathname || '/';
     if (p.startsWith('/login') || p.startsWith('/signup')) return;
     const conn: any = (navigator as any)?.connection || (navigator as any)?.mozConnection || (navigator as any)?.webkitConnection;

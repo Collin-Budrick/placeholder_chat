@@ -314,10 +314,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
       qwikCity({ trailingSlash: false }),
       qwikVite(),
       tsconfigPaths({ root: "." }),
-      solid({
-        ssr: true,
-        include: ["src/solid/**/*.{tsx,jsx}"],
-      }),
+      // Only enable Solid plugin if the project has any Solid islands
+      ...(fs.existsSync(join(__dirname, 'src', 'solid'))
+        ? [
+            solid({
+              ssr: true,
+              include: ["src/solid/**/*.{tsx,jsx}"],
+            }),
+          ]
+        : []),
       // Add dev compression when serving (Traefik also compresses, but this helps when accessing 5174 directly)
       ...(command === 'serve' ? [devCompressPlugin()] : []),
       ...extraPlugins,
@@ -346,6 +351,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         'preact/compat',
         'preact/jsx-runtime',
         'motion',
+        'gsap',
         '@faker-js/faker',
         'valibot',
         'lottie-web/build/player/lottie_light',
@@ -486,8 +492,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
       },
     },
     build: {
-      // Enable sourcemaps for production builds to aid debugging and Lighthouse insights
-      sourcemap: true,
+      // Emit production sourcemaps for better debugging and Lighthouse insights.
+      // Disable by setting VITE_SOURCEMAPS=0 during build if you don't want them.
+      sourcemap: process.env.VITE_SOURCEMAPS === '0' ? false : true,
       // Avoid nuking dist when using parallel --watch processes (client + SSG)
       emptyOutDir: process.env.VITE_WATCH === '1' ? false : true,
       // Reduce spurious warnings and split big vendor deps
@@ -503,6 +510,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
               if (id.includes('@builder.io/')) return undefined;
               // Split Preact + Qwik-React bridge into a dedicated chunk, so it's fetched only when a Preact island runs
               if (id.includes('preact') || id.includes('@preact') || id.includes('/preact/compat') || id.includes('@builder.io/qwik-react')) return 'vendor-preact';
+              // Split icon library to keep core smaller
+              if (id.includes('@qwikest/icons')) return 'vendor-icons';
               if (id.includes('gsap')) return 'vendor-gsap';
               if (id.includes('@lottiefiles')) return 'vendor-lottie';
               if (id.includes('@modular-forms')) return 'vendor-mod-forms';

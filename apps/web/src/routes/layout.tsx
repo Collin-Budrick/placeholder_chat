@@ -1,13 +1,11 @@
-import { component$, Slot } from '@builder.io/qwik';
-import fs from 'node:fs';
-import path from 'node:path';
+import { component$, Slot, isDev } from '@builder.io/qwik';
 import type { RequestHandler } from '@builder.io/qwik-city';
 import ScrollProgress from '~/components/ScrollProgress';
 import ScrollReveals from '~/components/ScrollReveals';
 import BottomNav from '~/components/BottomNav';
 import AuthWarmup from '~/components/AuthWarmup';
 import VTGlobal from '~/components/VTGlobal';
-import LenisProvider from '~/components/integrations/LenisProvider';
+import SmoothScrollProvider from '~/components/integrations/SmoothScrollProvider';
 
 /**
  * Layout component: renders the site navigation and a <Slot /> for route content.
@@ -25,19 +23,21 @@ export default component$(() => {
   // View transition pre-hydration script removed.
   return (
     <>
-      <ScrollProgress />
-      <VTGlobal />
-      <LenisProvider>
-      <main id="content" class="edge-fades flex-1 grid place-items-center pb-24">
-        <Slot />
-        <ScrollReveals />
+      <ScrollProgress client:idle />
+      {isDev ? <VTGlobal client:load /> : <VTGlobal client:idle />}
+      <SmoothScrollProvider client:load>
+      <main id="content" class="edge-fades flex-1 overflow-auto">
+        <div id="scroll-inner" class="grid place-items-center min-h-full pb-24">
+          <Slot />
+          <ScrollReveals client:idle />
+        </div>
       </main>
-      </LenisProvider>
+      </SmoothScrollProvider>
       {/* Overlay-based scroll fades (top/bottom) */}
       <div class="viewport-fade top" aria-hidden="true" />
       <div class="viewport-fade bottom" aria-hidden="true" />
-      {/* Warm auth routes early so /login is instant on click */}
-      <AuthWarmup client:load />
+      {/* In production, idle warmup reduces first paint JS; keep eager in dev */}
+      {isDev ? <AuthWarmup client:load /> : <AuthWarmup client:idle />}
       {
         // Defer nav hydration until idle in both dev and prod to keep auth pages light.
         // Nav still prefetches routes on idle/pointerdown, preserving snappy account clicks.
@@ -137,7 +137,7 @@ export const onRequest: RequestHandler = (ev) => {
 
 // Explicit list of static routes to prerender at build time
 // (handy for environments without a crawler during build).
-export const onStaticGenerate = () => {
+export const onStaticGenerate = async () => {
   const base = [
     '/',
     '/about',
@@ -151,8 +151,10 @@ export const onStaticGenerate = () => {
     const file = (typeof process !== 'undefined' && (process as any).env?.SSG_ROUTES_FILE) as string | undefined;
     if (file) {
       try {
-        const p = path.resolve(file);
-        const raw = fs.readFileSync(p, 'utf8');
+        const { resolve } = await import('node:path');
+        const { readFileSync } = await import('node:fs');
+        const p = resolve(file);
+        const raw = readFileSync(p, 'utf8');
         const arr = JSON.parse(raw);
         if (Array.isArray(arr) && arr.length > 0) {
           return { routes: Array.from(new Set(arr.map((s: string) => (s && s[0] !== '/' ? '/' + s : s)))) };

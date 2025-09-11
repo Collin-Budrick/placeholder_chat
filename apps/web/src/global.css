@@ -13,6 +13,26 @@
 html, body, #root {
   height: 100%;
 }
+/* Keep native scrollbar visible and CSS smooth-scroll as a baseline fallback */
+html { scroll-behavior: smooth; }
+html, body { overflow-y: auto; }
+#content { scroll-behavior: auto; }
+
+/* Hide page scrollbar while keeping scroll behavior */
+html, body, #content {
+  /* Firefox */
+  scrollbar-width: none;
+  /* IE/Edge legacy */
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#content::-webkit-scrollbar {
+  /* WebKit/Blink */
+  display: none;
+  width: 0;
+  height: 0;
+}
 /* Heading defaults in base layer so utilities can override */
 @layer base {
   h1 { font-size: 2em; line-height: 1.2; }
@@ -416,6 +436,7 @@ html[data-theme='light'] .bottom-nav .nav-sep, html[data-theme='white'] .bottom-
 */
 /* Remove mask-based edge fades to avoid scrollbar interaction issues */
 #content.edge-fades { position: relative; min-height: 100vh; }
+#scroll-inner { will-change: transform; }
 
 /* Overlay-based scroll fades (do not affect scrollbar rendering) */
 .viewport-fade {

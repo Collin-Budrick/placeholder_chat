@@ -86,7 +86,7 @@ export const LottieDemo = component$(() => {
           background: 'transparent',
           isolation: 'isolate',
         }}
-        aria-label="Lottie animation"
+        aria-hidden="true"
       />
     </div>
   );
