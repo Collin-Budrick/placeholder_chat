@@ -1,18 +1,18 @@
 {
-  "record": {
-    "hosts": [
-      "localhost",
-      "192.168.1.19",
-      "127.0.0.1",
-      "172.24.0.1",
-      "172.23.80.1",
-      "::1",
-      "0.0.0.0"
-    ],
-    "hash": {
-      "key": "1d3f2eac9ec4197bd3288e3eb515c46592d92759a13aa3fc8f8849763605a015",
-      "cert": "f004938543ea6dab78a2d716c4a10b322553c3f7cfc697628cb61939ccef629c"
-    }
-  },
-  "configFilePath": "C:\\Users\\Collin\\Documents\\Projects\\Stack\\apps\\web\\apps\\web\\certs\\config.json"
+	"record": {
+		"hosts": [
+			"localhost",
+			"192.168.1.19",
+			"127.0.0.1",
+			"172.24.0.1",
+			"172.23.80.1",
+			"::1",
+			"0.0.0.0"
+		],
+		"hash": {
+			"key": "1d3f2eac9ec4197bd3288e3eb515c46592d92759a13aa3fc8f8849763605a015",
+			"cert": "f004938543ea6dab78a2d716c4a10b322553c3f7cfc697628cb61939ccef629c"
+		}
+	},
+	"configFilePath": "C:\\Users\\Collin\\Documents\\Projects\\Stack\\apps\\web\\apps\\web\\certs\\config.json"
 }

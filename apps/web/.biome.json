@@ -1,0 +1,100 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "include": [
+      "src",
+      "*.config.ts",
+      "*.config.cjs"
+    ],
+    "ignore": [
+      "dist",
+      "build",
+      "node_modules",
+      "public/vendor",
+      "certs",
+      "logs",
+      "tmp",
+      ".vite",
+      "**/.vite",
+      "**/.qwik",
+      "src/global.css"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "organizeImports": { "enabled": true },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "a11y": {
+        "useButtonType": "off",
+        "useSemanticElements": "off",
+        "useAriaPropsForRole": "off",
+        "useFocusableInteractive": "off",
+        "noNoninteractiveElementToInteractiveRole": "off",
+        "noLabelWithoutControl": "warn"
+      },
+      "style": {
+        "useTemplate": "warn",
+        "noDescendingSpecificity": "off"
+      },
+      "correctness": {
+        "noUnknownTypeSelector": "off"
+      },
+      "suspicious": {
+        "noUnknownAtRules": "off",
+        "noAssignInExpressions": "warn",
+        "noExplicitAny": "warn",
+        "useIterableCallbackReturn": "warn",
+        "noAsyncPromiseExecutor": "warn"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "include": [
+        "src/components/integrations/**",
+        "src/components/preact/**",
+        "src/routes/integrations/**"
+      ],
+      "linter": { "enabled": false }
+    },
+    {
+      "include": [
+        "src/routes/signup/**"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": { "noLabelWithoutControl": "off" },
+          "suspicious": { "noExplicitAny": "warn", "noAssignInExpressions": "warn" },
+          "style": { "useTemplate": "warn" }
+        }
+      }
+    },
+    {
+      "include": [
+        "src/routes/login/**",
+        "src/components/BottomNav.tsx",
+        "src/components/BackButton.tsx",
+        "src/components/ScrollReveals.tsx",
+        "src/components/AuthWarmup.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": { "noAssignInExpressions": "warn" },
+          "style": { "useTemplate": "warn" }
+        }
+      }
+    }
+  ]
+}

@@ -1,294 +1,545 @@
 /* src/global.css */
 @import "tailwindcss";
 /* Load Tailwind plugins (Tailwind v4 style) */
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind plugin directive */
 @plugin "daisyui";
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind plugin directive */
 @plugin "tailwindcss-animate";
 /* Fallback include: In some preview/proxy setups Tailwind's @plugin processing can be skipped.
    Import DaisyUI's prebuilt CSS to ensure components (e.g., .btn) and theme variables exist. */
 /* Note: avoid importing full DaisyUI bundle here to keep CSS small. */
-/* Include Panda CSS (styled-system) so token variables are available */
-@import "../styled-system/styles.css";
+/* Panda CSS tokens removed: relying on Tailwind/DaisyUI tokens only */
 
 /* Global styles (minimal, theme-aware) */
-html, body, #root {
-  height: 100%;
+html,
+body,
+#root {
+	height: 100%;
 }
 /* Keep native scrollbar visible and CSS smooth-scroll as a baseline fallback */
-html { scroll-behavior: smooth; }
-html, body { overflow-y: auto; }
-#content { scroll-behavior: auto; }
+html {
+	scroll-behavior: smooth;
+}
+html,
+body {
+	overflow-y: auto;
+}
+#content {
+	scroll-behavior: auto;
+}
 
 /* Hide page scrollbar while keeping scroll behavior */
-html, body, #content {
-  /* Firefox */
-  scrollbar-width: none;
-  /* IE/Edge legacy */
-  -ms-overflow-style: none;
+html,
+body,
+#content {
+	/* Firefox */
+	scrollbar-width: none;
+	/* IE/Edge legacy */
+	-ms-overflow-style: none;
 }
 html::-webkit-scrollbar,
 body::-webkit-scrollbar,
 #content::-webkit-scrollbar {
-  /* WebKit/Blink */
-  display: none;
-  width: 0;
-  height: 0;
+	/* WebKit/Blink */
+	display: none;
+	width: 0;
+	height: 0;
 }
 /* Heading defaults in base layer so utilities can override */
 @layer base {
-  h1 { font-size: 2em; line-height: 1.2; }
-  article h1, aside h1, nav h1, section h1, main h1 { font-size: 1.5rem; line-height: 1.25; }
+	h1 {
+		font-size: 2em;
+		line-height: 1.2;
+	}
+	article h1,
+	aside h1,
+	nav h1,
+	section h1,
+	main h1 {
+		font-size: 1.5rem;
+		line-height: 1.25;
+	}
 }
 /* Enable CSS View Transitions for page-level animations */
 /* Minimal View Transitions for page slides */
 /* Ensure the root participates (override any injected resets) */
-html { view-transition-name: root !important; }
-#content { view-transition-name: page; contain: paint; will-change: transform; transform: translateZ(0); backface-visibility: hidden; }
+html {
+	view-transition-name: root;
+}
+#content {
+	view-transition-name: page;
+	contain: paint;
+	will-change: transform;
+	transform: translateZ(0);
+	backface-visibility: hidden;
+}
 
-@keyframes vt-in-right { from { transform: translateX(100%); opacity: .96; } to { transform: translateX(0); opacity: 1; } }
-@keyframes vt-out-left { from { transform: translateX(0); opacity: 1; } to { transform: translateX(-100%); opacity: .96; } }
-@keyframes vt-in-left { from { transform: translateX(-100%); opacity: .96; } to { transform: translateX(0); opacity: 1; } }
-@keyframes vt-out-right { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: .96; } }
+@keyframes vt-in-right {
+	from {
+		transform: translateX(100%);
+		opacity: 0.96;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+@keyframes vt-out-left {
+	from {
+		transform: translateX(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateX(-100%);
+		opacity: 0.96;
+	}
+}
+@keyframes vt-in-left {
+	from {
+		transform: translateX(-100%);
+		opacity: 0.96;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+@keyframes vt-out-right {
+	from {
+		transform: translateX(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateX(100%);
+		opacity: 0.96;
+	}
+}
 
 /* Slide in from the right when target icon is to the right */
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
 html[data-vt-nav="1"][data-vt-dir="right"]::view-transition-old(page),
-html[data-vt-nav="1"][data-vt-dir="right"] ::view-transition-old(page) {
-  animation: vt-out-left 420ms cubic-bezier(.22,.9,.37,1) both;
-  backface-visibility: hidden; transform: translateZ(0);
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
+	html[data-vt-nav="1"][data-vt-dir="right"]::view-transition-old(page) {
+	animation: vt-out-left 420ms cubic-bezier(0.22, 0.9, 0.37, 1) both;
+	backface-visibility: hidden;
+	transform: translateZ(0);
 }
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
 html[data-vt-nav="1"][data-vt-dir="right"]::view-transition-new(page),
-html[data-vt-nav="1"][data-vt-dir="right"] ::view-transition-new(page) {
-  animation: vt-in-right 420ms cubic-bezier(.22,.9,.37,1) both;
-  backface-visibility: hidden; transform: translateZ(0);
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
+	html[data-vt-nav="1"][data-vt-dir="right"]::view-transition-new(page) {
+	animation: vt-in-right 420ms cubic-bezier(0.22, 0.9, 0.37, 1) both;
+	backface-visibility: hidden;
+	transform: translateZ(0);
 }
 
 /* Slide in from the left when target icon is to the left */
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
 html[data-vt-nav="1"][data-vt-dir="left"]::view-transition-old(page),
-html[data-vt-nav="1"][data-vt-dir="left"] ::view-transition-old(page) {
-  animation: vt-out-right 420ms cubic-bezier(.22,.9,.37,1) both;
-  backface-visibility: hidden; transform: translateZ(0);
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
+	html[data-vt-nav="1"][data-vt-dir="left"]::view-transition-old(page) {
+	animation: vt-out-right 420ms cubic-bezier(0.22, 0.9, 0.37, 1) both;
+	backface-visibility: hidden;
+	transform: translateZ(0);
 }
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
 html[data-vt-nav="1"][data-vt-dir="left"]::view-transition-new(page),
-html[data-vt-nav="1"][data-vt-dir="left"] ::view-transition-new(page) {
-  animation: vt-in-left 420ms cubic-bezier(.22,.9,.37,1) both;
-  backface-visibility: hidden; transform: translateZ(0);
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
+	html[data-vt-nav="1"][data-vt-dir="left"]::view-transition-new(page) {
+	animation: vt-in-left 420ms cubic-bezier(0.22, 0.9, 0.37, 1) both;
+	backface-visibility: hidden;
+	transform: translateZ(0);
 }
 
 /* Fade effect for profile and logout navigations */
-@keyframes vt-new-fade { from { opacity: 0 } to { opacity: 1 } }
-@keyframes vt-old-fade { from { opacity: 1 } to { opacity: 0 } }
-html[data-vt-effect="fade"]::view-transition-old(page),
-html[data-vt-effect="fade"] ::view-transition-old(page) {
-  animation: vt-old-fade 280ms ease-out both;
+@keyframes vt-new-fade {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }
+@keyframes vt-old-fade {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
+html[data-vt-effect="fade"]::view-transition-old(page),
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
+	html[data-vt-effect="fade"]::view-transition-old(page) {
+	animation: vt-old-fade 280ms ease-out both;
+}
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
 html[data-vt-effect="fade"]::view-transition-new(page),
-html[data-vt-effect="fade"] ::view-transition-new(page) {
-  animation: vt-new-fade 320ms ease-out both;
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
+	html[data-vt-effect="fade"]::view-transition-new(page) {
+	animation: vt-new-fade 320ms ease-out both;
 }
 
 /* Hide incoming login DOM while VT is running to prevent pre-flash */
-html[data-vt-target="login"][data-vt-nav="1"] #login-root { visibility: hidden !important; opacity: 0 !important; }
+html[data-vt-target="login"][data-vt-nav="1"] #login-root {
+	visibility: hidden;
+	opacity: 0;
+}
 /* Hide incoming page DOM during VT to avoid double-paint and flashes.
    We scope to when a vt target is set so non-VT updates don't blank content. */
 /* Avoid globally hiding incoming content. Let VT snapshots render for smoothness. */
 
 /* Disable UA root cross-fade during nav slides; animate only page */
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
 html[data-vt-nav="1"]::view-transition-old(root),
-html[data-vt-nav="1"]::view-transition-new(root) {
-  animation: none !important;
-  mix-blend-mode: normal;
+/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
+	html[data-vt-nav="1"]::view-transition-new(root) {
+	animation: none;
+	mix-blend-mode: normal;
 }
 
 /* Fallback CSS removed; pure View Transitions mode */
 body {
-  margin: 0;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+	margin: 0;
+	font-family:
+		Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+		"Helvetica Neue", Arial;
 }
 /* Enforce pure black + white in OLED theme for guaranteed contrast */
-html[data-theme='dark'], html[data-theme='oled'] { color-scheme: dark; }
-html[data-theme='light'], html[data-theme='white'] { color-scheme: light; }
-html[data-theme='dark'] body, html[data-theme='oled'] body { background-color: #000; color: #fff; }
-html[data-theme='dark'] .oled-glass, html[data-theme='oled'] .oled-glass { background-color: #000 !important; backdrop-filter: none !important; }
+html[data-theme="dark"],
+html[data-theme="oled"] {
+	color-scheme: dark;
+}
+html[data-theme="light"],
+html[data-theme="white"] {
+	color-scheme: light;
+}
+html[data-theme="dark"] body,
+html[data-theme="oled"] body {
+	background-color: #000;
+	color: #fff;
+}
+html[data-theme="dark"] .oled-glass,
+html[data-theme="oled"] .oled-glass {
+	background-color: #000;
+	backdrop-filter: none;
+}
 
 ::selection {
-  background: color-mix(in oklab, #C7B7FF 35%, black);
-  color: #000;
+	background: color-mix(in oklab, #c7b7ff 35%, black);
+	color: #000;
 }
 
 /* Improve selection contrast per theme:
    - Light theme: selection uses a dark translucent overlay and light text for readability.
    - Dark/OLED themes: selection uses the existing tint but ensure text remains light.
 */
-html[data-theme='light'] ::selection,
-html[data-theme='white'] ::selection {
-  background: rgba(0,0,0,0.75);
-  color: #fff;
+html[data-theme="light"] ::selection,
+html[data-theme="white"] ::selection {
+	background: rgba(0, 0, 0, 0.75);
+	color: #fff;
 }
 
-html[data-theme='dark'] ::selection,
-html[data-theme='oled'] ::selection {
-  background: color-mix(in oklab, #C7B7FF 35%, black);
-  color: #fff;
+html[data-theme="dark"] ::selection,
+html[data-theme="oled"] ::selection {
+	background: color-mix(in oklab, #c7b7ff 35%, black);
+	color: #fff;
 }
 
 /* Theme icon flicker fix: hide inactive icon based on theme at first paint */
-html[data-theme='dark'] .theme-icon-sun, html[data-theme='oled'] .theme-icon-sun { display: none; }
-html[data-theme='light'] .theme-icon-moon, html[data-theme='white'] .theme-icon-moon { display: none; }
+html[data-theme="dark"] .theme-icon-sun,
+html[data-theme="oled"] .theme-icon-sun {
+	display: none;
+}
+html[data-theme="light"] .theme-icon-moon,
+html[data-theme="white"] .theme-icon-moon {
+	display: none;
+}
 
 /* Light theme background: moving pastel flow behind acrylic panels */
 @keyframes pastel-spin {
-  0% { transform: rotate(0turn) scale(1.25); }
-  100% { transform: rotate(1turn) scale(1.25); }
+	0% {
+		transform: rotate(0turn) scale(1.25);
+	}
+	100% {
+		transform: rotate(1turn) scale(1.25);
+	}
 }
 
-html[data-theme='light'] body::before, html[data-theme='white'] body::before {
-  content: "";
-  position: fixed;
-  inset: -15vh -15vw;
-  pointer-events: none;
-  background: conic-gradient(
-      from 180deg at 50% 50%,
-      rgba(199,183,255,0.35),
-      rgba(183,224,255,0.35),
-      rgba(191,255,224,0.35),
-      rgba(255,214,183,0.35),
-      rgba(255,192,225,0.35),
-      rgba(199, 183, 255, 0.726)
-    );
-  filter: blur(80px) saturate(1.15);
-  opacity: 0.55;
-  transform: translateZ(0);
-  animation: pastel-spin 42s linear infinite;
+html[data-theme="light"] body::before,
+html[data-theme="white"] body::before {
+	content: "";
+	position: fixed;
+	inset: -15vh -15vw;
+	pointer-events: none;
+	background: conic-gradient(
+		from 180deg at 50% 50%,
+		rgba(199, 183, 255, 0.35),
+		rgba(183, 224, 255, 0.35),
+		rgba(191, 255, 224, 0.35),
+		rgba(255, 214, 183, 0.35),
+		rgba(255, 192, 225, 0.35),
+		rgba(199, 183, 255, 0.726)
+	);
+	filter: blur(80px) saturate(1.15);
+	opacity: 0.55;
+	transform: translateZ(0);
+	animation: pastel-spin 42s linear infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-theme='light'] body::before, html[data-theme='white'] body::before { animation: none; }
+	html[data-theme="light"] body::before,
+	html[data-theme="white"] body::before {
+		animation: none;
+	}
 }
 
 /* Page slide transition using the View Transitions API */
 /* Seamless viewport-like slide between pages */
-@keyframes vt-in-right { from { transform: translateX(100%); } to { transform: translateX(0); } }
-@keyframes vt-out-left { from { transform: translateX(0); } to { transform: translateX(-100%); } }
-@keyframes vt-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-@keyframes vt-out-right { from { transform: translateX(0); } to { transform: translateX(100%); } }
+@keyframes vt-in-right {
+	from {
+		transform: translateX(100%);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+@keyframes vt-out-left {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-100%);
+	}
+}
+@keyframes vt-in-left {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(0);
+	}
+}
+@keyframes vt-out-right {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(100%);
+	}
+}
 /* Auth-specific vertical slides */
-@keyframes vt-in-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
-@keyframes vt-out-down { from { transform: translateY(0); } to { transform: translateY(100%); } }
-@keyframes vt-in-down { from { transform: translateY(-100%); } to { transform: translateY(0); } }
-@keyframes vt-out-up { from { transform: translateY(0); } to { transform: translateY(-100%); } }
-@keyframes vt-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes vt-in-up {
+	from {
+		transform: translateY(100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+@keyframes vt-out-down {
+	from {
+		transform: translateY(0);
+	}
+	to {
+		transform: translateY(100%);
+	}
+}
+@keyframes vt-in-down {
+	from {
+		transform: translateY(-100%);
+	}
+	to {
+		transform: translateY(0);
+	}
+}
+@keyframes vt-out-up {
+	from {
+		transform: translateY(0);
+	}
+	to {
+		transform: translateY(-100%);
+	}
+}
+@keyframes vt-fade-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
 /* Sequential fade: old fades out first half, new fades in second half */
-@keyframes vt-old-seq-fade { 0%, 49.9% { opacity: 1 } 50%, 100% { opacity: 0 } }
-@keyframes vt-new-seq-fade { 0%, 50% { opacity: 0 } 100% { opacity: 1 } }
+@keyframes vt-old-seq-fade {
+	0%,
+	49.9% {
+		opacity: 1;
+	}
+	50%,
+	100% {
+		opacity: 0;
+	}
+}
+@keyframes vt-new-seq-fade {
+	0%,
+	50% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
 /* Helper class for pre-fading the auth container before VT starts */
-.auth-fade-out { animation: vt-fade-out 300ms ease-out forwards; }
+.auth-fade-out {
+	animation: vt-fade-out 300ms ease-out forwards;
+}
 /* View Transition rules removed */
 /* View Transition rules removed */
 
 /* Content visibility utility: hides rendering work for offscreen sections until scrolled near.
    Provide a reasonable intrinsic size to avoid layout shifts when it becomes visible. */
-.cv-auto { content-visibility: auto; contain-intrinsic-size: 1px 800px; }
+.cv-auto {
+	content-visibility: auto;
+	contain-intrinsic-size: 1px 800px;
+}
 
 /* Acrylic glass utility (Windows 11-like) */
 .acrylic {
-  backdrop-filter: blur(14px) saturate(1.35);
-  -webkit-backdrop-filter: blur(14px) saturate(1.35);
-  background: rgba(255,255,255,0.55);
-  border: 1px solid rgba(255,255,255,0.35);
-  box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 10px 35px rgba(0,0,0,0.06);
+	backdrop-filter: blur(14px) saturate(1.35);
+	-webkit-backdrop-filter: blur(14px) saturate(1.35);
+	background: rgba(255, 255, 255, 0.55);
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	box-shadow:
+		0 1px 0 rgba(255, 255, 255, 0.6) inset,
+		0 10px 35px rgba(0, 0, 0, 0.06);
 }
 
 /* Glass + Grain utilities (theme-aware, no hard-coded colors for fill)
    - Use DaisyUI tokens via utilities on elements; these helpers only add structure/texture. */
 .glass-surface {
-  position: relative;
-  isolation: isolate;
-  border-radius: 1rem; /* rounded-xl */
-  backdrop-filter: blur(14px) saturate(1.15);
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+	position: relative;
+	isolation: isolate;
+	border-radius: 1rem; /* rounded-xl */
+	backdrop-filter: blur(14px) saturate(1.15);
+	-webkit-backdrop-filter: blur(14px) saturate(1.15);
 }
-.glass-surface.border-soft { border: 1px solid rgba(255,255,255,0.12); }
-html[data-theme='dark'] .glass-surface.border-soft,
-html[data-theme='oled'] .glass-surface.border-soft { border-color: rgba(255,255,255,0.10); }
-html[data-theme='light'] .glass-surface.border-soft,
-html[data-theme='white'] .glass-surface.border-soft { border-color: rgba(0,0,0,0.06); }
+.glass-surface.border-soft {
+	border: 1px solid rgba(255, 255, 255, 0.12);
+}
+html[data-theme="dark"] .glass-surface.border-soft,
+html[data-theme="oled"] .glass-surface.border-soft {
+	border-color: rgba(255, 255, 255, 0.1);
+}
+html[data-theme="light"] .glass-surface.border-soft,
+html[data-theme="white"] .glass-surface.border-soft {
+	border-color: rgba(0, 0, 0, 0.06);
+}
 
 /* Subtle grain over glass (dot matrix, very low opacity) */
-.with-grain { position: relative; }
+.with-grain {
+	position: relative;
+}
 .with-grain::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 1;
-  /* Use currentColor with low opacity via layer opacity so theme drives tint */
-  background-image: radial-gradient(circle, currentColor 0.5px, transparent 0.7px);
-  background-size: 6px 6px;
-  mix-blend-mode: overlay;
-  opacity: .055; /* keep extremely subtle */
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	pointer-events: none;
+	z-index: 1;
+	/* Use currentColor with low opacity via layer opacity so theme drives tint */
+	background-image: radial-gradient(
+		circle,
+		currentColor 0.5px,
+		transparent 0.7px
+	);
+	background-size: 6px 6px;
+	mix-blend-mode: overlay;
+	opacity: 0.055; /* keep extremely subtle */
 }
 
 /* Ensure readable text on acrylic surfaces in both themes */
-.bottom-nav { color: var(--fallback-bc, oklch(var(--bc)/1)); }
+.bottom-nav {
+	color: var(--fallback-bc, oklch(var(--bc) / 1));
+}
 .bottom-nav-surface {
-  position: relative;
-  isolation: isolate; /* create local stacking context so ::before sits under content */
-  border-radius: 16px;
-  border: 1px solid transparent; /* soften edge definition */
-  backdrop-filter: blur(14px) saturate(1.25);
-  -webkit-backdrop-filter: blur(14px) saturate(1.25);
-  will-change: backdrop-filter;
+	position: relative;
+	isolation: isolate; /* create local stacking context so ::before sits under content */
+	border-radius: 16px;
+	border: 1px solid transparent; /* soften edge definition */
+	backdrop-filter: blur(14px) saturate(1.25);
+	-webkit-backdrop-filter: blur(14px) saturate(1.25);
+	will-change: backdrop-filter;
 }
 /* Theme surfaces with subtle translucency */
-html[data-theme='dark'] .bottom-nav-surface, html[data-theme='oled'] .bottom-nav-surface {
-  /* Remove purple fill; keep subtle edge and depth */
-  background: transparent;
-  border-color: rgba(255,255,255,0.10);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+html[data-theme="dark"] .bottom-nav-surface,
+html[data-theme="oled"] .bottom-nav-surface {
+	/* Remove purple fill; keep subtle edge and depth */
+	background: transparent;
+	border-color: rgba(255, 255, 255, 0.1);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
-html[data-theme='light'] .bottom-nav-surface, html[data-theme='white'] .bottom-nav-surface {
-  /* Neutral glass — rely on external blur underlay for coloration */
-  background: transparent;
-  border-color: rgba(0,0,0,0.08);
-  box-shadow: 0 8px 28px rgba(0,0,0,0.06);
+html[data-theme="light"] .bottom-nav-surface,
+html[data-theme="white"] .bottom-nav-surface {
+	/* Neutral glass — rely on external blur underlay for coloration */
+	background: transparent;
+	border-color: rgba(0, 0, 0, 0.08);
+	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
 }
 /* Soft halo that diffuses the edges into the background */
 .bottom-nav-surface::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  display: none; /* external underlay handles acrylic blur */
-  /* Feather the outside edges only */
-  -webkit-mask-image: radial-gradient(closest-side at 50% 50%, black 58%, transparent 100%);
-  mask-image: radial-gradient(closest-side at 50% 50%, black 58%, transparent 100%);
-  opacity: .85;
-  z-index: 0;
-  pointer-events: none;
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	display: none; /* external underlay handles acrylic blur */
+	/* Feather the outside edges only */
+	-webkit-mask-image: radial-gradient(
+		closest-side at 50% 50%,
+		black 58%,
+		transparent 100%
+	);
+	mask-image: radial-gradient(
+		closest-side at 50% 50%,
+		black 58%,
+		transparent 100%
+	);
+	opacity: 0.85;
+	z-index: 0;
+	pointer-events: none;
 }
 
 /* Tune feather strength per theme: lighter in light mode to avoid solid look */
-html[data-theme='light'] .bottom-nav-surface::before,
-html[data-theme='white'] .bottom-nav-surface::before { opacity: .55; }
-html[data-theme='dark'] .bottom-nav-surface::before,
-html[data-theme='oled'] .bottom-nav-surface::before { opacity: .85; }
+html[data-theme="light"] .bottom-nav-surface::before,
+html[data-theme="white"] .bottom-nav-surface::before {
+	opacity: 0.55;
+}
+html[data-theme="dark"] .bottom-nav-surface::before,
+html[data-theme="oled"] .bottom-nav-surface::before {
+	opacity: 0.85;
+}
 
 /* (moved) h1 normalization lives in @layer base above so Tailwind utilities win */
 
 /* Prefer true backdrop blur when supported */
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  html[data-theme='dark'] .bottom-nav-surface, html[data-theme='oled'] .bottom-nav-surface {
-    background: transparent;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
-  }
-  html[data-theme='light'] .bottom-nav-surface, html[data-theme='white'] .bottom-nav-surface {
-    background: transparent;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
-  }
+	html[data-theme="dark"] .bottom-nav-surface,
+	html[data-theme="oled"] .bottom-nav-surface {
+		background: transparent;
+		box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+	}
+	html[data-theme="light"] .bottom-nav-surface,
+	html[data-theme="white"] .bottom-nav-surface {
+		background: transparent;
+		box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+	}
 }
 
 /* Ensure nav content sits above the feather layer */
-.bottom-nav-surface > ul { position: relative; z-index: 1; }
+.bottom-nav-surface > ul {
+	position: relative;
+	z-index: 1;
+}
 
 /* Keep the bottom navigation visually on top during view transitions.
    Some browsers render view-transition snapshots above fixed elements.
@@ -296,94 +547,124 @@ html[data-theme='oled'] .bottom-nav-surface::before { opacity: .85; }
    visually stays on top while allowing page layout to flow (better with VT).
    We still use a very high z-index to reduce the chance snapshots overlay it. */
 .bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 100000 !important;
-  pointer-events: auto;
-  /* Avoid isolating stacking context so backdrop-filter can sample page content */
-  will-change: transform, opacity;
-  transition: transform 220ms cubic-bezier(.2,.6,.2,1), opacity 160ms ease;
-  width: 100%;
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 100000;
+	pointer-events: auto;
+	/* Avoid isolating stacking context so backdrop-filter can sample page content */
+	will-change: transform, opacity;
+	transition:
+		transform 220ms cubic-bezier(0.2, 0.6, 0.2, 1),
+		opacity 160ms ease;
+	width: 100%;
 }
 
 .bottom-nav.is-hidden {
-  transform: translateY(110%);
-  opacity: 0;
-  pointer-events: none;
+	transform: translateY(110%);
+	opacity: 0;
+	pointer-events: none;
 }
 
 /* Subtle backdrop blur underneath the nav (blurs page content behind it) */
 .bottom-nav::before {
-  content: "";
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 96px; /* extend a bit above the nav for a soft blend */
-  pointer-events: none;
-  z-index: 0; /* stays beneath nav content but above page */
-  backdrop-filter: blur(8px) saturate(1.05);
-  -webkit-backdrop-filter: blur(8px) saturate(1.05);
-  /* a touch of tint helps the blur read, and is required by Safari */
-  background: linear-gradient(to top, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.22) 70%, rgba(255,255,255,0) 100%);
+	content: "";
+	position: fixed;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 96px; /* extend a bit above the nav for a soft blend */
+	pointer-events: none;
+	z-index: 0; /* stays beneath nav content but above page */
+	backdrop-filter: blur(8px) saturate(1.05);
+	-webkit-backdrop-filter: blur(8px) saturate(1.05);
+	/* a touch of tint helps the blur read, and is required by Safari */
+	background: linear-gradient(
+		to top,
+		rgba(255, 255, 255, 0.38) 0%,
+		rgba(255, 255, 255, 0.22) 70%,
+		rgba(255, 255, 255, 0) 100%
+	);
 }
 /* Allow components to opt-out of the global underlay when they provide their own glass surface */
-.bottom-nav.no-underlay::before { display: none; }
-html[data-theme='dark'] .bottom-nav::before,
-html[data-theme='oled'] .bottom-nav::before {
-  background: linear-gradient(to top, rgba(10,10,10,0.45) 0%, rgba(10,10,10,0.20) 70%, rgba(10,10,10,0) 100%);
+.bottom-nav.no-underlay::before {
+	display: none;
+}
+html[data-theme="dark"] .bottom-nav::before,
+html[data-theme="oled"] .bottom-nav::before {
+	background: linear-gradient(
+		to top,
+		rgba(10, 10, 10, 0.45) 0%,
+		rgba(10, 10, 10, 0.2) 70%,
+		rgba(10, 10, 10, 0) 100%
+	);
 }
 
 /* View overlay blur under the nav, above page content
    - Fixed to viewport bottom, extends upward with a soft fade
    - Sits behind nav content (z:0) while nav content is higher (z >= 1)
 */
-.bottom-nav .bottom-nav-surface { position: relative; z-index: 1; }
-.bottom-nav .bottom-nav-surface > * { position: relative; z-index: 2; }
+.bottom-nav .bottom-nav-surface {
+	position: relative;
+	z-index: 1;
+}
+.bottom-nav .bottom-nav-surface > * {
+	position: relative;
+	z-index: 2;
+}
 
 /* Sliding selector that highlights the active nav item.
    It's positioned inside the UL and animated via transform/width.
    It sits below the icons (z-index: 0) while nav items are promoted above. */
 .bottom-nav-selector {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  height: 40px;
-  border-radius: 12px;
-  /* Lavender frosted pill with light transparency and subtle blur for depth */
-  background: linear-gradient(135deg, rgba(199,183,255,0.36), rgba(164,130,255,0.24));
-  -webkit-backdrop-filter: blur(6px) saturate(1.05);
-  backdrop-filter: blur(6px) saturate(1.05);
-  /* Animate horizontal movement for smooth sliding effect (avoid width transition to reduce delay) */
-  transition: transform 180ms cubic-bezier(.2,.6,.2,1), opacity 120ms ease;
-  will-change: transform, opacity;
-  transform: translateX(0) translateY(-50%);
-  width: 0;
-  opacity: 0;
-  z-index: 0;
-  pointer-events: none;
+	position: absolute;
+	top: 50%;
+	left: 0;
+	height: 40px;
+	border-radius: 12px;
+	/* Lavender frosted pill with light transparency and subtle blur for depth */
+	background: linear-gradient(
+		135deg,
+		rgba(199, 183, 255, 0.36),
+		rgba(164, 130, 255, 0.24)
+	);
+	-webkit-backdrop-filter: blur(6px) saturate(1.05);
+	backdrop-filter: blur(6px) saturate(1.05);
+	/* Animate horizontal movement for smooth sliding effect (avoid width transition to reduce delay) */
+	transition:
+		transform 180ms cubic-bezier(0.2, 0.6, 0.2, 1),
+		opacity 120ms ease;
+	will-change: transform, opacity;
+	transform: translateX(0) translateY(-50%);
+	width: 0;
+	opacity: 0;
+	z-index: 0;
+	pointer-events: none;
 }
 
-.bottom-nav a { color: var(--fallback-bc, oklch(var(--bc)/1)); }
-.bottom-nav a[aria-current="page"] { color: var(--fallback-bc, oklch(var(--bc)/1)); }
+.bottom-nav a {
+	color: var(--fallback-bc, oklch(var(--bc) / 1));
+}
+.bottom-nav a[aria-current="page"] {
+	color: var(--fallback-bc, oklch(var(--bc) / 1));
+}
 
 /* Ensure no duplicate "active" background/outline shows under icons.
    The sliding purple selector is the single active indicator; remove other
    backgrounds, box-shadow, outlines and pseudo-elements for nav items. */
 .bottom-nav a.nav-link[aria-current="page"],
 .bottom-nav .nav-item.is-active {
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: none !important;
+	background: transparent;
+	box-shadow: none;
+	outline: none;
 }
 
 /* Remove potential pseudo-element highlights coming from component styles */
 .bottom-nav a.nav-link::before,
 .bottom-nav a.nav-link::after {
-  display: none !important;
-  content: none !important;
+	display: none;
+	content: none;
 }
 
 /* Suppress focus rings for nav icons (we rely on accessible focus elsewhere if needed) */
@@ -391,76 +672,125 @@ html[data-theme='oled'] .bottom-nav::before {
 .bottom-nav a.nav-link:focus-visible,
 .bottom-nav .nav-item:focus,
 .bottom-nav .nav-item:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
+	outline: none;
+	box-shadow: none;
 }
 
 /* Robust mobile-friendly colors (avoid oklch dependency) */
-html[data-theme='dark'] .bottom-nav, html[data-theme='oled'] .bottom-nav { color: #ffffff; }
-html[data-theme='light'] .bottom-nav, html[data-theme='white'] .bottom-nav { color: #111111; }
-.bottom-nav .nav-link { color: inherit; opacity: .85; }
-.bottom-nav .nav-link:hover { opacity: 1; }
-html[data-theme='dark'] .bottom-nav .nav-link.is-active, html[data-theme='oled'] .bottom-nav .nav-link.is-active { background: transparent; color: inherit; }
-html[data-theme='light'] .bottom-nav .nav-link.is-active, html[data-theme='white'] .bottom-nav .nav-link.is-active { background: transparent; color: inherit; }
-.bottom-nav .btn-ghost { color: inherit !important; }
+html[data-theme="dark"] .bottom-nav,
+html[data-theme="oled"] .bottom-nav {
+	color: #ffffff;
+}
+html[data-theme="light"] .bottom-nav,
+html[data-theme="white"] .bottom-nav {
+	color: #111111;
+}
+.bottom-nav .nav-link {
+	color: inherit;
+	opacity: 0.85;
+}
+.bottom-nav .nav-link:hover {
+	opacity: 1;
+}
+html[data-theme="dark"] .bottom-nav .nav-link.is-active,
+html[data-theme="oled"] .bottom-nav .nav-link.is-active {
+	background: transparent;
+	color: inherit;
+}
+html[data-theme="light"] .bottom-nav .nav-link.is-active,
+html[data-theme="white"] .bottom-nav .nav-link.is-active {
+	background: transparent;
+	color: inherit;
+}
+.bottom-nav .btn-ghost {
+	color: inherit;
+}
 
 /* Stronger rules for mobile browsers to ensure icons/text inherit theme color */
-html[data-theme='dark'] .bottom-nav .nav-link,
-html[data-theme='dark'] .bottom-nav a.nav-link:link,
-html[data-theme='dark'] .bottom-nav a.nav-link:visited { color: #fff !important; -webkit-text-fill-color: #fff; }
-html[data-theme='light'] .bottom-nav .nav-link,
-html[data-theme='light'] .bottom-nav a.nav-link:link,
-html[data-theme='light'] .bottom-nav a.nav-link:visited { color: #111 !important; -webkit-text-fill-color: #111; }
+html[data-theme="dark"] .bottom-nav .nav-link,
+html[data-theme="dark"] .bottom-nav a.nav-link:link,
+html[data-theme="dark"] .bottom-nav a.nav-link:visited {
+	color: #fff;
+	-webkit-text-fill-color: #fff;
+}
+html[data-theme="light"] .bottom-nav .nav-link,
+html[data-theme="light"] .bottom-nav a.nav-link:link,
+html[data-theme="light"] .bottom-nav a.nav-link:visited {
+	color: #111;
+	-webkit-text-fill-color: #111;
+}
 .bottom-nav .nav-link [class^="i-"],
-.bottom-nav .nav-link [class*=" i-"] { color: inherit !important; }
+.bottom-nav .nav-link [class*=" i-"] {
+	color: inherit;
+}
 
 /* Uniform hit targets and backgrounds for nav items */
 .bottom-nav .nav-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px; /* consistent touch target */
-  height: 48px;
-  border-radius: 12px;
-  transition: background-color .2s ease, color .2s ease, opacity .2s ease;
-  position: relative; /* ensure nav items render above the selector */
-  z-index: 2;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px; /* consistent touch target */
+	height: 48px;
+	border-radius: 12px;
+	transition:
+		background-color 0.2s ease,
+		color 0.2s ease,
+		opacity 0.2s ease;
+	position: relative; /* ensure nav items render above the selector */
+	z-index: 2;
 }
-.bottom-nav .nav-item:hover { opacity: 1; }
-html[data-theme='dark'] .bottom-nav .nav-item.is-active,
-html[data-theme='oled'] .bottom-nav .nav-item.is-active { background: transparent; }
-html[data-theme='light'] .bottom-nav .nav-item.is-active,
-html[data-theme='white'] .bottom-nav .nav-item.is-active { background: transparent; }
+.bottom-nav .nav-item:hover {
+	opacity: 1;
+}
+html[data-theme="dark"] .bottom-nav .nav-item.is-active,
+html[data-theme="oled"] .bottom-nav .nav-item.is-active {
+	background: transparent;
+}
+html[data-theme="light"] .bottom-nav .nav-item.is-active,
+html[data-theme="white"] .bottom-nav .nav-item.is-active {
+	background: transparent;
+}
 .bottom-nav .nav-item.is-active {
-  pointer-events: none; /* disable clicking when already on page */
-  cursor: default;
+	pointer-events: none; /* disable clicking when already on page */
+	cursor: default;
 }
 
 /* Subtle divider between page icons and toggles */
 .bottom-nav .nav-sep {
-  width: 1px;
-  height: 28px;
-  margin: 0 6px;
-  border-radius: 1px;
-  background: currentColor;
-  opacity: .18;
+	width: 1px;
+	height: 28px;
+	margin: 0 6px;
+	border-radius: 1px;
+	background: currentColor;
+	opacity: 0.18;
 }
-html[data-theme='dark'] .bottom-nav .nav-sep, html[data-theme='oled'] .bottom-nav .nav-sep { opacity: .22; }
-html[data-theme='light'] .bottom-nav .nav-sep, html[data-theme='white'] .bottom-nav .nav-sep { opacity: .18; }
+html[data-theme="dark"] .bottom-nav .nav-sep,
+html[data-theme="oled"] .bottom-nav .nav-sep {
+	opacity: 0.22;
+}
+html[data-theme="light"] .bottom-nav .nav-sep,
+html[data-theme="white"] .bottom-nav .nav-sep {
+	opacity: 0.18;
+}
 
 /* Auth UI polish */
 .pill-input {
-  border-radius: 9999px;
-  border: 1px solid #D6BCFA; /* light purple border */
-  background: #E9D5FF;       /* flat base; let shadows create the recess */
-  padding: 0.85rem 1rem;
-  color: #1a1a1a;            /* readable on light bg */
-  outline: none;
-  /* recessed look: stronger inner shadow, minimal highlights */
-  box-shadow:
-    inset 0 2px 10px rgba(0,0,0,.16),
-    inset 0 -1px 4px rgba(0,0,0,.10);
-  transition: border-color .2s ease, box-shadow .2s ease, transform .15s ease, background-color .2s ease, background .2s ease;
+	border-radius: 9999px;
+	border: 1px solid #d6bcfa; /* light purple border */
+	background: #e9d5ff; /* flat base; let shadows create the recess */
+	padding: 0.85rem 1rem;
+	color: #1a1a1a; /* readable on light bg */
+	outline: none;
+	/* recessed look: stronger inner shadow, minimal highlights */
+	box-shadow:
+		inset 0 2px 10px rgba(0, 0, 0, 0.16),
+		inset 0 -1px 4px rgba(0, 0, 0, 0.1);
+	transition:
+		border-color 0.2s ease,
+		box-shadow 0.2s ease,
+		transform 0.15s ease,
+		background-color 0.2s ease,
+		background 0.2s ease;
 }
 
 /* Viewport scroll fade edges for top and bottom
@@ -468,238 +798,359 @@ html[data-theme='light'] .bottom-nav .nav-sep, html[data-theme='white'] .bottom-
    - Uses CSS mask so interactive elements remain clickable
 */
 /* Remove mask-based edge fades to avoid scrollbar interaction issues */
-#content.edge-fades { position: relative; min-height: 100vh; }
-#scroll-inner { will-change: transform; }
+#content.edge-fades {
+	position: relative;
+	min-height: 100vh;
+}
+#scroll-inner {
+	will-change: transform;
+}
 
 /* Overlay-based scroll fades (do not affect scrollbar rendering) */
 .viewport-fade {
-  position: fixed;
-  left: 0; right: 0;
-  pointer-events: none;
-  z-index: 99990; /* below bottom-nav (100000), above content */
-  /* default background (light) */
-  --page-bg: #ffffff;
+	position: fixed;
+	left: 0;
+	right: 0;
+	pointer-events: none;
+	z-index: 99990; /* below bottom-nav (100000), above content */
+	/* default background (light) */
+	--page-bg: #ffffff;
 }
-.viewport-fade.top { top: 0; height: 48px; background: linear-gradient(to bottom, var(--page-bg) 0%, rgba(255,255,255,0) 100%); }
-.viewport-fade.bottom { bottom: 0; height: 64px; background: linear-gradient(to top, var(--page-bg) 0%, rgba(255,255,255,0) 100%); }
+.viewport-fade.top {
+	top: 0;
+	height: 48px;
+	background: linear-gradient(
+		to bottom,
+		var(--page-bg) 0%,
+		rgba(255, 255, 255, 0) 100%
+	);
+}
+.viewport-fade.bottom {
+	bottom: 0;
+	height: 64px;
+	background: linear-gradient(
+		to top,
+		var(--page-bg) 0%,
+		rgba(255, 255, 255, 0) 100%
+	);
+}
 
 /* Theme tuning for overlay fades */
-html[data-theme='dark'] .viewport-fade, html[data-theme='oled'] .viewport-fade { --page-bg: #0b0b0b; }
-html[data-theme='light'] .viewport-fade, html[data-theme='white'] .viewport-fade { --page-bg: #ffffff; }
-.pill-input::placeholder{ color: rgba(0,0,0,.45); }
-.pill-input:hover {
-  box-shadow:
-    inset 0 3px 12px rgba(0,0,0,.18),
-    inset 0 -2px 6px rgba(0,0,0,.12);
+html[data-theme="dark"] .viewport-fade,
+html[data-theme="oled"] .viewport-fade {
+	--page-bg: #0b0b0b;
 }
-.pill-input:focus{
-  border-color: #A78BFA;              /* violet-400 */
-  box-shadow:
-    inset 0 3px 14px rgba(0,0,0,.2),
-    inset 0 -3px 8px rgba(0,0,0,.14),
-    0 0 0 2px rgba(167,139,250,.22);  /* subtle outer focus ring without lift */
+html[data-theme="light"] .viewport-fade,
+html[data-theme="white"] .viewport-fade {
+	--page-bg: #ffffff;
+}
+.pill-input::placeholder {
+	color: rgba(0, 0, 0, 0.45);
+}
+.pill-input:hover {
+	box-shadow:
+		inset 0 3px 12px rgba(0, 0, 0, 0.18),
+		inset 0 -2px 6px rgba(0, 0, 0, 0.12);
+}
+.pill-input:focus {
+	border-color: #a78bfa; /* violet-400 */
+	box-shadow:
+		inset 0 3px 14px rgba(0, 0, 0, 0.2),
+		inset 0 -3px 8px rgba(0, 0, 0, 0.14),
+		0 0 0 2px rgba(167, 139, 250, 0.22); /* subtle outer focus ring without lift */
 }
 
 /* When an input is in error/warn state and has Tailwind/DaisyUI utilities, ensure they win */
-.pill-input.text-error { color: var(--fallback-er, oklch(var(--er)/1)); }
-.pill-input.text-error::placeholder { color: color-mix(in oklab, currentColor 55%, transparent); }
-.pill-input.text-warning { color: var(--fallback-wa, oklch(var(--wa)/1)); }
-.pill-input.text-warning::placeholder { color: color-mix(in oklab, currentColor 55%, transparent); }
+.pill-input.text-error {
+	color: var(--fallback-er, oklch(var(--er) / 1));
+}
+.pill-input.text-error::placeholder {
+	color: color-mix(in oklab, currentColor 55%, transparent);
+}
+.pill-input.text-warning {
+	color: var(--fallback-wa, oklch(var(--wa) / 1));
+}
+.pill-input.text-warning::placeholder {
+	color: color-mix(in oklab, currentColor 55%, transparent);
+}
 
 /* Error variant: switch purple pill to red tones when invalid */
 /* Warning variant: switch purple pill to yellow tones when invalid */
 .pill-input.is-warning {
-  border-color: #FCD34D;              /* amber-300 */
-  background: #FEF3C7;                /* amber-100 */
-  color: var(--fallback-wa, oklch(var(--wa)/1));
-  box-shadow:
-    inset 0 3px 14px rgba(0,0,0,.12),
-    inset 0 -3px 8px rgba(0,0,0,.08);
+	border-color: #fcd34d; /* amber-300 */
+	background: #fef3c7; /* amber-100 */
+	color: var(--fallback-wa, oklch(var(--wa) / 1));
+	box-shadow:
+		inset 0 3px 14px rgba(0, 0, 0, 0.12),
+		inset 0 -3px 8px rgba(0, 0, 0, 0.08);
 }
-.pill-input.is-warning:focus{
-  border-color: #FBBF24;              /* amber-400 */
-  box-shadow:
-    inset 0 3px 16px rgba(0,0,0,.14),
-    inset 0 -3px 9px rgba(0,0,0,.10),
-    0 0 0 2px rgba(251,191,36,.24);   /* soft yellow focus ring */
+.pill-input.is-warning:focus {
+	border-color: #fbbf24; /* amber-400 */
+	box-shadow:
+		inset 0 3px 16px rgba(0, 0, 0, 0.14),
+		inset 0 -3px 9px rgba(0, 0, 0, 0.1),
+		0 0 0 2px rgba(251, 191, 36, 0.24); /* soft yellow focus ring */
 }
 
 .btn-cta {
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 9999px; height: 44px; padding: 0 1.1rem;
-  background: #fff; color: #000; font-weight: 600;
-  box-shadow: 0 10px 25px -10px rgba(255,255,255,.35), 0 1px 0 rgba(0,0,0,.4) inset;
-  transition: transform .15s ease, box-shadow .2s ease;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	height: 44px;
+	padding: 0 1.1rem;
+	background: #fff;
+	color: #000;
+	font-weight: 600;
+	box-shadow:
+		0 10px 25px -10px rgba(255, 255, 255, 0.35),
+		0 1px 0 rgba(0, 0, 0, 0.4) inset;
+	transition:
+		transform 0.15s ease,
+		box-shadow 0.2s ease;
 }
-.btn-cta:hover{ transform: translateY(-1px); box-shadow: 0 12px 28px -12px rgba(255,255,255,.45), 0 1px 0 rgba(0,0,0,.4) inset; }
-.btn-cta:active{ transform: translateY(0); }
+.btn-cta:hover {
+	transform: translateY(-1px);
+	box-shadow:
+		0 12px 28px -12px rgba(255, 255, 255, 0.45),
+		0 1px 0 rgba(0, 0, 0, 0.4) inset;
+}
+.btn-cta:active {
+	transform: translateY(0);
+}
 
 .btn-social {
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 9999px; height: 44px; padding: 0 1rem;
-  font-weight: 600;
-  transition: transform .12s ease, box-shadow .2s ease, background-color .2s ease, background .2s ease, color .2s ease;
-  outline: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 9999px;
+	height: 44px;
+	padding: 0 1rem;
+	font-weight: 600;
+	transition:
+		transform 0.12s ease,
+		box-shadow 0.2s ease,
+		background-color 0.2s ease,
+		background 0.2s ease,
+		color 0.2s ease;
+	outline: none;
 }
-.btn-social:hover { transform: translateY(-1px); }
-.btn-social:active { transform: translateY(0); }
+.btn-social:hover {
+	transform: translateY(-1px);
+}
+.btn-social:active {
+	transform: translateY(0);
+}
 
 /* Google variant: white recessed pill */
 .btn-social.btn-google {
-  background: #ffffff;
-  color: #1a1a1a;
-  border: 1px solid #E5E7EB; /* gray-200 */
-  box-shadow:
-    inset 0 2px 10px rgba(0,0,0,.10),
-    inset 0 -1px 4px rgba(0,0,0,.06);
+	background: #ffffff;
+	color: #1a1a1a;
+	border: 1px solid #e5e7eb; /* gray-200 */
+	box-shadow:
+		inset 0 2px 10px rgba(0, 0, 0, 0.1),
+		inset 0 -1px 4px rgba(0, 0, 0, 0.06);
 }
 .btn-social.btn-google:hover {
-  box-shadow:
-    inset 0 3px 12px rgba(0,0,0,.12),
-    inset 0 -2px 6px rgba(0,0,0,.08);
+	box-shadow:
+		inset 0 3px 12px rgba(0, 0, 0, 0.12),
+		inset 0 -2px 6px rgba(0, 0, 0, 0.08);
 }
 .btn-social.btn-google:focus-visible {
-  box-shadow:
-    inset 0 3px 14px rgba(0,0,0,.14),
-    inset 0 -3px 8px rgba(0,0,0,.10),
-    0 0 0 2px rgba(59,130,246,.22); /* blue-ish focus ring for visibility */
+	box-shadow:
+		inset 0 3px 14px rgba(0, 0, 0, 0.14),
+		inset 0 -3px 8px rgba(0, 0, 0, 0.1),
+		0 0 0 2px rgba(59, 130, 246, 0.22); /* blue-ish focus ring for visibility */
 }
 
 /* Facebook variant: light brand blue recessed pill */
 .btn-social.btn-facebook {
-  background: #DBEAFE;            /* blue-200 */
-  color: #0f172a;                 /* slate-900 for contrast */
-  border: 1px solid #93C5FD;      /* blue-300 */
-  box-shadow:
-    inset 0 2px 10px rgba(0,0,0,.12),
-    inset 0 -1px 4px rgba(0,0,0,.08);
+	background: #dbeafe; /* blue-200 */
+	color: #0f172a; /* slate-900 for contrast */
+	border: 1px solid #93c5fd; /* blue-300 */
+	box-shadow:
+		inset 0 2px 10px rgba(0, 0, 0, 0.12),
+		inset 0 -1px 4px rgba(0, 0, 0, 0.08);
 }
 .btn-social.btn-facebook:hover {
-  box-shadow:
-    inset 0 3px 12px rgba(0,0,0,.14),
-    inset 0 -2px 6px rgba(0,0,0,.10);
+	box-shadow:
+		inset 0 3px 12px rgba(0, 0, 0, 0.14),
+		inset 0 -2px 6px rgba(0, 0, 0, 0.1);
 }
 .btn-social.btn-facebook:focus-visible {
-  box-shadow:
-    inset 0 3px 14px rgba(0,0,0,.16),
-    inset 0 -3px 8px rgba(0,0,0,.12),
-    0 0 0 2px rgba(96,165,250,.28);  /* blue-400 focus ring */
+	box-shadow:
+		inset 0 3px 14px rgba(0, 0, 0, 0.16),
+		inset 0 -3px 8px rgba(0, 0, 0, 0.12),
+		0 0 0 2px rgba(96, 165, 250, 0.28); /* blue-400 focus ring */
 }
 
 /* Typewriter caret (underline) */
-@keyframes caret-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
-.type-caret {
-  display: inline-block;
-  width: 0.9ch;              /* compact underscore width */
-  height: 0.08em;           /* thin underline height */
-  margin-left: 0;           /* flush against last character */
-  border-bottom: 0.1em solid currentColor; /* scales with font size */
-  opacity: .95;
-  vertical-align: -0.12em;  /* align right at baseline next to text */
+@keyframes caret-blink {
+	0%,
+	49% {
+		opacity: 1;
+	}
+	50%,
+	100% {
+		opacity: 0;
+	}
 }
-.type-caret.blink { animation: caret-blink 0.8s steps(1,end) infinite !important; }
+.type-caret {
+	display: inline-block;
+	width: 0.9ch; /* compact underscore width */
+	height: 0.08em; /* thin underline height */
+	margin-left: 0; /* flush against last character */
+	border-bottom: 0.1em solid currentColor; /* scales with font size */
+	opacity: 0.95;
+	vertical-align: -0.12em; /* align right at baseline next to text */
+}
+.type-caret.blink {
+	animation: caret-blink 0.8s steps(1, end) infinite;
+}
 
 /* Lightweight CSS reveal for simple tiles — progressive enhancement with scroll-timeline */
 .reveal {
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 420ms cubic-bezier(.16,.8,.2,1), transform 420ms cubic-bezier(.16,.8,.2,1);
-  will-change: transform, opacity;
+	opacity: 0;
+	transform: translateY(12px);
+	transition:
+		opacity 420ms cubic-bezier(0.16, 0.8, 0.2, 1),
+		transform 420ms cubic-bezier(0.16, 0.8, 0.2, 1);
+	will-change: transform, opacity;
 }
 @supports (animation-timeline: scroll()) {
-  .reveal {
-    opacity: 1; transform: none; transition: none;
-    /* animate on page scroll */
-    animation: reveal-up both ease-out;
-    animation-timeline: scroll(root block);
-    animation-range: 0% 100%;
-    animation-duration: 1s;
-  }
-  @keyframes reveal-up { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
+	.reveal {
+		opacity: 1;
+		transform: none;
+		transition: none;
+		/* animate on page scroll */
+		animation: reveal-up both ease-out;
+		animation-timeline: scroll(root block);
+		animation-range: 0% 100%;
+		animation-duration: 1s;
+	}
+	@keyframes reveal-up {
+		from {
+			opacity: 0;
+			transform: translateY(12px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
 }
 
 /* Scroll-driven progress bar — progressive enhancement */
-@keyframes grow { from { width: 0% } to { width: 100% } }
+@keyframes grow {
+	from {
+		width: 0%;
+	}
+	to {
+		width: 100%;
+	}
+}
 @supports (animation-timeline: scroll()) {
-  .scroll-progress {
-    height: 2px;
-    position: fixed;
-    inset-block-start: 0;
-    inset-inline: 0;
-    background: transparent;
-    z-index: 50;
-  }
-  .scroll-progress::before {
-    content: "";
-    display: block;
-    height: 100%;
-    background: var(--color-accent, currentColor);
-    width: 0%;
-    animation: grow both linear;
-    /* Root page scroll in block direction */
-    animation-timeline: scroll(root block);
-    animation-range: 0% 100%;
-  }
-  /* Hide JS fallback bar where CSS enhancement is available */
-  .scroll-progress .fallback { display: none; }
+	.scroll-progress {
+		height: 2px;
+		position: fixed;
+		inset-block-start: 0;
+		inset-inline: 0;
+		background: transparent;
+		z-index: 50;
+	}
+	.scroll-progress::before {
+		content: "";
+		display: block;
+		height: 100%;
+		background: var(--color-accent, currentColor);
+		width: 0%;
+		animation: grow both linear;
+		/* Root page scroll in block direction */
+		animation-timeline: scroll(root block);
+		animation-range: 0% 100%;
+	}
+	/* Hide JS fallback bar where CSS enhancement is available */
+	.scroll-progress .fallback {
+		display: none;
+	}
 }
 
 /* Make DaisyUI inputs in auth panel look like pill inputs without editing JSX */
-  .auth-panel .input.input-bordered {
-    border-radius: 9999px !important;
-    border: 1px solid #D6BCFA !important; /* light purple border */
-    background: #E9D5FF !important;
-    color: #1a1a1a !important;
-    box-shadow:
-    inset 0 2px 10px rgba(0,0,0,.16),
-    inset 0 -1px 4px rgba(0,0,0,.10) !important;
-  }
-  .auth-panel .input.input-bordered:focus {
-    outline: none !important;
-    border-color: #A78BFA !important;
-    box-shadow:
-    inset 0 3px 14px rgba(0,0,0,.2),
-    inset 0 -3px 8px rgba(0,0,0,.14),
-    0 0 0 2px rgba(167,139,250,.22) !important;
-  }
+.auth-panel .input.input-bordered {
+	border-radius: 9999px;
+	border: 1px solid #d6bcfa; /* light purple border */
+	background: #e9d5ff;
+	color: #1a1a1a;
+	box-shadow:
+		inset 0 2px 10px rgba(0, 0, 0, 0.16),
+		inset 0 -1px 4px rgba(0, 0, 0, 0.1);
+}
+.auth-panel .input.input-bordered:focus {
+	outline: none;
+	border-color: #a78bfa;
+	box-shadow:
+		inset 0 3px 14px rgba(0, 0, 0, 0.2),
+		inset 0 -3px 8px rgba(0, 0, 0, 0.14),
+		0 0 0 2px rgba(167, 139, 250, 0.22);
+}
 
 /* Below-the-fold decorative panels should not impact initial paint */
-.mosaic-panel{
-  content-visibility: auto;
-  contain-intrinsic-size: auto 800px; /* tune placeholder size to your layout */
-  contain: content; /* layout+paint+style isolation */
+.mosaic-panel {
+	content-visibility: auto;
+	contain-intrinsic-size: auto 800px; /* tune placeholder size to your layout */
+	contain: content; /* layout+paint+style isolation */
 }
 
 /* Make auth panel acrylic in light theme */
-html[data-theme='light'] .auth-panel, html[data-theme='white'] .auth-panel {
-  background: rgba(255,255,255,0.55) !important;
-  color: #000 !important;
-  backdrop-filter: blur(14px) saturate(1.35);
-  -webkit-backdrop-filter: blur(14px) saturate(1.35);
-  border-color: rgba(255,255,255,0.35) !important;
+html[data-theme="light"] .auth-panel,
+html[data-theme="white"] .auth-panel {
+	background: rgba(255, 255, 255, 0.55);
+	color: #000;
+	backdrop-filter: blur(14px) saturate(1.35);
+	-webkit-backdrop-filter: blur(14px) saturate(1.35);
+	border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* Prevent FOUC: hide reveal items at first paint so they don't flash before JS runs */
-.auth-panel .reveal-item { opacity: 0; transform: translateY(8px); transition: none !important; }
+.auth-panel .reveal-item {
+	opacity: 0;
+	transform: translateY(8px);
+	transition: none;
+}
 @media (prefers-reduced-motion: reduce) {
-  .auth-panel .reveal-item { opacity: 1 !important; transform: none !important; transition: none !important; }
+	.auth-panel .reveal-item {
+		opacity: 1;
+		transform: none;
+		transition: none;
+	}
 }
 
 /* Parallel dimensions for login/signup panels */
-.auth-panel { display: flex; flex-direction: column; }
-.auth-panel .auth-header { min-height: 48px; }
-.auth-panel .auth-body { flex: 1; }
+.auth-panel {
+	display: flex;
+	flex-direction: column;
+}
+.auth-panel .auth-header {
+	min-height: 48px;
+}
+.auth-panel .auth-body {
+	flex: 1;
+}
 
 /* DaisyUI accent override for custom themes */
-html[data-theme='light'], html[data-theme='white'] {
-  --color-accent: oklch(85% .06 280);
-  --color-accent-content: oklch(15% 0 0);
+html[data-theme="light"],
+html[data-theme="white"] {
+	--color-accent: oklch(85% 0.06 280);
+	--color-accent-content: oklch(15% 0 0);
 }
-html[data-theme='dark'], html[data-theme='oled'] {
-  --color-accent: oklch(85% .06 280);
-  --color-accent-content: oklch(15% 0 0);
+html[data-theme="dark"],
+html[data-theme="oled"] {
+	--color-accent: oklch(85% 0.06 280);
+	--color-accent-content: oklch(15% 0 0);
 }
 
 /* Safe-area padding helper for bottom-fixed UI (mobile notch) */
-.pb-safe { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.25rem); }
+.pb-safe {
+	padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.25rem);
+}
 /* View Transition heavy rules moved to vt.css to load non-blocking */

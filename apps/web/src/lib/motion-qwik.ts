@@ -11,12 +11,14 @@
  *   const tl = await timelineMotion(items, opts);
  */
 export async function isReducedMotion(): Promise<boolean> {
-  try {
-    if (typeof window === 'undefined') return true;
-    return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches === true;
-  } catch {
-    return true;
-  }
+	try {
+		if (typeof window === "undefined") return true;
+		return (
+			window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true
+		);
+	} catch {
+		return true;
+	}
 }
 
 /**
@@ -24,31 +26,64 @@ export async function isReducedMotion(): Promise<boolean> {
  * - Plain async function that lazy-loads Motion One and calls animate.
  * - Named without a trailing dollar to avoid Qwik's QRL analyzer treating it as a QRL.
  */
-function isValidTarget(el: any): boolean {
-  try {
-    if (!el) return false;
-    // Single element
-    if (typeof Element !== 'undefined' && el instanceof Element) return true;
-    // NodeList or array-like collection
-    if (el instanceof NodeList) return el.length > 0 && Array.from(el).every((n) => n && typeof (n as any).nodeType === 'number');
-    if (Array.isArray(el)) return el.length > 0 && el.every((n) => n && typeof (n as any).nodeType === 'number');
-  } catch {}
-  return false;
+function isValidTarget(el: unknown): el is Element | NodeList | Element[] {
+	try {
+		if (!el) return false;
+		// Single element
+		if (typeof Element !== "undefined" && el instanceof Element) return true;
+		// NodeList or array-like collection
+		if (el instanceof NodeList)
+			return (
+				el.length > 0 &&
+				Array.from(el).every((n) => {
+					try {
+						return typeof Node !== "undefined"
+							? n instanceof Node
+							: Boolean((n as { nodeType?: number })?.nodeType);
+					} catch {
+						return false;
+					}
+				})
+			);
+		if (Array.isArray(el))
+			return (
+				el.length > 0 &&
+				el.every((n) => {
+					try {
+						return typeof Node !== "undefined"
+							? (n as unknown) instanceof Node
+							: Boolean((n as { nodeType?: number })?.nodeType);
+					} catch {
+						return false;
+					}
+				})
+			);
+	} catch {}
+	return false;
 }
 
-export async function animateMotion(el: Element | Element[] | NodeList | any, keyframes: any, opts?: any) {
-  if (!isValidTarget(el)) return undefined as any;
-  try {
-    const mod = await import('motion');
-    if (!mod || typeof mod.animate !== 'function') return undefined as any;
-    // motion.animate returns an Animation-like player
-    return mod.animate(el, keyframes, opts);
-  } catch (err) {
-    // Silent fallback - consumer may apply CSS fallback if undefined returned
-    // eslint-disable-next-line no-console
-    console.warn('[motion-qwik] failed to load motion.animate', err);
-    return undefined as any;
-  }
+export async function animateMotion(
+	el: Element | Element[] | NodeList,
+	keyframes: Keyframe[] | PropertyIndexedKeyframes | Keyframe,
+	opts?: number | KeyframeAnimationOptions,
+): Promise<Animation | undefined> {
+	if (!isValidTarget(el)) return undefined;
+	try {
+		const mod = await import("motion");
+		if (!mod || typeof (mod as { animate?: unknown }).animate !== "function")
+			return undefined;
+		// motion.animate returns an Animation-like player
+		return (mod as { animate: typeof animate }).animate(
+			el as unknown as Element,
+			keyframes as unknown as Keyframe[] | PropertyIndexedKeyframes | Keyframe,
+			opts as unknown as number | KeyframeAnimationOptions,
+		);
+	} catch (err) {
+		// Silent fallback - consumer may apply CSS fallback if undefined returned
+		// eslint-disable-next-line no-console
+		console.warn("[motion-qwik] failed to load motion.animate", err);
+		return undefined;
+	}
 }
 
 /**
@@ -61,100 +96,159 @@ export async function animateMotion(el: Element | Element[] | NodeList | any, ke
  * For reduced-motion, we apply final styles synchronously and return a stub controller.
  */
 export type TLItem = {
-  el: Element | Element[] | NodeList | any;
-  keyframes: any;
-  options?: any;
-  at?: number | string;
+	el: Element | Element[] | NodeList;
+	keyframes: Keyframe[] | PropertyIndexedKeyframes | Keyframe;
+	options?: number | KeyframeAnimationOptions;
+	at?: number | string;
 };
 
-function applyFinalStyles(el: any, keyframes: any) {
-  try {
-    if (!el) return;
-    // If keyframes is array of objects, pick last object and apply properties
-    const last = Array.isArray(keyframes) ? keyframes[keyframes.length - 1] : (typeof keyframes === 'object' ? keyframes : null);
-    if (last && typeof last === 'object') {
-      const elements = (el instanceof NodeList || Array.isArray(el)) ? Array.from(el as any) : [el];
-      for (const node of elements) {
-        for (const [k, v] of Object.entries(last)) {
-          try {
-            // Map transform components to style.transform if present
-            if (k === 'transform' || k === 'translate' || k === 'translateY' || k === 'x' || k === 'y') {
-              // best-effort: if v is a string, set transform; otherwise skip complex mapping
-              if (typeof v === 'string') node.style.transform = v;
-            } else {
-              // set as style property if possible
-              const prop = k.replace(/([A-Z])/g, '-$1').toLowerCase();
-              node.style.setProperty(prop, String(v));
-            }
-          } catch { /* ignore individual property failures */ }
-        }
-      }
-    }
-  } catch { /* ignore */ }
+function applyFinalStyles(
+	el: Element | Element[] | NodeList,
+	keyframes: unknown,
+) {
+	try {
+		if (!el) return;
+		// If keyframes is array of objects, pick last object and apply properties
+		const last = Array.isArray(keyframes)
+			? keyframes[keyframes.length - 1]
+			: typeof keyframes === "object"
+				? keyframes
+				: null;
+		if (last && typeof last === "object") {
+			const elements =
+				el instanceof NodeList || Array.isArray(el)
+					? Array.from(el as unknown as Element[])
+					: [el as Element];
+			for (const node of elements) {
+				for (const [k, v] of Object.entries(last)) {
+					try {
+						// Map transform components to style.transform if present
+						if (
+							k === "transform" ||
+							k === "translate" ||
+							k === "translateY" ||
+							k === "x" ||
+							k === "y"
+						) {
+							// best-effort: if v is a string, set transform; otherwise skip complex mapping
+							if (typeof v === "string")
+								(node as HTMLElement).style.transform = v;
+						} else {
+							// set as style property if possible
+							const prop = k.replace(/([A-Z])/g, "-$1").toLowerCase();
+							(node as HTMLElement).style.setProperty(prop, String(v));
+						}
+					} catch {
+						/* ignore individual property failures */
+					}
+				}
+			}
+		}
+	} catch {
+		/* ignore */
+	}
 }
 
-export async function timelineMotion(items: TLItem[], opts?: any) {
-  // Filter out invalid elements early to avoid runtime errors inside the lib
-  const validItems = (Array.isArray(items) ? items : []).filter((it) => isValidTarget(it?.el));
-  if (validItems.length === 0) {
-    return { play() {}, pause() {}, cancel() {}, finished: Promise.resolve() } as any;
-  }
-  // Reduced motion: apply finals and return a stub controller
-  if (await isReducedMotion()) {
-    for (const it of validItems) {
-      applyFinalStyles(it.el, it.keyframes);
-    }
-    return {
-      play() {},
-      pause() {},
-      cancel() {},
-      finished: Promise.resolve(),
-    } as any;
-  }
+export type TimelineController = {
+	play: () => void;
+	pause: () => void;
+	cancel: () => void;
+	finished?: Promise<unknown>;
+};
 
-  try {
-    const mod = await import('motion');
-    const timelineFn = (mod as any).timeline ?? (mod as any).default?.timeline ?? (mod as any).timeline;
-    if (!timelineFn) {
-      // Fallback: sequentially call animateMotion for each item
-      const players: any[] = [];
-      for (const it of validItems) {
-        const p = await animateMotion(it.el, it.keyframes, it.options);
-        if (p) players.push(p);
-        try { if (p && p.finished) await p.finished; } catch { /* ignore */ }
-      }
-      return {
-        play() {},
-        pause() {},
-        cancel() { players.forEach(p => p?.cancel?.()); },
-        finished: Promise.resolve(),
-      } as any;
-    }
+export async function timelineMotion(
+	items: TLItem[],
+	opts?: unknown,
+): Promise<TimelineController | undefined> {
+	// Filter out invalid elements early to avoid runtime errors inside the lib
+	const validItems = (Array.isArray(items) ? items : []).filter((it) =>
+		isValidTarget(it?.el),
+	);
+	if (validItems.length === 0) {
+		return {
+			play() {},
+			pause() {},
+			cancel() {},
+			finished: Promise.resolve(),
+		};
+	}
+	// Reduced motion: apply finals and return a stub controller
+	if (await isReducedMotion()) {
+		for (const it of validItems) {
+			applyFinalStyles(it.el, it.keyframes);
+		}
+		return {
+			play() {},
+			pause() {},
+			cancel() {},
+			finished: Promise.resolve(),
+		};
+	}
 
-    // Build definitions compatible with Motion One timeline API:
-    // [target, keyframes, options, at]
-    const defs = validItems.map((it) => {
-      let at = it.at;
-      if (typeof at === 'string' && at.startsWith('-')) {
-        // negative overlap -> "<{abs}" syntax (Motion One accepts '<0.25' to start before previous)
-        const num = Math.abs(parseFloat(at));
-        at = `<${num}`;
-      }
-      return [it.el, it.keyframes, it.options || {}, at] as const;
-    });
+	try {
+		const mod = await import("motion");
+		const timelineFn:
+			| undefined
+			| ((defs: unknown, options?: unknown) => TimelineController) =
+			(mod as { timeline?: (d: unknown, o?: unknown) => TimelineController })
+				.timeline ??
+			(
+				mod as {
+					default?: {
+						timeline?: (d: unknown, o?: unknown) => TimelineController;
+					};
+				}
+			).default?.timeline;
+		if (!timelineFn) {
+			// Fallback: sequentially call animateMotion for each item
+			const players: Array<
+				{ cancel?: () => void; finished?: Promise<unknown> } | undefined
+			> = [];
+			for (const it of validItems) {
+				const p = await animateMotion(it.el, it.keyframes, it.options);
+				if (p) players.push(p);
+				try {
+					if (p?.finished) await p.finished;
+				} catch {
+					/* ignore */
+				}
+			}
+			return {
+				play() {},
+				pause() {},
+				cancel() {
+					players.forEach((p) => {
+						p?.cancel?.();
+					});
+				},
+				finished: Promise.resolve(),
+			};
+		}
 
-    const tl = timelineFn(defs, opts);
-    return tl;
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.warn('[motion-qwik] timelineMotion failed', err);
-    // best-effort fallback: apply finals
-    for (const it of validItems) applyFinalStyles(it.el, it.keyframes);
-    return {
-      play() {},
-      pause() {},
-      cancel() {},
-      finished: Promise.resolve(),
-    } as any;
-  }
+		// Build definitions compatible with Motion One timeline API:
+		// [target, keyframes, options, at]
+		const defs = validItems.map((it) => {
+			let at = it.at;
+			if (typeof at === "string" && at.startsWith("-")) {
+				// negative overlap -> "<{abs}" syntax (Motion One accepts '<0.25' to start before previous)
+				const num = Math.abs(parseFloat(at));
+				at = `<${num}`;
+			}
+			return [it.el, it.keyframes, it.options || {}, at] as const;
+		});
+
+		const tl = timelineFn(defs, opts);
+		return tl;
+	} catch (err) {
+		// eslint-disable-next-line no-console
+		console.warn("[motion-qwik] timelineMotion failed", err);
+		// best-effort fallback: apply finals
+		for (const it of validItems) applyFinalStyles(it.el, it.keyframes);
+		return {
+			play() {},
+			pause() {},
+			cancel() {},
+			finished: Promise.resolve(),
+		};
+	}
 }
