@@ -106,7 +106,8 @@ services:
       dockerfile: docker/gateway.Dockerfile
     working_dir: /workspace
     environment:
-      RUST_LOG: info
+      # Quieter logs by default; override by setting RUST_LOG in your shell
+      RUST_LOG: ${RUST_LOG:-warn,tower_http=info}
       ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@example.com}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin12345}"
       RUSTC_WRAPPER: "/usr/local/cargo/bin/sccache"

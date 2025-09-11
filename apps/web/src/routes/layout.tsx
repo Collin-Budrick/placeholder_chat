@@ -2,7 +2,7 @@ import { component$, Slot, isDev } from '@builder.io/qwik';
 import type { RequestHandler } from '@builder.io/qwik-city';
 import ScrollProgress from '~/components/ScrollProgress';
 import ScrollReveals from '~/components/ScrollReveals';
-import BottomNav from '~/components/BottomNav';
+import GlassNavBar from '~/components/GlassNavBar';
 import AuthWarmup from '~/components/AuthWarmup';
 import VTGlobal from '~/components/VTGlobal';
 import SmoothScrollProvider from '~/components/integrations/SmoothScrollProvider';
@@ -39,10 +39,9 @@ export default component$(() => {
       {/* In production, idle warmup reduces first paint JS; keep eager in dev */}
       {isDev ? <AuthWarmup client:load /> : <AuthWarmup client:idle />}
       {
-        // Defer nav hydration until idle in both dev and prod to keep auth pages light.
-        // Nav still prefetches routes on idle/pointerdown, preserving snappy account clicks.
+        // New glass top navigation; hydrate on idle to keep auth pages light.
       }
-      <BottomNav client:idle />
+      <GlassNavBar client:idle />
     </>
   );
 });

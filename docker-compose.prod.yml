@@ -58,7 +58,8 @@ services:
       context: .
       dockerfile: docker/gateway.Dockerfile
     environment:
-      RUST_LOG: info
+      # Quieter logs by default; override by setting RUST_LOG in your shell
+      RUST_LOG: ${RUST_LOG:-warn,tower_http=info}
       ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@example.com}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin12345}"
       # Allow HTTPS origins on 5173 (LAN IP via Traefik)

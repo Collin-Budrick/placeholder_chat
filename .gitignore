@@ -65,3 +65,6 @@ apps/web/certs/*.key
 apps/web/certs/*.crt
 apps/web/certs/*.pem
 apps/web/certs/*.pfx
+
+# Cookies/session artifacts (do not commit)
+cookies.txt

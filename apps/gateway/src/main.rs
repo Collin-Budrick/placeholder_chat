@@ -216,6 +216,8 @@ async fn rate_limit_middleware(
             || path.starts_with("/api/auth/check_username")
             || path.starts_with("/api/frontend-logs")
             || path.starts_with("/healthz")
+            // Do not throttle WebSocket upgrades; messages are not limited per-frame
+            || path.starts_with("/ws")
         {
             // bypass rate limiting for core auth/health endpoints
             let resp: hyper::Response<Body> = next.run(req).await;
@@ -461,11 +463,13 @@ async fn main() -> Result<()> {
         .layer(TimeoutLayer::new(Duration::from_secs(10)));
 
     let mut app: Router = base
+        // Cheap/fast layers first (outermost): body limit, compression, timeout+error mapping, trace
+        // Then policy layers: CORS and rate limiting
         .layer(middleware::from_fn_with_state(state.clone(), rate_limit_middleware))
         .layer(cors_layer)
         .layer(TraceLayer::new_for_http())
-        .layer(CompressionLayer::new())
         .layer(timeout_stack)
+        .layer(CompressionLayer::new())
         .layer(DefaultBodyLimit::max(body_limit));
 
     // Optional: verbose POST body logging (expensive) — enabled only when LOG_POST_BODY=1

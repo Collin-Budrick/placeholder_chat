@@ -246,7 +246,13 @@ export default defineConfig(({ command, mode }): UserConfig => {
     }
   } catch (e) {}
   try {
-    if (command === 'build' && process.env.BUILD_TARGET !== 'ssg' && process.env.ASSET_COMPRESSION === '1') {
+    // Prefer Traefik for compression in Docker; otherwise, use brotli (optionally gzip) at build time
+    if (
+      command === 'build' &&
+      process.env.BUILD_TARGET !== 'ssg' &&
+      process.env.DOCKER_TRAEFIK !== '1' &&
+      process.env.ASSET_COMPRESSION === '1'
+    ) {
       // @ts-ignore
       const compression = require("vite-plugin-compression2");
       const wantGzip = process.env.ASSET_GZIP === '1';
@@ -323,8 +329,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
             }),
           ]
         : []),
-      // Add dev compression when serving (Traefik also compresses, but this helps when accessing 5174 directly)
-      ...(command === 'serve' ? [devCompressPlugin()] : []),
+      // Add dev compression only when not behind Traefik to avoid double compression.
+      ...(command === 'serve' && process.env.DOCKER_TRAEFIK !== '1' ? [devCompressPlugin()] : []),
       ...extraPlugins,
       // Improve cache/compression headers when using `vite preview` or Traefik preview proxy
       previewHeadersPlugin(),
@@ -337,7 +343,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
       // Put problematic deps that break bundling here, mostly those with binaries.
       // For example ['better-sqlite3'] if you use that in server functions.
       // Also exclude Qwik core/city so the optimizer can transform $(), component$, etc.
-      exclude: ['undici', '@builder.io/qwik', '@builder.io/qwik-city'],
+      exclude: ['undici', '@builder.io/qwik', '@builder.io/qwik-city', '@modular-forms/qwik'],
       // Minify prebundled deps in dev to cut payload size
       esbuildOptions: {
         minify: true,
@@ -355,6 +361,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
         '@faker-js/faker',
         'valibot',
         'lottie-web/build/player/lottie_light',
+        '@lottiefiles/lottie-player',
       ],
     },
     /**
@@ -458,8 +465,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
               : { overlay: false },
       // Improve reliability of file watching on Windows/WSL bind mounts
       watch: {
-        usePolling: true,
-        interval: 100,
+        // Prefer native FS events; fall back to polling in Docker or when explicitly requested
+        usePolling: process.env.DOCKER_TRAEFIK === '1' || process.env.USE_POLLING === '1',
+        // Relax polling interval to reduce CPU load on Windows/Docker bind mounts
+        interval: Number(process.env.VITE_WATCH_INTERVAL_MS || process.env.POLL_INTERVAL_MS || '350'),
       },
       // Dev proxy: forward /api and /ws to the gateway to avoid CORS and to make
       // browser-origin requests reach the backend during development.
@@ -492,9 +501,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
       },
     },
     build: {
-      // Emit production sourcemaps for better debugging and Lighthouse insights.
-      // Disable by setting VITE_SOURCEMAPS=0 during build if you don't want them.
-      sourcemap: process.env.VITE_SOURCEMAPS === '0' ? false : true,
+      // Disable sourcemaps in production to cut bundle weight and leak risk.
+      // Keep for debug builds only (non-production modes).
+      sourcemap: command === 'build' ? mode !== 'production' && process.env.VITE_SOURCEMAPS !== '0' : false,
       // Avoid nuking dist when using parallel --watch processes (client + SSG)
       emptyOutDir: process.env.VITE_WATCH === '1' ? false : true,
       // Reduce spurious warnings and split big vendor deps

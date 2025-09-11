@@ -2,6 +2,10 @@
 
 Website, App, and Desktop application for a chat app created with performance in mind. Using LynxJS, Qwik (SSR), SolidJS server islands, Tauri, Rust, and more.
 
+For contributors: please read AGENTS.md first — it captures our stack, patterns, and safety rules to keep diffs small and correct.
+
+See: [AGENTS.md](AGENTS.md)
+
 ## Prerequisites
 
 - Bun 1.x installed and on PATH (https://bun.sh)
@@ -32,6 +36,7 @@ What happens:
 Useful env vars:
 - `WEB_FORCE_URL` or `DEV_SERVER_URL` or `LAN_DEV_URL`: override the dev URL the stack should use (e.g. `https://192.168.1.10:5173`).
 - `NO_HTTPS=1`: prefer `http` scheme for local URLs (default is `https`).
+- `NO_HMR=1`: disable Vite HMR/WebSocket for bfcache/fire-drill testing. The dev server will run without HMR and avoid injecting the client.
 - `LYNX_QR_PORT` (default `3000`), `LYNX_HOST`, `LYNX_PORT_RANGE` (e.g. `5173-5180`).
 - `WAIT_TIMEOUT_MS` (default `120000`), `WAIT_POLL_MS` (default `400`).
 
@@ -51,6 +56,11 @@ What happens:
 - Builds `packages/shared` and the web preview/SSR bundle.
 - Starts a local HTTPS proxy to `vite preview` so you get TLS + HSTS.
 - Listens on `HOST` (default `0.0.0.0`) and `PORT`/`WEB_PORT` (default `5173`).
+
+Performance checks:
+- For the most production‑like perf, prefer the Docker prod preview: `bun run docker:prod`.
+- That stack serves SSG on `5174` behind Traefik TLS on `5173` (same routing as real prod).
+- Run Lighthouse against `https://<LAN-IP>:5173/` for realistic results (H2/H3, edge compression, cache headers).
 
 TLS options:
 - Provide your own certs with env vars (any of):
@@ -133,3 +143,55 @@ TLS/certificates:
 - Backend Guide: Axum gateway, redb storage, bus, JWT auth, WebSockets, TLS/rustls notes
   - `.clinerules/backend_docs.md`
   - Direct link: [.clinerules/backend_docs.md](.clinerules/backend_docs.md)
+
+## Compression Policy (Traefik vs build‑time)
+
+- With Traefik (including HTTP/3 overlay), prefer compression at the edge and skip build‑time precompression.
+  - Default compose files enable Traefik compression; Vite’s build‑time compression stays disabled by default.
+  - Leave `ASSET_COMPRESSION` unset in Docker to avoid duplicate work.
+- For static hosting without Traefik, enable precompressed assets:
+  - Set `ASSET_COMPRESSION=1` to emit Brotli (`.br`) files (default),
+  - Optionally add `ASSET_GZIP=1` to also emit `.gz` files.
+  - Note: Don’t enable both edge compression and build‑time compression for the same environment.
+
+## CI / Cache Hygiene
+
+Build caches (sccache, BuildKit, cargo registry/git) will grow over time. Prune monthly to keep runners healthy.
+
+- Safe monthly prune examples:
+
+  ```sh
+  # BuildKit only (Docker layer cache)
+  bun scripts/docker-cache-prune.mjs --buildkit --yes
+
+  # Named volumes (cargo-*/sccache) — keeps image layers
+  bun scripts/docker-cache-prune.mjs --volumes --yes
+
+  # All caches (use with care on CI runners)
+  bun scripts/docker-cache-prune.mjs --all --yes
+  ```
+
+- Tip: schedule in CI or a local cron; the script is idempotent and prints what it removes.
+
+## Gateway Performance Notes
+
+- Docker builds: The gateway image is built in release mode with `cargo-chef` and `sccache` for fast incremental rebuilds. See `docker/gateway.Dockerfile`.
+- Bare‑metal runs: To enable architecture‑specific optimizations on your local machine, you can run the gateway with:
+
+  ```sh
+  RUSTFLAGS="-C target-cpu=native" cargo run -p gateway --release
+  ```
+
+  Do not set this in shared Docker images or CI, since it embeds host‑specific instructions.
+
+- Logging baseline: For cleaner logs under load, set a quieter default filter:
+
+  ```sh
+  # Shell (affects all binaries using `tracing_subscriber` env filter)
+  export RUST_LOG="warn,tower_http=info"
+
+  # Or override only docker-compose runs
+  RUST_LOG="warn,tower_http=info" bun run docker:dev
+  ```
+
+  Compose files default to this baseline, but you can override by exporting `RUST_LOG`.

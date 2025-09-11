@@ -19,17 +19,25 @@ try {
     process.on('SIGTERM', () => { cleanup(); process.exit(0); });
   } catch {}
 } catch (e) {
-  // If lock exists, and the PID inside is alive, bail out to prevent duplicate dev servers
+  // If lock exists, and the PID inside is alive, bail out to prevent duplicate dev servers.
+  // However, when running in Docker, PID 1 is often our own process in a fresh container,
+  // and a leftover lock from a previous container may also read as 1. Treat that as stale.
   try {
     const raw = fs.readFileSync(lockFile, 'utf8');
     const pid = Number((raw || '').trim());
     if (Number.isFinite(pid)) {
-      try { process.kill(pid, 0); /* no-op test signal */
-        console.warn('[dev-env] Detected existing dev server (pid', pid, '). Skipping duplicate start.');
-        process.exit(0);
-      } catch {
-        // Stale lock; replace
+      // Ignore locks that point to our current process or PID 1 heuristically
+      if (pid === process.pid || pid === 1) {
         try { fs.unlinkSync(lockFile); } catch {}
+      } else {
+        try {
+          process.kill(pid, 0); // no-op test signal
+          console.warn('[dev-env] Detected existing dev server (pid', pid, '). Skipping duplicate start.');
+          process.exit(0);
+        } catch {
+          // Stale lock; replace
+          try { fs.unlinkSync(lockFile); } catch {}
+        }
       }
     }
   } catch {}
@@ -134,6 +142,14 @@ try {
 
 const useBun = !!(process.versions && (process.versions.bun || process.env.BUN_RUNTIME === '1'));
 const noSSR = process.env.NO_SSR === '1';
+
+// Relax file-watch polling defaults when set too aggressively by the environment
+try {
+  const iv = Number(process.env.CHOKIDAR_INTERVAL || '0');
+  if (!Number.isFinite(iv) || iv < 300) {
+    process.env.CHOKIDAR_INTERVAL = '350';
+  }
+} catch {}
 const cmd = useBun ? 'bunx' : 'vite';
 const baseArgs = ['--host', '0.0.0.0', '--port', process.env.PORT || '5174'];
 const args = useBun

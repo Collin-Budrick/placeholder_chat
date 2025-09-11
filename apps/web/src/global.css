@@ -197,6 +197,37 @@ html[data-theme='light'] body::before, html[data-theme='white'] body::before {
   box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 10px 35px rgba(0,0,0,0.06);
 }
 
+/* Glass + Grain utilities (theme-aware, no hard-coded colors for fill)
+   - Use DaisyUI tokens via utilities on elements; these helpers only add structure/texture. */
+.glass-surface {
+  position: relative;
+  isolation: isolate;
+  border-radius: 1rem; /* rounded-xl */
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+}
+.glass-surface.border-soft { border: 1px solid rgba(255,255,255,0.12); }
+html[data-theme='dark'] .glass-surface.border-soft,
+html[data-theme='oled'] .glass-surface.border-soft { border-color: rgba(255,255,255,0.10); }
+html[data-theme='light'] .glass-surface.border-soft,
+html[data-theme='white'] .glass-surface.border-soft { border-color: rgba(0,0,0,0.06); }
+
+/* Subtle grain over glass (dot matrix, very low opacity) */
+.with-grain { position: relative; }
+.with-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  /* Use currentColor with low opacity via layer opacity so theme drives tint */
+  background-image: radial-gradient(circle, currentColor 0.5px, transparent 0.7px);
+  background-size: 6px 6px;
+  mix-blend-mode: overlay;
+  opacity: .055; /* keep extremely subtle */
+}
+
 /* Ensure readable text on acrylic surfaces in both themes */
 .bottom-nav { color: var(--fallback-bc, oklch(var(--bc)/1)); }
 .bottom-nav-surface {
@@ -298,6 +329,8 @@ html[data-theme='oled'] .bottom-nav-surface::before { opacity: .85; }
   /* a touch of tint helps the blur read, and is required by Safari */
   background: linear-gradient(to top, rgba(255,255,255,0.38) 0%, rgba(255,255,255,0.22) 70%, rgba(255,255,255,0) 100%);
 }
+/* Allow components to opt-out of the global underlay when they provide their own glass surface */
+.bottom-nav.no-underlay::before { display: none; }
 html[data-theme='dark'] .bottom-nav::before,
 html[data-theme='oled'] .bottom-nav::before {
   background: linear-gradient(to top, rgba(10,10,10,0.45) 0%, rgba(10,10,10,0.20) 70%, rgba(10,10,10,0) 100%);

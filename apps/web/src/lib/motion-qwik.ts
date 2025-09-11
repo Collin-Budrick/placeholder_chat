@@ -24,7 +24,20 @@ export async function isReducedMotion(): Promise<boolean> {
  * - Plain async function that lazy-loads Motion One and calls animate.
  * - Named without a trailing dollar to avoid Qwik's QRL analyzer treating it as a QRL.
  */
+function isValidTarget(el: any): boolean {
+  try {
+    if (!el) return false;
+    // Single element
+    if (typeof Element !== 'undefined' && el instanceof Element) return true;
+    // NodeList or array-like collection
+    if (el instanceof NodeList) return el.length > 0 && Array.from(el).every((n) => n && typeof (n as any).nodeType === 'number');
+    if (Array.isArray(el)) return el.length > 0 && el.every((n) => n && typeof (n as any).nodeType === 'number');
+  } catch {}
+  return false;
+}
+
 export async function animateMotion(el: Element | Element[] | NodeList | any, keyframes: any, opts?: any) {
+  if (!isValidTarget(el)) return undefined as any;
   try {
     const mod = await import('motion');
     if (!mod || typeof mod.animate !== 'function') return undefined as any;
@@ -81,9 +94,14 @@ function applyFinalStyles(el: any, keyframes: any) {
 }
 
 export async function timelineMotion(items: TLItem[], opts?: any) {
+  // Filter out invalid elements early to avoid runtime errors inside the lib
+  const validItems = (Array.isArray(items) ? items : []).filter((it) => isValidTarget(it?.el));
+  if (validItems.length === 0) {
+    return { play() {}, pause() {}, cancel() {}, finished: Promise.resolve() } as any;
+  }
   // Reduced motion: apply finals and return a stub controller
   if (await isReducedMotion()) {
-    for (const it of items) {
+    for (const it of validItems) {
       applyFinalStyles(it.el, it.keyframes);
     }
     return {
@@ -100,7 +118,7 @@ export async function timelineMotion(items: TLItem[], opts?: any) {
     if (!timelineFn) {
       // Fallback: sequentially call animateMotion for each item
       const players: any[] = [];
-      for (const it of items) {
+      for (const it of validItems) {
         const p = await animateMotion(it.el, it.keyframes, it.options);
         if (p) players.push(p);
         try { if (p && p.finished) await p.finished; } catch { /* ignore */ }
@@ -115,7 +133,7 @@ export async function timelineMotion(items: TLItem[], opts?: any) {
 
     // Build definitions compatible with Motion One timeline API:
     // [target, keyframes, options, at]
-    const defs = items.map((it) => {
+    const defs = validItems.map((it) => {
       let at = it.at;
       if (typeof at === 'string' && at.startsWith('-')) {
         // negative overlap -> "<{abs}" syntax (Motion One accepts '<0.25' to start before previous)
@@ -131,7 +149,7 @@ export async function timelineMotion(items: TLItem[], opts?: any) {
     // eslint-disable-next-line no-console
     console.warn('[motion-qwik] timelineMotion failed', err);
     // best-effort fallback: apply finals
-    for (const it of items) applyFinalStyles(it.el, it.keyframes);
+    for (const it of validItems) applyFinalStyles(it.el, it.keyframes);
     return {
       play() {},
       pause() {},
