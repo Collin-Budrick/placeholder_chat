@@ -11,19 +11,13 @@
     "@builder.io/qwik-city": "^1.16.0",
     "@fastify/compress": "^8.1.0",
     "@fastify/static": "^8.2.0",
-    "@tailwindcss/vite": "^4.1.13",
-    "daisyui": "5.1.9",
-    "express": "^5.1.0",
     "fastify": "^5.6.0",
     "fastify-plugin": "^5.0.1",
     "ignore": "^7.0.5",
-    "tailwindcss": "^4.1.13",
     "typescript": "^5.9.2",
-    "vite": "7.1.5",
-    "vite-plugin-solid": "^2.11.8"
+    "vite": "7.1.5"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^24.3.1",
     "dotenv": "^17.2.2",
     "concurrently": "^9.2.1"
@@ -38,16 +32,9 @@
     "desktop:dev": "cargo run -p desktop_app",
     "desktop:build": "cargo build -p desktop_app --release",
     "docker:env": "bun scripts/write-public-ip-env.mjs",
-    "docker:up": "bun scripts/write-public-ip-env.mjs && docker compose up",
-    "docker:uph3": "bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.yml -f docker-compose.h3.yml up",
-    "docker:devall": "docker compose -f docker-compose.dev-all.yml up",
     "docker:dev": "bun scripts/write-public-ip-env.mjs && docker compose -p stack -f docker-compose.yml up web gateway traefik",
-    "docker:dev:ssr": "bun scripts/write-public-ip-env.mjs && docker compose -p stack -f docker-compose.yml up web gateway traefik",
     "docker:dev:ssg": "bun scripts/write-public-ip-env.mjs && docker compose -p stack -f docker-compose.dev-web.yml up --build",
     "docker:prod": "bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.prod.yml up --build",
-    "docker:build:gateway:dev": "DOCKER_BUILDKIT=1 bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.dev-web.yml build gateway",
-    "docker:build:gateway:prod": "DOCKER_BUILDKIT=1 bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.prod.yml build gateway",
-    "docker:rebuild-gateway": "DOCKER_BUILDKIT=1 bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.dev-web.yml build --no-cache gateway && docker compose -f docker-compose.prod.yml build --no-cache gateway",
     "docker:cache:prune": "bun scripts/docker-cache-prune.mjs --all",
     "mkcert:lan": "bun scripts/mkcert-lan.mjs"
   },

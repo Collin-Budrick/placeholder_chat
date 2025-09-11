@@ -14,7 +14,6 @@ import { join } from "path";
 import Fonts from "unplugin-fonts/vite";
 import Icons from "unplugin-icons/vite";
 import { defineConfig, type UserConfig } from "vite";
-import solid from "vite-plugin-solid";
 import tsconfigPaths from "vite-tsconfig-paths";
 import pkg from "./package.json";
 

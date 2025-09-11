@@ -14,7 +14,7 @@ services:
         echo '[web] deps cached; bun.lock unchanged'; \
       fi; \
       bunx tsc -p packages/shared/tsconfig.build.json || true; \
-      exec bun apps/web/scripts/dev-with-env.js"
+      exec bun scripts/dev-env.js"
     environment:
       CHOKIDAR_USEPOLLING: "1"
       CHOKIDAR_INTERVAL: "100"
