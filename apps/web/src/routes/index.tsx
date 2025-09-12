@@ -5,8 +5,8 @@ import {
 	useVisibleTask$,
 } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
-import { timelineMotion } from "~/lib/motion-qwik";
 import { cn } from "~/lib/cn";
+import { timelineMotion } from "~/lib/motion-qwik";
 
 export default component$(() => {
 	const h1Ref = useSignal<HTMLElement>();
@@ -196,10 +196,12 @@ export default component$(() => {
 								Real‑time chats, rich profiles, and a playful, modern UI — all
 								on a silky glass surface with a subtle grain texture.
 							</p>
-								<div
-									ref={ctaRef}
-									class={cn("mt-8 flex items-center justify-center md:justify-start gap-4")}
-								>
+							<div
+								ref={ctaRef}
+								class={cn(
+									"mt-8 flex items-center justify-center md:justify-start gap-4",
+								)}
+							>
 								<a href="/signup" class="btn btn-primary">
 									Create your account
 								</a>

@@ -59,12 +59,7 @@ const backNav = $((ev: Event, elParam?: Element) => {
 		// Default back gesture: slide left (previous)
 		root.setAttribute("data-vt-nav", "1");
 		root.setAttribute("data-vt-dir", "left");
-		try {
-			const vtTarget = (getAttr("data-vt-target") || "back") as string;
-			if (vtTarget) root.setAttribute("data-vt-target", vtTarget);
-		} catch {
-			/* ignore */
-		}
+		// No per-target CSS hints
 		// Respect reduced motion: no VT, just navigate
 		try {
 			if (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
@@ -108,8 +103,7 @@ const backNav = $((ev: Event, elParam?: Element) => {
 				try {
 					root.removeAttribute("data-vt-nav");
 					root.removeAttribute("data-vt-dir");
-					root.removeAttribute("data-vt-effect");
-					root.removeAttribute("data-vt-target");
+					// effect and target attributes no longer used
 				} catch {
 					/* ignore */
 				}
@@ -349,14 +343,8 @@ const BackButton = component$((props: BackButtonProps) => {
 						: "left"; // default left
 				root.setAttribute("data-vt-nav", "1");
 				root.setAttribute("data-vt-dir", dir);
-				// Name target for CSS hints (e.g., login hiding)
-				const name =
-					targetCanon === "/" ? "home" : targetCanon.replace(/^\//, "");
-				root.setAttribute("data-vt-target", name);
-				// Match VTGlobal special fade for profile transitions
-				if (current === "/profile" || targetCanon === "/profile") {
-					root.setAttribute("data-vt-effect", "fade");
-				}
+				// No target-specific CSS hints
+				// Removed special fade; slide handles all transitions
 			} catch {
 				/* ignore */
 			}
@@ -384,8 +372,6 @@ const BackButton = component$((props: BackButtonProps) => {
 				try {
 					root.removeAttribute("data-vt-nav");
 					root.removeAttribute("data-vt-dir");
-					root.removeAttribute("data-vt-effect");
-					root.removeAttribute("data-vt-target");
 				} catch {
 					/* ignore */
 				}
@@ -412,7 +398,7 @@ const BackButton = component$((props: BackButtonProps) => {
 		}
 	});
 
-	// Pre-arm direction on pointerdown to mirror nav behavior (VTGlobal does this for anchors)
+	// Pre-arm direction on pointerdown to mirror anchor behavior
 	const onPreArm = $((ev: Event) => {
 		try {
 			const el =
@@ -436,12 +422,8 @@ const BackButton = component$((props: BackButtonProps) => {
 			const dir = toIdx > fromIdx ? "right" : "left";
 			root.setAttribute("data-vt-nav", "1");
 			root.setAttribute("data-vt-dir", dir);
-			const name =
-				targetCanon === "/" ? "home" : targetCanon.replace(/^\//, "");
-			root.setAttribute("data-vt-target", name);
-			if (current === "/profile" || targetCanon === "/profile") {
-				root.setAttribute("data-vt-effect", "fade");
-			}
+			// No target-specific CSS hints
+			// No special fade effect on pointer pre-arm
 		} catch {
 			/* ignore */
 		}
@@ -478,7 +460,6 @@ const BackButton = component$((props: BackButtonProps) => {
 			}
 			data-target={explicitTarget ?? ""}
 			data-force={explicitTarget ? "1" : ""}
-			data-vt-target={isSignup ? "login" : ""}
 			onClick$={explicitTarget ? goExplicit : backNav}
 		>
 			<svg

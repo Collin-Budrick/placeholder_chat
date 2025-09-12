@@ -5,7 +5,6 @@ import GlassNavBar from "~/components/GlassNavBar";
 import SmoothScrollProvider from "~/components/integrations/SmoothScrollProvider";
 import ScrollProgress from "~/components/ScrollProgress";
 import ScrollReveals from "~/components/ScrollReveals";
-import VTGlobal from "~/components/VTGlobal";
 
 /**
  * Layout component: renders the site navigation and a <Slot /> for route content.
@@ -18,7 +17,6 @@ export default component$(() => {
 	return (
 		<>
 			<ScrollProgress client:idle />
-			{isDev ? <VTGlobal client:load /> : <VTGlobal client:idle />}
 			<SmoothScrollProvider client:load>
 				<main id="content" class="edge-fades flex-1 overflow-auto">
 					<div

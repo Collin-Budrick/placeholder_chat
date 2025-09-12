@@ -3,7 +3,6 @@ import type { DocumentHead } from "@builder.io/qwik-city";
 import DaisyButtonsDemo from "../../components/integrations/DaisyButtonsDemo";
 import FakerDemo from "../../components/integrations/FakerDemo";
 import IconsDemo from "../../components/integrations/IconsDemo";
-import LottieDemo from "../../components/integrations/LottieDemo";
 import MotionOneDemo from "../../components/integrations/MotionOneDemo";
 import UnpicDemo from "../../components/integrations/UnpicDemo";
 import { PreactCounterIsland } from "../../components/PreactCounterIsland";
@@ -12,12 +11,9 @@ export default component$(() => {
 	return (
 		<section class="container mx-auto max-w-3xl p-6 space-y-8">
 			<h1 class="text-2xl font-bold">Integrations</h1>
-			<p class="text-zinc-400">
-				Quick demos wired up for Lenis, Lottie, Panda, and Faker.
-			</p>
+            <p class="text-zinc-400">Quick demos wired up for Panda, Faker, Motion One, and DaisyUI.</p>
 			<div class="grid gap-8 md:grid-cols-2">
 				<FakerDemo />
-				<LottieDemo />
 				<MotionOneDemo />
 				<DaisyButtonsDemo />
 				<IconsDemo />

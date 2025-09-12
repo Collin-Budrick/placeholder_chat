@@ -1,8 +1,8 @@
 import { $, component$, useSignal, useTask$ } from "@builder.io/qwik";
+import { cn } from "~/lib/cn";
 // Switch to Iconify (lucide) for consistency and tree-shaken SVGs
 import LuMoon from "~icons/lucide/moon";
 import LuSun from "~icons/lucide/sun";
-import { cn } from "~/lib/cn";
 
 const THEME_KEY = "theme";
 const LIGHT = "light"; // daisyUI default light theme

@@ -34,7 +34,6 @@
     "eslint",
     "build",
     "run",
-    "wait-on",
     "server/entry.bun.js",
     "playwright",
     "biome"

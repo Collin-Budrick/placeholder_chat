@@ -3,16 +3,16 @@ import {
 	component$,
 	useOnWindow,
 	useSignal,
-	useTask$,
+	useVisibleTask$,
 } from "@builder.io/qwik";
 import { Link, useLocation } from "@builder.io/qwik-city";
+import ThemeToggle from "~/components/ThemeToggle";
+import { cn } from "~/lib/cn";
 // Use Iconify (lucide) via unplugin-icons for tree-shaken inline SVGs
 import LuHome from "~icons/lucide/home";
 import LuInfo from "~icons/lucide/info";
 import LuMail from "~icons/lucide/mail";
 import LuUser from "~icons/lucide/user";
-import ThemeToggle from "~/components/ThemeToggle";
-import { cn } from "~/lib/cn";
 
 /**
  * GlassNavBar — DaisyUI-based, glassy top navigation with subtle grain.
@@ -43,10 +43,11 @@ export default component$(() => {
 		return cur.startsWith(p);
 	};
 
-	// Avoid layout jump on first paint; set initial scroll state client-side
-	useTask$(() => {
-		if (typeof window === "undefined") return;
-		scrolled.value = window.scrollY > 8;
+	// Avoid layout jump on first paint; set initial scroll state client-side after mount
+	useVisibleTask$(() => {
+		try {
+			scrolled.value = window.scrollY > 8;
+		} catch {}
 	});
 
 	// No sliding pill logic; keep it clean like the top version
@@ -116,7 +117,10 @@ export default component$(() => {
 							</Link>
 						</li>
 						<li class="w-full grid place-items-center">
-							<ThemeToggle class="btn btn-ghost btn-sm" iconClass="w-6 h-6 [stroke-width:2.25]" />
+							<ThemeToggle
+								class="btn btn-ghost btn-sm"
+								iconClass="w-6 h-6 [stroke-width:2.25]"
+							/>
 						</li>
 					</ul>
 				</div>

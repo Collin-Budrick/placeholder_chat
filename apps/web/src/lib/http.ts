@@ -87,7 +87,7 @@ export const api = ofetch.create({
  * POST helper that returns a normalized result.
  * Note: browsers will not expose Set-Cookie response headers; server-side fetches may.
  */
-async function postJson(path: string, body: unknown) {
+async function _postJson(path: string, body: unknown) {
 	try {
 		const json = await api(path, {
 			method: "POST",

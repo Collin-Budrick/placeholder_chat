@@ -8,7 +8,6 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { qwikVite } from "@builder.io/qwik/optimizer";
 import { qwikCity } from "@builder.io/qwik-city/vite";
-import { partytownVite } from "@qwik.dev/partytown/utils";
 import tailwindcss from "@tailwindcss/vite";
 import { join } from "path";
 import Fonts from "unplugin-fonts/vite";
@@ -101,17 +100,21 @@ export default defineConfig(({ command, mode }): UserConfig => {
 						res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
 						res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
 						res.setHeader("Cross-Origin-Embedder-Policy", "require-corp");
-						const csp = [
-							"default-src 'self'",
-							"base-uri 'self'",
-							"object-src 'none'",
-							"frame-ancestors 'none'",
-							"img-src 'self' data: blob:",
-							"font-src 'self' data:",
-							"style-src 'self' 'unsafe-inline'",
-							"script-src 'self' 'unsafe-inline'",
-							"connect-src 'self'",
-						].join("; ");
+            const csp = [
+              "default-src 'self'",
+              "base-uri 'self'",
+              "object-src 'none'",
+              "frame-ancestors 'none'",
+              "img-src 'self' data: blob:",
+              "font-src 'self' data:",
+              "style-src 'self' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-inline' blob:",
+              "connect-src 'self'",
+              // Allow Vite/preview to spawn blob: workers (some libs create workers dynamically)
+              "worker-src 'self' blob:",
+              // Back-compat for old UAs that use child-src for workers
+              "child-src 'self' blob:",
+            ].join("; ");
 						res.setHeader("Content-Security-Policy", csp);
 					} catch {}
 					next();
@@ -349,7 +352,28 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			);
 		}
 	} catch (e) {}
-	const cfg: UserConfig = {
+  const tailwindPrewarmPlugin = () => {
+    return {
+      name: "tailwind-prewarm-global-css",
+      apply: "serve",
+      configureServer(server: any) {
+        const warm = async () => {
+          try {
+            const cssPath = path.posix.join("/src", "global.css");
+            // Trigger transform so Tailwind + DaisyUI run before first navigation
+            await server.transformRequest(cssPath);
+          } catch {}
+        };
+        try {
+          // Run once server is ready; a short delay avoids race with other plugins
+          const t = setTimeout(warm, 200);
+          server.httpServer?.once("close", () => clearTimeout(t));
+        } catch {}
+      },
+    } as any;
+  };
+
+  const cfg: UserConfig = {
 		// Use esbuild to drop dev statements in production builds; disable sourcemaps in dev for lighter responses
 		esbuild:
 			command === "build"
@@ -368,12 +392,14 @@ export default defineConfig(({ command, mode }): UserConfig => {
 		// Suppress Vite's informational "externalized for browser compatibility" logs
 		// (These are expected when Node built-ins are referenced from server-only modules.)
 		logLevel: "warn",
-		plugins: [
-			qwikCity({ trailingSlash: false }),
-			qwikVite(),
-			tsconfigPaths({ root: "." }),
-			// Tree-shaken icon components via Iconify collections (e.g., ~icons/lucide/home)
-			Icons({ compiler: "jsx" }),
+      plugins: [
+          qwikCity({ trailingSlash: false }),
+          qwikVite(),
+          tsconfigPaths({ root: "." }),
+          // Tree-shaken icon components via Iconify collections (e.g., ~icons/lucide/home)
+          Icons({ compiler: "jsx" }),
+          // Warm Tailwind+DaisyUI pipeline so first request doesn't trigger cold compile
+          tailwindPrewarmPlugin(),
 			// Optional: Preload/inject web fonts (enable by setting USE_FONTS=1)
 			...(process.env.USE_FONTS === "1"
 				? [
@@ -405,8 +431,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			// Improve cache/compression headers when using `vite preview` or Traefik preview proxy
 			previewHeadersPlugin(),
 			// Run Tailwind only for the client build to avoid duplicate CSS work/logs in SSG pass
-			...(isSsgBuild ? [] : [tailwindcss()]),
-			partytownVite({ dest: join(__dirname, "dist", "~partytown") }),
+            ...(isSsgBuild ? [] : [tailwindcss()]),
 		],
 		// This tells Vite which dependencies to pre-build in dev mode.
 		optimizeDeps: {
@@ -430,15 +455,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			},
 			// Force prebundle commonly-used heavy deps (but NOT Qwik packages)
 			include: [
-				"@qwikest/icons/lucide",
 				"preact",
 				"preact/compat",
 				"preact/jsx-runtime",
 				"motion",
 				"@faker-js/faker",
 				"valibot",
-				"lottie-web/build/player/lottie_light",
-				"@lottiefiles/lottie-player",
 			],
 		},
 		/**
@@ -493,21 +515,25 @@ export default defineConfig(({ command, mode }): UserConfig => {
 						})(),
 			https: resolveHttpsOptions(),
 			headers: (() => {
-				const csp = [
-					"default-src 'self'",
-					// Allow inline for dev only (Vite injects inline scripts and some frameworks emit small inlines)
-					"script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-					// HMR/websocket + SSR proxy connections
-					"connect-src 'self' ws: wss: http: https:",
-					// Styles often use inline during dev (Tailwind, Qwik style injections)
-					"style-src 'self' 'unsafe-inline'",
-					// Safe asset types
-					"img-src 'self' data: blob:",
-					"font-src 'self' data:",
-					"object-src 'none'",
-					"base-uri 'self'",
-					"frame-ancestors 'none'",
-				].join("; ");
+        const csp = [
+          "default-src 'self'",
+          // Allow inline for dev only (Vite injects inline scripts and some frameworks emit small inlines)
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
+          // HMR/websocket + SSR proxy connections
+          "connect-src 'self' ws: wss: http: https:",
+          // Styles often use inline during dev (Tailwind, Qwik style injections)
+          "style-src 'self' 'unsafe-inline'",
+          // Safe asset types
+          "img-src 'self' data: blob:",
+          "font-src 'self' data:",
+          "object-src 'none'",
+          "base-uri 'self'",
+          "frame-ancestors 'none'",
+          // Allow dev-time workers created from blob: URLs (e.g., Vite plugins or libs)
+          "worker-src 'self' blob:",
+          // Back-compat for old UAs that use child-src for workers
+          "child-src 'self' blob:",
+        ].join("; ");
 				return {
 					// Don't cache the server response in dev mode
 					"Cache-Control": "public, max-age=0",
@@ -621,10 +647,10 @@ export default defineConfig(({ command, mode }): UserConfig => {
 							)
 								return "vendor-preact";
 							// Split icon library to keep core smaller
-							if (id.includes("@qwikest/icons")) return "vendor-icons";
+							// Split icon library chunk when present; handled by unplugin-icons virtual imports
 							// Keep any transitive zod usage isolated from core bundles
 							if (id.includes("zod")) return "vendor-zod";
-							if (id.includes("@lottiefiles")) return "vendor-lottie";
+							if (id.includes("lottie-web")) return "vendor-lottie";
 							if (id.includes("@modular-forms")) return "vendor-mod-forms";
 							if (id.includes("valibot")) return "vendor-valibot";
 							return "vendor";

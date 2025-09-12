@@ -5,11 +5,11 @@ import { type InitialValues, useForm, valiForm$ } from "@modular-forms/qwik";
 import * as v from "valibot";
 import BackButton from "~/components/BackButton";
 import TypeTitle from "~/components/TypeTitle";
+import { cn } from "~/lib/cn";
 import { animateMotion } from "~/lib/motion-qwik";
 import AuthCard from "../../components/auth/AuthCard";
 import { csrfHeader } from "../../lib/csrf";
 import { api, apiFetch } from "../../lib/http";
-import { cn } from "~/lib/cn";
 
 const SignupSchema = v.object({
 	username: v.pipe(
@@ -309,11 +309,9 @@ export default component$(() => {
 											class={cn(
 												"pill-input w-full",
 												!usernameEditing.value &&
-													(
-														usernameAvailable.value === false ||
-															usernameTaken.value ||
-															!!field.error
-													) &&
+													(usernameAvailable.value === false ||
+														usernameTaken.value ||
+														!!field.error) &&
 													"is-warning ring-1 ring-warning text-warning",
 											)}
 											required
@@ -473,7 +471,8 @@ export default component$(() => {
 											}
 											class={cn(
 												"pill-input w-full",
-												!passwordEditing.value && field.error &&
+												!passwordEditing.value &&
+													field.error &&
 													"is-warning ring-1 ring-warning text-warning",
 											)}
 											required

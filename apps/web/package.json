@@ -11,14 +11,11 @@
 		"docker:dev": "bun ./scripts/docker-dev-proxy.cjs",
 		"docker:prod": "bun ./scripts/docker-prod-proxy.cjs",
 		"build": "qwik build",
-
 		"build.types": "tsc --incremental --noEmit",
-
 		"deploy": "echo 'Run \"npm run qwik add\" to install a server adapter'",
 		"dev": "concurrently -n GW,VITE,LYNX -c \"yellow.bold,cyan.bold,magenta.bold\" \"bun run gateway:dev\" \"bun run dev:web\" \"bun run lynx:auto\"",
 		"dev.debug": "bun --inspect-brk ./node_modules/vite/bin/vite.js --mode ssr --force",
 		"dev.public": "vite --mode ssr --host 0.0.0.0",
-
 		"dev:web": "bun ../../scripts/dev-env.js",
 		"dev:web:nohmr": "bun ../../scripts/dev-nohmr.js",
 		"fmt": "prettier --write .",
@@ -29,24 +26,20 @@
 		"lynx:auto": "bun ../../scripts/wait-and-launch.js",
 		"preview": "qwik build preview && vite preview --open",
 		"preview.public": "qwik build preview && vite preview --host 0.0.0.0",
-
 		"build:ssg": "bunx vite build && bunx vite build -c adapters/static/vite.config.ts",
 		"build:ssg:watch": "bunx concurrently -n client,ssg -c \"cyan,magenta\" \"VITE_WATCH=1 bunx vite build --watch\" \"node ./scripts/ssg-watch-routes.mjs\"",
 		"ssg:route": "bun ./scripts/ssg-route.mjs",
 		"preview:ssg": "bunx vite preview --host 0.0.0.0 --strictPort --port 5174 --outDir dist",
-
-		"preview:ssg:watch": "bunx concurrently -n watch,preview -c \"magenta,cyan\" \"bun run build:ssg:watch\" \"bunx wait-on ./dist/index.html && bunx vite preview --host 0.0.0.0 --strictPort --port 5174 --outDir dist\"",
+		"preview:ssg:watch": "bunx concurrently -n watch,preview -c \"magenta,cyan\" \"bun run build:ssg:watch\" \"node ./scripts/preview-wait-dist.mjs\"",
 		"serve": "bun server/entry.bun.js",
 		"start": "vite --open --mode ssr",
 		"test.e2e": "playwright test",
 		"qwik": "qwik",
 		"biome:check": "biome check src --max-diagnostics=500",
 		"biome:fix": "biome check --write src --max-diagnostics=500",
-
 		"inspect": "VITE_INSPECT=1 bun ./scripts/dev-with-env.js"
 	},
 	"devDependencies": {
-		"@auth/qwik": "0.8.0",
 		"@builder.io/qwik": "1.16.0",
 		"@builder.io/qwik-city": "1.16.0",
 		"@builder.io/qwik-react": "0.5.6",
@@ -54,8 +47,6 @@
 		"@modular-forms/qwik": "0.29.1",
 		"@playwright/test": "1.55.0",
 		"@preact/preset-vite": "2.10.2",
-		"@qwik.dev/partytown": "0.11.2",
-		"@qwikest/icons": "0.0.13",
 		"@tailwindcss/postcss": "4.1.13",
 		"@tailwindcss/vite": "4.1.13",
 		"@types/bun": "1.2.21",
@@ -68,7 +59,6 @@
 		"postcss": "8.5.6",
 		"prettier": "3.6.2",
 		"prettier-plugin-tailwindcss": "0.6.14",
-		"qrcode-terminal": "0.12.0",
 		"rollup-plugin-visualizer": "6.0.3",
 		"selfsigned": "3.0.1",
 		"tailwindcss": "4.1.13",
@@ -76,37 +66,27 @@
 		"typescript": "5.9.2",
 		"typescript-eslint": "8.43.0",
 		"typescript-plugin-css-modules": "5.2.0",
-		"undici": "7.16.0",
 		"vite": "7.1.5",
 		"vite-plugin-compression2": "2.2.1",
 		"vite-plugin-mkcert": "1.17.8",
 		"vite-tsconfig-paths": "5.1.4",
-		"wait-on": "8.0.4",
 		"unplugin-icons": "22.2.0",
-		"@iconify-json/lucide": "1.2.67",
 		"@unpic/qwik": "1.0.0",
-		"@svgr/core": "8.1.0",
 		"@biomejs/biome": "2.2.4",
-		"oxlint": "1.15.0",
 		"knip": "5.63.1",
 		"vite-plugin-inspect": "11.3.3",
 		"unplugin-fonts": "1.4.0",
 		"msw": "2.11.2"
 	},
 	"dependencies": {
-		"@auth/core": "0.40.0",
-		"@builder.io/partytown": "^0.10.3",
 		"@faker-js/faker": "10.0.0",
-		"@lottiefiles/lottie-player": "2.0.12",
 		"@stack/shared": "workspace:*",
-		"@svgr/plugin-jsx": "8.1.0",
 		"daisyui": "5.1.10",
-		"html2canvas": "1.4.1",
-		"lottie-web": "5.13.0",
 		"motion": "12.23.12",
 		"ofetch": "1.4.1",
 		"preact": "10.27.1",
 		"tailwind-merge": "3.3.1",
-		"valibot": "1.1.0"
+		"valibot": "1.1.0",
+		"velvette": "0.1.8"
 	}
 }

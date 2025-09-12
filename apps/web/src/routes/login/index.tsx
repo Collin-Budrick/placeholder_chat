@@ -4,8 +4,8 @@ import { useNavigate } from "@builder.io/qwik-city";
 import * as v from "valibot";
 import BackButton from "~/components/BackButton";
 import TypeTitle from "~/components/TypeTitle";
-import { logApi } from "~/lib/log";
 import { cn } from "~/lib/cn";
+import { logApi } from "~/lib/log";
 import { animateMotion } from "~/lib/motion-qwik";
 import AuthCard from "../../components/auth/AuthCard";
 
@@ -292,7 +292,8 @@ export default component$(() => {
 									}
 									class={cn(
 										"pill-input w-full",
-										serverError.value && !emailEditing.value &&
+										serverError.value &&
+											!emailEditing.value &&
 											"is-warning ring-1 ring-warning text-warning",
 									)}
 									autoComplete="username"
@@ -327,7 +328,8 @@ export default component$(() => {
 									}
 									class={cn(
 										"pill-input w-full",
-										serverError.value && !passwordEditing.value &&
+										serverError.value &&
+											!passwordEditing.value &&
 											"is-warning ring-1 ring-warning text-warning",
 									)}
 									autoComplete="current-password"

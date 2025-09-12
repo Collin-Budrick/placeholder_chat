@@ -1,5 +1,6 @@
 import { component$, isDev } from "@builder.io/qwik";
 import { QwikCityProvider, RouterOutlet } from "@builder.io/qwik-city";
+import VelvetteInit from "~/components/integrations/VelvetteInit";
 import { RouterHead } from "./components/router-head/router-head";
 import "./global.css";
 // Ensure DaisyUI component styles are present even if Tailwind plugin processing
@@ -18,23 +19,9 @@ export default component$(() => {
 						href={`${import.meta.env.BASE_URL}manifest.json`}
 					/>
 				)}
-				{/* Connection hints for CDN assets used by integrations (e.g., Lottie demos) */}
-				<link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
+        {/* Connection hints removed (no external Lottie assets in use) */}
 				<RouterHead />
-				{/* Optional: route third‑party analytics via Partytown to isolate from main thread.
-            Enable by setting ENABLE_ANALYTICS=1 and provide ANALYTICS_GTAG_ID. */}
-				{/* Dev-only analytics via Partytown to avoid any prod perf impact */}
-				{isDev && import.meta.env.ENABLE_ANALYTICS === "1" && (
-					<>
-						<script
-							type="text/partytown"
-							src={`https://www.googletagmanager.com/gtag/js?id=${import.meta.env.ANALYTICS_GTAG_ID || "G-XXXX"}`}
-						/>
-						<script type="text/partytown">
-							{`window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', '${String(import.meta.env.ANALYTICS_GTAG_ID || "G-XXXX")}', { anonymize_ip: true, transport_type: 'beacon' });`}
-						</script>
-					</>
-				)}
+				{/* Analytics via Partytown removed; add your own script loader if needed */}
 				{/* Prefetch auth route data so login/signup feel instant */}
 				<link
 					rel="prefetch"
@@ -56,6 +43,8 @@ export default component$(() => {
 				lang="en"
 				class="min-h-screen flex flex-col bg-base-100 text-base-content"
 			>
+				{/* Initialize Velvette page transitions (client-only) */}
+				<VelvetteInit client:load />
 				{/* RouterOutlet renders routes that include their own #content container.
             Avoid wrapping in another #content to keep View Transitions working. */}
 				<RouterOutlet />

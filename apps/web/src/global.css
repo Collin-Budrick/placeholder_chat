@@ -151,41 +151,7 @@ html[data-vt-nav="1"][data-vt-dir="left"]::view-transition-new(page),
 	transform: translateZ(0);
 }
 
-/* Fade effect for profile and logout navigations */
-@keyframes vt-new-fade {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-@keyframes vt-old-fade {
-	from {
-		opacity: 1;
-	}
-	to {
-		opacity: 0;
-	}
-}
-/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
-html[data-vt-effect="fade"]::view-transition-old(page),
-/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
-	html[data-vt-effect="fade"]::view-transition-old(page) {
-	animation: vt-old-fade 280ms ease-out both;
-}
-/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
-html[data-vt-effect="fade"]::view-transition-new(page),
-/* biome-ignore lint/correctness/noUnknownTypeSelector: View Transitions pseudo-elements are valid */
-	html[data-vt-effect="fade"]::view-transition-new(page) {
-	animation: vt-new-fade 320ms ease-out both;
-}
-
-/* Hide incoming login DOM while VT is running to prevent pre-flash */
-html[data-vt-target="login"][data-vt-nav="1"] #login-root {
-	visibility: hidden;
-	opacity: 0;
-}
+/* Removed profile/login specific fade helpers; velvette slide handles all */
 /* Hide incoming page DOM during VT to avoid double-paint and flashes.
    We scope to when a vt target is set so non-VT updates don't blank content. */
 /* Avoid globally hiding incoming content. Let VT snapshots render for smoothness. */
@@ -295,99 +261,14 @@ html[data-theme="white"] body::before {
 	}
 }
 
-/* Page slide transition using the View Transitions API */
-/* Seamless viewport-like slide between pages */
-@keyframes vt-in-right {
-	from {
-		transform: translateX(100%);
-	}
-	to {
-		transform: translateX(0);
-	}
-}
-@keyframes vt-out-left {
-	from {
-		transform: translateX(0);
-	}
-	to {
-		transform: translateX(-100%);
-	}
-}
-@keyframes vt-in-left {
-	from {
-		transform: translateX(-100%);
-	}
-	to {
-		transform: translateX(0);
-	}
-}
-@keyframes vt-out-right {
-	from {
-		transform: translateX(0);
-	}
-	to {
-		transform: translateX(100%);
-	}
-}
+/* Page slide transition keyframes are defined above; duplicate set removed */
 /* Auth-specific vertical slides */
-@keyframes vt-in-up {
-	from {
-		transform: translateY(100%);
-	}
-	to {
-		transform: translateY(0);
-	}
-}
-@keyframes vt-out-down {
-	from {
-		transform: translateY(0);
-	}
-	to {
-		transform: translateY(100%);
-	}
-}
-@keyframes vt-in-down {
-	from {
-		transform: translateY(-100%);
-	}
-	to {
-		transform: translateY(0);
-	}
-}
-@keyframes vt-out-up {
-	from {
-		transform: translateY(0);
-	}
-	to {
-		transform: translateY(-100%);
-	}
-}
 @keyframes vt-fade-out {
 	from {
 		opacity: 1;
 	}
 	to {
 		opacity: 0;
-	}
-}
-/* Sequential fade: old fades out first half, new fades in second half */
-@keyframes vt-old-seq-fade {
-	0%,
-	49.9% {
-		opacity: 1;
-	}
-	50%,
-	100% {
-		opacity: 0;
-	}
-}
-@keyframes vt-new-seq-fade {
-	0%,
-	50% {
-		opacity: 0;
-	}
-	100% {
-		opacity: 1;
 	}
 }
 /* Helper class for pre-fading the auth container before VT starts */
