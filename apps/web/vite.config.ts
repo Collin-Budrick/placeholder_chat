@@ -34,13 +34,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
 		(mode === "production" || process.env.NODE_ENV === "production");
 	const isSsgBuild = process.env.BUILD_TARGET === "ssg";
 	const extraPlugins: any[] = [];
-	// Try to load Preact plugin if present; keep optional to avoid hard failure before deps are installed
-	try {
-		// @ts-expect-error
-		const preact = require("@preact/preset-vite");
-		if (preact) extraPlugins.push(preact.default ? preact.default() : preact());
-	} catch (e) {
-		// Not installed yet; islands using preact/compat will still work after you install deps
+	// Try to load Preact plugin for client/dev builds only; skip during SSG to avoid server-side imports
+	if (!process.env.BUILD_TARGET || process.env.BUILD_TARGET !== "ssg") {
+		try {
+			// @ts-expect-error
+			const preact = require("@preact/preset-vite");
+			if (preact) extraPlugins.push(preact.default ? preact.default() : preact());
+		} catch (e) {
+			// Not installed yet; islands using preact/compat will still work after you install deps
+		}
 	}
 	// Enable gzip/deflate in dev to improve Lighthouse in docker:dev and direct 5174 access
 	const devCompressPlugin = () => {
@@ -357,17 +359,28 @@ export default defineConfig(({ command, mode }): UserConfig => {
       name: "tailwind-prewarm-global-css",
       apply: "serve",
       configureServer(server: any) {
+        let warmed = false;
         const warm = async () => {
+          if (warmed) return;
+          warmed = true;
           try {
-            const cssPath = path.posix.join("/src", "global.css");
-            // Trigger transform so Tailwind + DaisyUI run before first navigation
-            await server.transformRequest(cssPath);
+            // Use ssrLoadModule to avoid pushing HMR updates to the client during initial load
+            // Import a tiny virtual module that re-exports the CSS so Tailwind/DaisyUI compile once
+            const virtualId = "\0_twind_prewarm_global_css";
+            server.moduleGraph.createFileOnlyEntry(virtualId);
+            await server.ssrLoadModule(virtualId, {
+              fixStacktrace: false,
+            }).catch(() => {});
           } catch {}
         };
+        // Warm right after server starts listening and before first request if possible
         try {
-          // Run once server is ready; a short delay avoids race with other plugins
-          const t = setTimeout(warm, 200);
-          server.httpServer?.once("close", () => clearTimeout(t));
+          if (server.httpServer?.listening) {
+            setTimeout(warm, 0);
+          } else {
+            server.httpServer?.once("listening", () => setTimeout(warm, 0));
+          }
+          server.httpServer?.once("close", () => (warmed = true));
         } catch {}
       },
     } as any;
@@ -379,16 +392,84 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			command === "build"
 				? { drop: ["console", "debugger"], legalComments: "none" }
 				: { sourcemap: false },
-		resolve: {
-			alias: {
-				// Avoid bundling Node's undici into the browser; map to a tiny shim
-				undici: join(__dirname, "src", "shims", "undici.browser.mjs"),
-				// React compat to Preact for smaller islands
-				react: "preact/compat",
-				"react-dom": "preact/compat",
-				"react/jsx-runtime": "preact/jsx-runtime",
-			},
-		},
+      resolve: {
+        alias: (() => {
+          const a: Record<string, string> = {
+            // Avoid bundling Node's undici into the browser; map to a tiny shim
+            undici: join(__dirname, "src", "shims", "undici.browser.mjs"),
+            // Avoid requiring preact-render-to-string during SSG by shimming preact server imports (belt-and-suspenders)
+            "preact/compat/server": join(
+              __dirname,
+              "src",
+              "shims",
+              "preact.server.shim.mjs",
+            ),
+            "preact/compat/server.mjs": join(
+              __dirname,
+              "src",
+              "shims",
+              "preact.server.shim.mjs",
+            ),
+            "preact-render-to-string": join(
+              __dirname,
+              "src",
+              "shims",
+              "preact.rts.shim.mjs",
+            ),
+            "preact-render-to-string/stream-node": join(
+              __dirname,
+              "src",
+              "shims",
+              "preact.rts.shim.mjs",
+            ),
+          };
+          // Only alias React → Preact for non-SSG builds to avoid importing preact server paths
+          if (!isSsgBuild) {
+            a["react"] = "preact/compat";
+            a["react-dom"] = "preact/compat";
+            a["react/jsx-runtime"] = "preact/jsx-runtime";
+          }
+          return a;
+        })(),
+      },
+      // Ensure SSR module runner (dev) also honors our shims to avoid
+      // preact/compat/server -> preact-render-to-string/stream-node resolution
+      ssr: {
+        resolve: {
+          alias: {
+            "preact/compat/server": join(
+              __dirname,
+              "src",
+              "shims",
+              "preact.server.shim.mjs",
+            ),
+            "preact/compat/server.mjs": join(
+              __dirname,
+              "src",
+              "shims",
+              "preact.server.shim.mjs",
+            ),
+            "preact-render-to-string": join(
+              __dirname,
+              "src",
+              "shims",
+              "preact.rts.shim.mjs",
+            ),
+            "preact-render-to-string/stream-node": join(
+              __dirname,
+              "src",
+              "shims",
+              "preact.rts.shim.mjs",
+            ),
+          },
+        },
+        // Do not externalize these so Vite's resolver can apply our aliases/shims
+        noExternal: [
+          "preact",
+          "preact/compat",
+          "preact-render-to-string",
+        ],
+      },
 		// Suppress Vite's informational "externalized for browser compatibility" logs
 		// (These are expected when Node built-ins are referenced from server-only modules.)
 		logLevel: "warn",
@@ -398,8 +479,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
           tsconfigPaths({ root: "." }),
           // Tree-shaken icon components via Iconify collections (e.g., ~icons/lucide/home)
           Icons({ compiler: "jsx" }),
-          // Warm Tailwind+DaisyUI pipeline so first request doesn't trigger cold compile
-          tailwindPrewarmPlugin(),
+          // Optional: prewarm Tailwind+DaisyUI once at dev server start to reduce first navigation jank.
+          // Note: can cause an extra client connect/reload in some setups; keep opt-in via env.
+          ...(process.env.TAILWIND_PREWARM === "1" ? [tailwindPrewarmPlugin()] : []),
 			// Optional: Preload/inject web fonts (enable by setting USE_FONTS=1)
 			...(process.env.USE_FONTS === "1"
 				? [

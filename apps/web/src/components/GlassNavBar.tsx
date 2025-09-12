@@ -118,6 +118,7 @@ export default component$(() => {
 						</li>
 						<li class="w-full grid place-items-center">
 							<ThemeToggle
+								client:idle
 								class="btn btn-ghost btn-sm"
 								iconClass="w-6 h-6 [stroke-width:2.25]"
 							/>

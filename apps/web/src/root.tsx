@@ -13,13 +13,31 @@ export default component$(() => {
 			<head>
 				<meta charset="utf-8" />
 				<meta name="color-scheme" content="dark light" />
+				{/* Dev CSP meta: ensure blob: workers allowed even if reverse proxy strips headers */}
+                {isDev && (
+                    <meta
+                        http-equiv="Content-Security-Policy"
+                        content={[
+                            "default-src 'self'",
+                            "base-uri 'self'",
+                            "object-src 'none'",
+                            "img-src 'self' data: blob:",
+                            "font-src 'self' data:",
+                            "style-src 'self' 'unsafe-inline'",
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
+                            "connect-src 'self' ws: wss: http: https:",
+                            "worker-src 'self' blob:",
+                            "child-src 'self' blob:",
+                        ].join("; ")}
+                    />
+                )}
 				{!isDev && (
 					<link
 						rel="manifest"
 						href={`${import.meta.env.BASE_URL}manifest.json`}
 					/>
 				)}
-        {/* Connection hints removed (no external Lottie assets in use) */}
+				{/* Connection hints removed (no external Lottie assets in use) */}
 				<RouterHead />
 				{/* Analytics via Partytown removed; add your own script loader if needed */}
 				{/* Prefetch auth route data so login/signup feel instant */}

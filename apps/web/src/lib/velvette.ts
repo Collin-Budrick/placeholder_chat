@@ -1,6 +1,14 @@
 // Client-side initializer for Velvette view transitions
 export async function initVelvette(): Promise<void> {
 	if (typeof window === "undefined") return;
+	const w = window as unknown as {
+		__velvette_started?: boolean;
+		__velvette_cleanup?: () => void;
+		requestIdleCallback?: (cb: IdleRequestCallback) => number;
+		cancelIdleCallback?: (id: number) => void;
+	};
+	if (w.__velvette_started) return;
+	w.__velvette_started = true;
 	try {
 		const reduced = (() => {
 			try {
@@ -52,42 +60,66 @@ export async function initVelvette(): Promise<void> {
 		};
 
 		// Initialize velvette with a slide effect; if API differs, fail silently.
-		try {
-			// Common API shape: create({ effect, onNavigate })
-			const root = document.documentElement;
-			// Clean-up when Qwik finishes a view transition (Qwik City emits this custom event)
-			const onVTDone = () => {
-				try {
-					root.removeAttribute("data-vt-nav");
-					root.removeAttribute("data-vt-dir");
-					root.removeAttribute("data-vt-effect");
-				} catch {}
-			};
-			document.addEventListener("qview-transition", (ev: any) => {
-				try {
-					Promise.resolve(ev?.detail?.finished).finally(onVTDone);
-				} catch {
-					onVTDone();
-				}
-			});
-
-			create?.({
-				effect: "slide",
-				// Many libs provide a navigation hook; be defensive and support both
-				onNavigate: (from: string, to: string) => {
-					try {
-						const dir = getDir(from || window.location.pathname, to || "");
-						root.setAttribute("data-vt-nav", "1");
-						root.setAttribute("data-vt-dir", dir);
-					} catch {}
-				},
-			});
-		} catch {
-			// Fallback: attempt simple call without options
+		const root = document.documentElement;
+		let firstNavSkipped = false;
+		const vtHandler = (ev: any) => {
 			try {
-				create?.();
+				Promise.resolve(ev?.detail?.finished)
+					.catch(() => {})
+					.finally(() => {
+						try {
+							root.removeAttribute("data-vt-nav");
+							root.removeAttribute("data-vt-dir");
+						} catch {}
+					});
 			} catch {}
-		}
+		};
+		document.addEventListener("qview-transition", vtHandler);
+
+		const enable = () => {
+			try {
+				create?.({
+					effect: "slide",
+					onNavigate: (from: string, to: string) => {
+						try {
+							if (!firstNavSkipped) {
+								firstNavSkipped = true;
+								return;
+							}
+							const dir = getDir(from || window.location.pathname, to || "");
+							root.setAttribute("data-vt-nav", "1");
+							root.setAttribute("data-vt-dir", dir);
+						} catch {}
+					},
+				});
+			} catch {
+				try {
+					create?.();
+				} catch {}
+			}
+		};
+
+		const idle = w.requestIdleCallback;
+		if (typeof idle === "function") idle(() => enable());
+		else setTimeout(enable, 0);
+
+		w.__velvette_cleanup = () => {
+			try {
+				document.removeEventListener("qview-transition", vtHandler);
+			} catch {}
+		};
+		try {
+			// @ts-expect-error
+			if (import.meta.hot) {
+				// @ts-expect-error
+				import.meta.hot.dispose(() => {
+					try {
+						w.__velvette_cleanup?.();
+					} catch {}
+					w.__velvette_started = false;
+				});
+			}
+		} catch {}
 	} catch {
 		/* ignore */
 	}
