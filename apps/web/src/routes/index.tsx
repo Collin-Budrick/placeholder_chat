@@ -236,7 +236,7 @@ export default component$(() => {
 									<div class="mt-4 space-y-3">
 										<div class="flex items-center gap-3" data-reveal>
 											<div class="avatar placeholder">
-												<div class="bg-neutral text-neutral-content w-8 rounded-full">
+												<div class="bg-base-300 text-base-content w-8 h-8 rounded-full grid place-items-center">
 													<span>M</span>
 												</div>
 											</div>
@@ -250,7 +250,7 @@ export default component$(() => {
 										</div>
 										<div class="flex items-center gap-3" data-reveal>
 											<div class="avatar placeholder">
-												<div class="bg-neutral text-neutral-content w-8 rounded-full">
+												<div class="bg-base-300 text-base-content w-8 h-8 rounded-full grid place-items-center">
 													<span>J</span>
 												</div>
 											</div>
@@ -264,7 +264,7 @@ export default component$(() => {
 										</div>
 										<div class="flex items-center gap-3" data-reveal>
 											<div class="avatar placeholder">
-												<div class="bg-neutral text-neutral-content w-8 rounded-full">
+												<div class="bg-base-300 text-base-content w-8 h-8 rounded-full grid place-items-center">
 													<span>H</span>
 												</div>
 											</div>
@@ -369,7 +369,7 @@ export default component$(() => {
 								<div class="space-y-3">
 									<div class="chat chat-start">
 										<div class="chat-image avatar placeholder">
-											<div class="bg-neutral text-neutral-content w-9 rounded-full">
+											<div class="bg-base-300 text-base-content w-9 h-9 rounded-full grid place-items-center">
 												<span>A</span>
 											</div>
 										</div>
@@ -382,7 +382,7 @@ export default component$(() => {
 									</div>
 									<div class="chat chat-end">
 										<div class="chat-image avatar placeholder">
-											<div class="bg-neutral text-neutral-content w-9 rounded-full">
+											<div class="bg-base-300 text-base-content w-9 h-9 rounded-full grid place-items-center">
 												<span>Y</span>
 											</div>
 										</div>
@@ -395,7 +395,7 @@ export default component$(() => {
 									</div>
 									<div class="chat chat-start">
 										<div class="chat-image avatar placeholder">
-											<div class="bg-neutral text-neutral-content w-9 rounded-full">
+											<div class="bg-base-300 text-base-content w-9 h-9 rounded-full grid place-items-center">
 												<span>M</span>
 											</div>
 										</div>
