@@ -81,7 +81,7 @@ export default component$(() => {
             type="button"
             class="pointer-events-auto btn btn-circle btn-ghost btn-sm"
             aria-label="Previous slide"
-            onClick$={$(()->{
+            onClick$={$(() => {
               const el = carRef.value as unknown as HTMLElement | null;
               if (!el) return;
               try { el.scrollBy({ left: -el.clientWidth, behavior: 'smooth' as ScrollBehavior }); } catch { el.scrollLeft -= el.clientWidth; }
@@ -93,7 +93,7 @@ export default component$(() => {
             type="button"
             class="pointer-events-auto btn btn-circle btn-ghost btn-sm"
             aria-label="Next slide"
-            onClick$={$(()->{
+            onClick$={$(() => {
               const el = carRef.value as unknown as HTMLElement | null;
               if (!el) return;
               try { el.scrollBy({ left: el.clientWidth, behavior: 'smooth' as ScrollBehavior }); } catch { el.scrollLeft += el.clientWidth; }

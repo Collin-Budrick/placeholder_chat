@@ -344,11 +344,11 @@ export default component$(() => {
 						</div>
 					</div>
 					<div class="order-1 md:order-2">
-						<div
-							class="glass-surface border-soft with-grain card bg-base-100/5 border shadow-lg"
-							data-reveal
-						>
-							<div class="card-body p-4 sm:p-6">
+								<div
+									class="glass-surface border-soft with-grain card bg-base-100/5 border shadow-lg min-h-[360px]"
+									style={{ contentVisibility: "auto", containIntrinsicSize: "360px 640px" }}
+								>
+								<div class="card-body p-4 sm:p-6">
 								<div class="space-y-3">
 									<div class="chat chat-start">
 										<div class="chat-image avatar placeholder">

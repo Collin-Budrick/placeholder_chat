@@ -1,4 +1,5 @@
 import { component$, isDev, Slot } from "@builder.io/qwik";
+import { useLocation } from "@builder.io/qwik-city";
 import type { RequestHandler } from "@builder.io/qwik-city";
 import AuthWarmup from "~/components/AuthWarmup";
 import GlassNavBar from "~/components/GlassNavBar";
@@ -18,6 +19,16 @@ export default component$(() => {
 	const enableSmooth = env.VITE_SMOOTH_SCROLL === '1';
 	const enableProgress = env.VITE_SCROLL_PROGRESS === '1';
 const enableReveals = env.VITE_REVEALS === '1';
+	const loc = useLocation();
+	const path = loc.url.pathname || "/";
+	const hideNav =
+		path === "/login" ||
+		path === "/login/" ||
+		path === "/signup" ||
+		path === "/signup/" ||
+		path === "/integrations" ||
+		path === "/integrations/";
+
 	return (
 		<>
 			{enableProgress && <ScrollProgress client:visible />}
@@ -58,7 +69,7 @@ const enableReveals = env.VITE_REVEALS === '1';
 			{
 				// New glass top navigation; hydrate on idle to keep auth pages light.
 			}
-			<GlassNavBar client:visible />
+			{!hideNav && <GlassNavBar client:visible />}
 		</>
 	);
 });
