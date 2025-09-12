@@ -16,7 +16,9 @@ export default component$(() => {
 	// View transition pre-hydration script removed.
 	return (
 		<>
+			// @ts-expect-error Qwik client directive
 			<ScrollProgress client:idle />
+			// @ts-expect-error Qwik client directive
 			<SmoothScrollProvider client:load>
 				<main id="content" class="edge-fades flex-1 overflow-auto">
 					<div
@@ -24,6 +26,7 @@ export default component$(() => {
 						class="grid place-items-center min-h-full pb-24"
 					>
 						<Slot />
+						{/* @ts-expect-error Qwik client directive */}
 						<ScrollReveals client:idle />
 					</div>
 				</main>
@@ -32,10 +35,17 @@ export default component$(() => {
 			<div class="viewport-fade top" aria-hidden="true" />
 			<div class="viewport-fade bottom" aria-hidden="true" />
 			{/* In production, idle warmup reduces first paint JS; keep eager in dev */}
-			{isDev ? <AuthWarmup client:load /> : <AuthWarmup client:idle />}
+			{isDev ? (
+				// @ts-expect-error Qwik client directive
+				<AuthWarmup client:load />
+			) : (
+				// @ts-expect-error Qwik client directive
+				<AuthWarmup client:idle />
+			)}
 			{
 				// New glass top navigation; hydrate on idle to keep auth pages light.
 			}
+			// @ts-expect-error Qwik client directive
 			<GlassNavBar client:idle />
 		</>
 	);
@@ -60,7 +70,10 @@ export const onRequest: RequestHandler = (ev) => {
 				ev.headers.set("Cache-Control", "no-store");
 			} catch {}
 			try {
-				return ev.text(204, "");
+				// In Qwik handlers, response helpers return an AbortMessage to be thrown
+				// so the handler type remains void.
+				// eslint-disable-next-line @typescript-eslint/no-throw-literal
+				throw ev.text(204, "");
 			} catch {
 				return;
 			}

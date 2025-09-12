@@ -1,3 +1,4 @@
+import type { Component } from "@builder.io/qwik";
 import {
 	$,
 	component$,
@@ -13,6 +14,12 @@ import LuHome from "~icons/lucide/home";
 import LuInfo from "~icons/lucide/info";
 import LuMail from "~icons/lucide/mail";
 import LuUser from "~icons/lucide/user";
+
+// Some IDE/TS setups type unplugin-icons as unknown; cast to Qwik components
+const HomeIcon = LuHome as unknown as Component<{ class?: string }>;
+const InfoIcon = LuInfo as unknown as Component<{ class?: string }>;
+const MailIcon = LuMail as unknown as Component<{ class?: string }>;
+const UserIcon = LuUser as unknown as Component<{ class?: string }>;
 
 /**
  * GlassNavBar — DaisyUI-based, glassy top navigation with subtle grain.
@@ -52,19 +59,19 @@ export default component$(() => {
 
 	// No sliding pill logic; keep it clean like the top version
 
-    return (
-        <nav
-            class={cn(
-                "fixed left-1/2 -translate-x-1/2 bottom-3 z-[100000]",
-                "transition-transform duration-300",
-                scrolled.value
-                    ? "translate-y-[-2px] scale-[.995]"
-                    : "translate-y-0 scale-100",
-                "w-[min(1120px,calc(100%-1.5rem))]",
-            )}
-            aria-label="Primary"
-            data-glass-nav
-        >
+	return (
+		<nav
+			class={cn(
+				"fixed left-1/2 -translate-x-1/2 bottom-3 z-[100000]",
+				"transition-transform duration-300",
+				scrolled.value
+					? "translate-y-[-2px] scale-[.995]"
+					: "translate-y-0 scale-100",
+				"w-[min(1120px,calc(100%-1.5rem))]",
+			)}
+			aria-label="Primary"
+			data-glass-nav
+		>
 			<div
 				class={cn(
 					"navbar rounded-2xl border glass-surface border-soft with-grain",
@@ -83,7 +90,7 @@ export default component$(() => {
 								href="/"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<LuHome class="w-6 h-6 [stroke-width:2.25]" />
+								<HomeIcon class="w-6 h-6 [stroke-width:2.25]" />
 								<span class="sr-only">Home</span>
 							</Link>
 						</li>
@@ -93,7 +100,7 @@ export default component$(() => {
 								href="/about"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<LuInfo class="w-6 h-6 [stroke-width:2.25]" />
+								<InfoIcon class="w-6 h-6 [stroke-width:2.25]" />
 								<span class="sr-only">About</span>
 							</Link>
 						</li>
@@ -103,7 +110,7 @@ export default component$(() => {
 								href="/contact"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<LuMail class="w-6 h-6 [stroke-width:2.25]" />
+								<MailIcon class="w-6 h-6 [stroke-width:2.25]" />
 								<span class="sr-only">Messages</span>
 							</Link>
 						</li>
@@ -113,13 +120,16 @@ export default component$(() => {
 								href="/profile"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<LuUser class="w-6 h-6 [stroke-width:2.25]" />
+								<UserIcon class="w-6 h-6 [stroke-width:2.25]" />
 								<span class="sr-only">Account</span>
 							</Link>
 						</li>
 						<li class="w-full grid place-items-center">
 							<ThemeToggle
-								client:idle
+								{...({ "client:idle": true } as unknown as Record<
+									"client:idle",
+									true
+								>)}
 								class="btn btn-ghost btn-sm"
 								iconClass="w-6 h-6 [stroke-width:2.25]"
 							/>
