@@ -48,7 +48,9 @@ export default component$(() => {
     `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=${q}&fm=jpg`;
 
   return (
-    <div class="glass-surface border-soft with-grain card bg-base-100/5 border overflow-hidden">
+    <div class="space-y-2">
+      <h2 class="text-xl font-semibold">Web Image Carousel</h2>
+      <div class="glass-surface border-soft with-grain card bg-base-100/5 border overflow-hidden">
       {/* DaisyUI carousel */}
       <div class="relative">
         <div
@@ -64,17 +66,30 @@ export default component$(() => {
               <picture>
                 <source type="image/avif" srcSet={buildSet(s.id, "avif")} sizes={sizes} />
                 <source type="image/webp" srcSet={buildSet(s.id, "webp")} sizes={sizes} />
-                <img
-                  src={fallback(s.id)}
-                  srcSet={buildSet(s.id, "jpg")}
-                  sizes={sizes}
-                  alt={s.alt}
-                  loading={i === 0 ? ("eager" as const) : ("lazy" as const)}
-                  fetchpriority={i === 0 ? ("high" as any) : (undefined as any)}
-                  class="h-full w-full object-cover"
-                  width={360}
-                  height={240}
-                />
+                {i === 0 ? (
+                  <img
+                    src={fallback(s.id)}
+                    srcSet={buildSet(s.id, "jpg")}
+                    sizes={sizes}
+                    alt={s.alt}
+                    loading="eager"
+                    fetchpriority="high"
+                    class="h-full w-full object-cover"
+                    width={360}
+                    height={240}
+                  />
+                ) : (
+                  <img
+                    src={fallback(s.id)}
+                    srcSet={buildSet(s.id, "jpg")}
+                    sizes={sizes}
+                    alt={s.alt}
+                    loading="lazy"
+                    class="h-full w-full object-cover"
+                    width={360}
+                    height={240}
+                  />
+                )}
               </picture>
             </figure>
           </div>
@@ -125,6 +140,7 @@ export default component$(() => {
             </a>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );
