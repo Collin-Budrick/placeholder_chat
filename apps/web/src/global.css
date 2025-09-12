@@ -340,6 +340,23 @@ html[data-theme="white"] .glass-surface.border-soft {
 	opacity: 0.055; /* keep extremely subtle */
 }
 
+/* Scoped glass fixes for nav (robust across SSR/SSG)
+   Ensure the blur can composite by giving the glass a light theme tint,
+   avoid isolating its stacking context, and clip to rounded corners. */
+[data-glass-nav] .glass-surface {
+    isolation: auto;
+    position: relative;
+    overflow: hidden;
+    /* keep existing blur but ensure a minimal tint so Safari/Chromium sample reliably */
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+    backdrop-filter: blur(14px) saturate(1.15);
+    background: oklch(var(--b1) / 0.06);
+}
+[data-glass-nav] .glass-surface > * {
+    position: relative;
+    z-index: 1;
+}
+
 /* Ensure readable text on acrylic surfaces in both themes */
 .bottom-nav {
 	color: var(--fallback-bc, oklch(var(--bc) / 1));

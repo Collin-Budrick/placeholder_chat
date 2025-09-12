@@ -52,18 +52,19 @@ export default component$(() => {
 
 	// No sliding pill logic; keep it clean like the top version
 
-	return (
-		<nav
-			class={cn(
-				"fixed left-1/2 -translate-x-1/2 bottom-3 z-[100000]",
-				"transition-transform duration-300",
-				scrolled.value
-					? "translate-y-[-2px] scale-[.995]"
-					: "translate-y-0 scale-100",
-				"w-[min(1120px,calc(100%-1.5rem))]",
-			)}
-			aria-label="Primary"
-		>
+    return (
+        <nav
+            class={cn(
+                "fixed left-1/2 -translate-x-1/2 bottom-3 z-[100000]",
+                "transition-transform duration-300",
+                scrolled.value
+                    ? "translate-y-[-2px] scale-[.995]"
+                    : "translate-y-0 scale-100",
+                "w-[min(1120px,calc(100%-1.5rem))]",
+            )}
+            aria-label="Primary"
+            data-glass-nav
+        >
 			<div
 				class={cn(
 					"navbar rounded-2xl border glass-surface border-soft with-grain",
