@@ -58,6 +58,32 @@ export const head: DocumentHead = {
 			// Boost priority for the above‑the‑fold image
 			fetchpriority: "high" as any,
 		},
+		// Preload the first carousel image to optimize LCP
+		{
+			rel: "preload",
+			as: "image",
+			href:
+				"https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=480&q=45&fm=avif",
+			crossOrigin: "anonymous" as any,
+			fetchpriority: "high" as any,
+			// Provide responsive hints for browsers that support it
+			imagesrcset: (
+				[
+					240,
+					320,
+					360,
+					420,
+					480,
+				]
+					.map(
+						(w) =>
+							`https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=${w}&q=45&fm=avif ${w}w`,
+					)
+					.join(", ")
+			) as any,
+			imagesizes:
+				"(min-width: 768px) calc((min(100vw, 64rem) - 3rem - 2rem)/2), 100vw" as any,
+		},
 	],
 };
 

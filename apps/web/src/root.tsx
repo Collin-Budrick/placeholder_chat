@@ -41,6 +41,7 @@ export default component$(() => {
 					)}
 				{/* Connection hints removed (no external Lottie assets in use) */}
 				<RouterHead />
+				<link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
 				{/* Analytics via Partytown removed; add your own script loader if needed */}
 				{/* Optional prefetch for auth route data; opt-in via VITE_PREFETCH_AUTH=1 */}
 				{(import.meta as unknown as { env?: Record<string, string> })?.env

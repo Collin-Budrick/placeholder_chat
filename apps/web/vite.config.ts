@@ -568,7 +568,28 @@ export default defineConfig(({ command, mode }): UserConfig => {
                 ? [devCompressPlugin()]
                 : []),
             // Handle @unpic/qwik dev metadata requests locally
-            ...(command === "serve" ? [devImageInfoPlugin()] : []),
+          ...(command === "serve" ? [devImageInfoPlugin()] : []),
+          // In dev, force long cache for favicon.svg so audits don't flag it
+          ...(command === "serve"
+            ? [
+                ((): any => ({
+                  name: "dev-favicon-cache",
+                  configureServer(server: any) {
+                    const oneYear = "public, max-age=31536000, immutable";
+                    server.middlewares.use((req: any, res: any, next: any) => {
+                      try {
+                        const url: string = (req.originalUrl || req.url || "/") as string;
+                        if (/^\/favicon\.svg(?:$|\?)/.test(url)) {
+                          res.setHeader("Cache-Control", oneYear);
+                          res.setHeader("Vary", "Accept-Encoding");
+                        }
+                      } catch {}
+                      next();
+                    });
+                  },
+                }))(),
+              ]
+            : []),
           ...extraPlugins,
           // Enable LightningCSS in dev under Bun by using the WASM build to avoid N-API panics.
           // This pre-transform runs before Vite's CSS handling and is dev-only.

@@ -12,8 +12,13 @@ export default component$(() => {
   // Width candidates tuned to our actual card slot. Cap at 480 to avoid oversizing.
   const widths = [240, 320, 360, 420, 480];
   const buildSet = (id: string, fm: "avif" | "webp" | "jpg") => {
-    // Slightly lower quality for better byte savings; AVIF compresses well.
-    const q = fm === "avif" ? 55 : fm === "webp" ? 65 : 60;
+    // Per-image tuning: the concert image compresses well at a lower q
+    const isConcert = id === "photo-1492684223066-81342ee5ff30";
+    const q = fm === "avif"
+      ? (isConcert ? 40 : 45)
+      : fm === "webp"
+        ? (isConcert ? 58 : 60)
+        : (isConcert ? 52 : 55);
     return widths
       .map(
         (w) =>
@@ -39,7 +44,7 @@ export default component$(() => {
     },
   ];
 
-  const fallback = (id: string, w = 360, q = 60) =>
+  const fallback = (id: string, w = 360, q = 55) =>
     `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=${q}&fm=jpg`;
 
   return (
@@ -79,7 +84,7 @@ export default component$(() => {
         <div class="pointer-events-none absolute left-2 right-2 top-1/2 z-10 -translate-y-1/2 transform flex justify-between">
           <button
             type="button"
-            class="pointer-events-auto btn btn-circle btn-ghost btn-sm"
+            class="pointer-events-auto btn btn-circle btn-ghost w-12 h-12"
             aria-label="Previous slide"
             onClick$={$(() => {
               const el = carRef.value as unknown as HTMLElement | null;
@@ -91,7 +96,7 @@ export default component$(() => {
           </button>
           <button
             type="button"
-            class="pointer-events-auto btn btn-circle btn-ghost btn-sm"
+            class="pointer-events-auto btn btn-circle btn-ghost w-12 h-12"
             aria-label="Next slide"
             onClick$={$(() => {
               const el = carRef.value as unknown as HTMLElement | null;
@@ -110,7 +115,12 @@ export default component$(() => {
         </p>
         <div class="join justify-center">
           {slides.map((_s, i) => (
-            <a key={i} href={`#pic-slide-${i + 1}`} class="join-item btn btn-xs">
+            <a
+              key={i}
+              href={`#pic-slide-${i + 1}`}
+              class="join-item btn btn-circle w-12 h-12"
+              aria-label={`Go to slide ${i + 1}`}
+            >
               {i + 1}
             </a>
           ))}
