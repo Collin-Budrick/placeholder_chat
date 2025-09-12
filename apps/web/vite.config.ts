@@ -58,7 +58,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
 		} as any;
 	};
 	// Add preview-time headers (cache + compression) to improve Lighthouse in preview/proxy setups
-	const previewHeadersPlugin = () => {
+  const previewHeadersPlugin = () => {
 		return {
 			name: "preview-headers",
 			// Vite 5/7 preview server hook
@@ -385,6 +385,42 @@ export default defineConfig(({ command, mode }): UserConfig => {
       },
     } as any;
   };
+  // Minimal dev handler for Unpic image info to avoid 404 and TLS fetches
+  const devImageInfoPlugin = () => {
+    return {
+      name: "dev-image-info",
+      apply: "serve",
+      configureServer(server: any) {
+        server.middlewares.use((req: any, res: any, next: any) => {
+          try {
+            const raw = (req.originalUrl || req.url || "/") as string;
+            const url = new URL(raw, "http://dev.local");
+            if (url.pathname === "/__image_info") {
+              const src = url.searchParams.get("url") || "";
+              // Provide stub info for known local assets to satisfy @unpic/qwik in dev
+              if (/\/favicon\.svg(?:$|\?)/.test(src)) {
+                res.setHeader("Content-Type", "application/json");
+                res.statusCode = 200;
+                res.end(
+                  JSON.stringify({
+                    width: 128,
+                    height: 128,
+                    type: "image/svg+xml",
+                    src,
+                  }),
+                );
+                return;
+              }
+              res.statusCode = 404;
+              res.end("not found");
+              return;
+            }
+          } catch {}
+          next();
+        });
+      },
+    } as any;
+  };
 
   const cfg: UserConfig = {
 		// Use esbuild to drop dev statements in production builds; disable sourcemaps in dev for lighter responses
@@ -506,12 +542,14 @@ export default defineConfig(({ command, mode }): UserConfig => {
 					]
 				: []),
 			// Add dev compression only when not behind Traefik to avoid double compression.
-			...(command === "serve" && process.env.DOCKER_TRAEFIK !== "1"
-				? [devCompressPlugin()]
-				: []),
-			...extraPlugins,
-			// Improve cache/compression headers when using `vite preview` or Traefik preview proxy
-			previewHeadersPlugin(),
+            ...(command === "serve" && process.env.DOCKER_TRAEFIK !== "1"
+                ? [devCompressPlugin()]
+                : []),
+            // Handle @unpic/qwik dev metadata requests locally
+            ...(command === "serve" ? [devImageInfoPlugin()] : []),
+          ...extraPlugins,
+          // Improve cache/compression headers when using `vite preview` or Traefik preview proxy
+          previewHeadersPlugin(),
 			// Run Tailwind only for the client build to avoid duplicate CSS work/logs in SSG pass
             ...(isSsgBuild ? [] : [tailwindcss()]),
 		],

@@ -28,8 +28,8 @@ services:
       # PUBLIC_IP comes from .env; default to 127.0.0.1 to avoid warnings
       MKCERT_HOSTS: "localhost,127.0.0.1,::1,${PUBLIC_IP:-127.0.0.1}"
       LAN_DEV_URL: "https://${PUBLIC_IP:-127.0.0.1}:5173"
-      # Option: run Vite in CSR mode if SSR dev renders 404
-      NO_SSR: "1"
+      # Use SSR dev with HMR (set to 1 only for troubleshooting)
+      NO_SSR: "0"
     volumes:
       - ./:/workspace
       # Persist Bun cache and node_modules across container recreations

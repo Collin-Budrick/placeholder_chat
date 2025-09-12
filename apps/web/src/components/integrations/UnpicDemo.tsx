@@ -6,17 +6,31 @@ export default component$(() => {
 		<div class="space-y-2">
 			<h2 class="text-xl font-semibold">Unpic Image</h2>
 			<div class="rounded-lg border border-base-content/10 p-3 bg-base-100/5">
-				<Image
-					src="/favicon.svg"
-					width={128}
-					height={128}
-					alt="App favicon"
-					decoding="async"
-					loading="eager"
-					fetchpriority="high"
-					sizes="(min-width: 768px) 128px, 25vw"
-					class="block mx-auto"
-				/>
+				{import.meta.env.DEV ? (
+					// In dev, prefer a plain <img> to avoid __image_info fetches over self-signed HTTPS
+					<img
+						src="/favicon.svg"
+						width={128}
+						height={128}
+						alt="App favicon"
+						decoding="async"
+						loading="eager"
+						fetchpriority="high"
+						class="block mx-auto"
+					/>
+				) : (
+					<Image
+						src="/favicon.svg"
+						width={128}
+						height={128}
+						alt="App favicon"
+						decoding="async"
+						loading="eager"
+						fetchpriority="high"
+						sizes="(min-width: 768px) 128px, 25vw"
+						class="block mx-auto"
+					/>
+				)}
 			</div>
 			<p class="text-xs text-zinc-400">
 				Responsive <code>&lt;img&gt;</code> with srcset/sizes and zero client
