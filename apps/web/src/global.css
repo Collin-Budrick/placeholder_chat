@@ -61,6 +61,13 @@ body::-webkit-scrollbar,
 		line-height: 1.25;
 	}
 }
+
+/* Prefer Google/Android emoji where available */
+.emoji {
+  font-family: 'Noto Color Emoji', 'Segoe UI Emoji', 'Apple Color Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif;
+  font-weight: 400;
+  line-height: 1;
+}
 /* Enable CSS View Transitions for page-level animations */
 /* Minimal View Transitions for page slides */
 /* Ensure the root participates (override any injected resets) */

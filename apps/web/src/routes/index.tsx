@@ -181,7 +181,7 @@ export default component$(() => {
 						<div class="text-center md:text-left">
 							<h1
 								ref={h1Ref}
-								style={{ opacity: "0" }}
+                            style={{ opacity: "0", fontSize: "clamp(2.25rem, 6vw, 4.5rem)", lineHeight: "1.1" }}
 								class={cn(
 									"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-balance",
 								)}
@@ -298,7 +298,7 @@ export default component$(() => {
 						data-reveal
 					>
 						<div class="card-body">
-							<div class="text-3xl">💬</div>
+							<div class="text-3xl emoji">💬</div>
 							<h3 class="card-title">Realtime messaging</h3>
 							<p class="opacity-70">
 								Low‑latency rooms, typing indicators, and read receipts that
@@ -312,7 +312,7 @@ export default component$(() => {
 						data-reveal
 					>
 						<div class="card-body">
-							<div class="text-3xl">🎨</div>
+							<div class="text-3xl emoji">🎨</div>
 							<h3 class="card-title">Glassy by design</h3>
 							<p class="opacity-70">
 								DaisyUI surfaces with delicate grain, tasteful depth, and
@@ -326,7 +326,7 @@ export default component$(() => {
 						data-reveal
 					>
 						<div class="card-body">
-							<div class="text-3xl">⚡</div>
+							<div class="text-3xl emoji">⚡</div>
 							<h3 class="card-title">Built for speed</h3>
 							<p class="opacity-70">
 								Qwik islands, SSR, and lazy motion keep the app snappy and lean.
