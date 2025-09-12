@@ -7,7 +7,7 @@ import {
 	useTask$,
 } from "@builder.io/qwik";
 
-export const LottieDemo = component$(() => {
+const LottieDemo = component$(() => {
 	const host = useSignal<HTMLDivElement>();
 	const start$ = $(async () => {
 		if (isServer) return;

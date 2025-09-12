@@ -14,7 +14,7 @@ import {
  * - Honors prefers-reduced-motion
  * - Cleans up animations on dispose
  */
-export const MotionOneDemo = component$(() => {
+const MotionOneDemo = component$(() => {
 	const boxRef = useSignal<HTMLElement>();
 	const wrapperRef = useSignal<HTMLDivElement>();
 

@@ -3,7 +3,7 @@ import type { DocumentHead } from "@builder.io/qwik-city";
 import { Link, useNavigate } from "@builder.io/qwik-city";
 import { csrfHeader } from "~/lib/csrf";
 import { logApi } from "~/lib/log";
-import { AuthCard } from "../../components/auth/AuthCard";
+import AuthCard from "../../components/auth/AuthCard";
 export const prerender = true;
 
 export default component$(() => {

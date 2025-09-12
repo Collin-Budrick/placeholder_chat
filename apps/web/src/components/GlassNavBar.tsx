@@ -6,8 +6,13 @@ import {
 	useTask$,
 } from "@builder.io/qwik";
 import { Link, useLocation } from "@builder.io/qwik-city";
-import { LuHome, LuInfo, LuMail, LuUser } from "@qwikest/icons/lucide";
+// Use Iconify (lucide) via unplugin-icons for tree-shaken inline SVGs
+import LuHome from "~icons/lucide/home";
+import LuInfo from "~icons/lucide/info";
+import LuMail from "~icons/lucide/mail";
+import LuUser from "~icons/lucide/user";
 import ThemeToggle from "~/components/ThemeToggle";
+import { cn } from "~/lib/cn";
 
 /**
  * GlassNavBar — DaisyUI-based, glassy top navigation with subtle grain.
@@ -48,21 +53,21 @@ export default component$(() => {
 
 	return (
 		<nav
-			class={[
+			class={cn(
 				"fixed left-1/2 -translate-x-1/2 bottom-3 z-[100000]",
 				"transition-transform duration-300",
 				scrolled.value
 					? "translate-y-[-2px] scale-[.995]"
 					: "translate-y-0 scale-100",
 				"w-[min(1120px,calc(100%-1.5rem))]",
-			].join(" ")}
+			)}
 			aria-label="Primary"
 		>
 			<div
-				class={[
+				class={cn(
 					"navbar rounded-2xl border glass-surface border-soft with-grain",
 					"bg-base-100/5 shadow-xl px-2",
-				].join(" ")}
+				)}
 			>
 				{/* Left spacer (brand removed per request) */}
 				<div class="navbar-start w-0 p-0 m-0" />
@@ -74,9 +79,9 @@ export default component$(() => {
 							<Link
 								aria-current={isActive("/") ? "page" : undefined}
 								href="/"
-								class="px-2 py-1.5 rounded-lg transition-colors"
+								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<LuHome class="w-6 h-6" />
+								<LuHome class="w-6 h-6 [stroke-width:2.25]" />
 								<span class="sr-only">Home</span>
 							</Link>
 						</li>
@@ -84,9 +89,9 @@ export default component$(() => {
 							<Link
 								aria-current={isActive("/about") ? "page" : undefined}
 								href="/about"
-								class="px-2 py-1.5 rounded-lg transition-colors"
+								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<LuInfo class="w-6 h-6" />
+								<LuInfo class="w-6 h-6 [stroke-width:2.25]" />
 								<span class="sr-only">About</span>
 							</Link>
 						</li>
@@ -94,9 +99,9 @@ export default component$(() => {
 							<Link
 								aria-current={isActive("/contact") ? "page" : undefined}
 								href="/contact"
-								class="px-2 py-1.5 rounded-lg transition-colors"
+								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<LuMail class="w-6 h-6" />
+								<LuMail class="w-6 h-6 [stroke-width:2.25]" />
 								<span class="sr-only">Messages</span>
 							</Link>
 						</li>
@@ -104,14 +109,14 @@ export default component$(() => {
 							<Link
 								aria-current={isActive("/profile") ? "page" : undefined}
 								href="/profile"
-								class="px-2 py-1.5 rounded-lg transition-colors"
+								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<LuUser class="w-6 h-6" />
+								<LuUser class="w-6 h-6 [stroke-width:2.25]" />
 								<span class="sr-only">Account</span>
 							</Link>
 						</li>
 						<li class="w-full grid place-items-center">
-							<ThemeToggle class="btn btn-ghost btn-sm" iconClass="w-6 h-6" />
+							<ThemeToggle class="btn btn-ghost btn-sm" iconClass="w-6 h-6 [stroke-width:2.25]" />
 						</li>
 					</ul>
 				</div>

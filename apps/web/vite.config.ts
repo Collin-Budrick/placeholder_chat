@@ -170,15 +170,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
 				| string
 				| null;
 		}
-		if (keyFile && certFile) {
-			try {
-				const relKey = path.relative(process.cwd(), keyFile);
-				const relCert = path.relative(process.cwd(), certFile);
-				// Only announce certs when running the dev server; suppress during vite build/watch to reduce noise
-				if (command !== "build") {
-					console.log(`[https] Using TLS key/cert from ${relKey} / ${relCert}`);
-				}
-			} catch {}
+    if (keyFile && certFile) {
+      try {
+        const relKey = path.relative(process.cwd(), keyFile);
+        const relCert = path.relative(process.cwd(), certFile);
+        // Only announce certs when running the dev server; suppress during vite build/watch and knip runs
+        if (command !== "build" && process.env.KNIP !== "1") {
+          console.log(`[https] Using TLS key/cert from ${relKey} / ${relCert}`);
+        }
+      } catch {}
 			return {
 				key: fs.readFileSync(keyFile),
 				cert: fs.readFileSync(certFile),
@@ -206,11 +206,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
 					},
 				],
 			});
-			if (command !== "build") {
-				console.warn(
-					"[https] Using in-memory self-signed development certificate (browser will warn).",
-				);
-			}
+      if (command !== "build" && process.env.KNIP !== "1") {
+        console.warn(
+          "[https] Using in-memory self-signed development certificate (browser will warn).",
+        );
+      }
 			return {
 				key: pems.private,
 				cert: pems.cert,
@@ -419,6 +419,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
 				"@builder.io/qwik-city",
 				"@modular-forms/qwik",
 				"@unpic/qwik",
+				// Avoid bringing zod into dev optimizer; we don't use it directly
+				"zod",
 			],
 			// Minify prebundled deps in dev to cut payload size
 			esbuildOptions: {
@@ -589,6 +591,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			},
 		},
 		build: {
+			// Emit modern JS for modern browsers
+			target: "es2022",
 			// Disable sourcemaps in production to cut bundle weight and leak risk.
 			// Keep for debug builds only (non-production modes).
 			sourcemap:
@@ -618,6 +622,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
 								return "vendor-preact";
 							// Split icon library to keep core smaller
 							if (id.includes("@qwikest/icons")) return "vendor-icons";
+							// Keep any transitive zod usage isolated from core bundles
+							if (id.includes("zod")) return "vendor-zod";
 							if (id.includes("@lottiefiles")) return "vendor-lottie";
 							if (id.includes("@modular-forms")) return "vendor-mod-forms";
 							if (id.includes("valibot")) return "vendor-valibot";
@@ -631,24 +637,24 @@ export default defineConfig(({ command, mode }): UserConfig => {
 		css: { devSourcemap: false },
 	};
 
-	try {
-		// Only log server config in non-build commands to avoid duplicate lines during dual builds
-		if (command !== "build") {
-			const httpsVal: any = (cfg as any)?.server?.https;
-			const httpsKind =
-				httpsVal === true
-					? "mkcert/auto"
-					: httpsVal === false || typeof httpsVal === "undefined"
-						? "disabled"
-						: "file/selfsigned";
-			const hmrConf: any = (cfg as any)?.server?.hmr;
-			const hmr =
-				hmrConf === false ? "disabled" : JSON.stringify(hmrConf ?? {});
-			console.log(
-				`[vite-config] server: port=${(cfg as any)?.server?.port} https=${httpsKind} hmr=${hmr} docker_traefik=${process.env.DOCKER_TRAEFIK ?? ""}`,
-			);
-		}
-	} catch {}
+  try {
+    // Only log server config in non-build commands; suppress during knip
+    if (command !== "build" && process.env.KNIP !== "1") {
+      const httpsVal: any = (cfg as any)?.server?.https;
+      const httpsKind =
+        httpsVal === true
+          ? "mkcert/auto"
+          : httpsVal === false || typeof httpsVal === "undefined"
+            ? "disabled"
+            : "file/selfsigned";
+      const hmrConf: any = (cfg as any)?.server?.hmr;
+      const hmr =
+        hmrConf === false ? "disabled" : JSON.stringify(hmrConf ?? {});
+      console.log(
+        `[vite-config] server: port=${(cfg as any)?.server?.port} https=${httpsKind} hmr=${hmr} docker_traefik=${process.env.DOCKER_TRAEFIK ?? ""}`,
+      );
+    }
+  } catch {}
 
 	return cfg;
 });

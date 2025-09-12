@@ -1,8 +1,8 @@
-/** @jsxImportSource react */
+/** @jsxImportSource preact */
 // React-compatible Preact component (runs via preact/compat)
 import { useState } from "preact/hooks";
 
-export function PreactCounter({ initial = 0 }: { initial?: number }) {
+function PreactCounter({ initial = 0 }: { initial?: number }) {
 	const [count, setCount] = useState<number>(initial);
 	return (
 		<div class="card bg-base-200 shadow-sm">

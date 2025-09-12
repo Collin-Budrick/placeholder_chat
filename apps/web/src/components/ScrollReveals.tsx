@@ -116,7 +116,7 @@ const startScrollReveals = $(async (): Promise<() => void> => {
 	}
 });
 
-export const ScrollReveals = component$(() => {
+const ScrollReveals = component$(() => {
 	useTask$(() => {
 		if (isServer) return;
 		let idleId: number | undefined;

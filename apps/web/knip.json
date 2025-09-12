@@ -1,0 +1,45 @@
+{
+  "$schema": "https://unpkg.com/knip/schema.json",
+  "entry": [
+    "src/entry.ssr.tsx",
+    "src/entry.dev.tsx",
+    "src/entry.preview.tsx",
+    "src/entry.bun.ts",
+    "src/root.tsx",
+    "src/routes/**/*.{ts,tsx}"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx,js,mjs,cjs}"
+  ],
+  "ignore": [
+    "dist/**",
+    "public/**",
+    "styled-system/**",
+    "node_modules/**"
+  ],
+  "ignoreDependencies": [
+    "@qwik-city-plan"
+  ],
+  "ignoreUnresolved": [
+    "~icons/*"
+  ],
+  "rules": {
+    "unlisted": "off"
+  },
+  "ignoreBinaries": [
+    "qwik",
+    "tsc",
+    "concurrently",
+    "prettier",
+    "eslint",
+    "build",
+    "run",
+    "wait-on",
+    "server/entry.bun.js",
+    "playwright",
+    "biome"
+  ],
+  "tailwind": {
+    "config": ["tailwind.config.cjs"]
+  }
+}

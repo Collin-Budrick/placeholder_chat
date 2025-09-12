@@ -1,11 +1,14 @@
 import { $, component$, useSignal, useTask$ } from "@builder.io/qwik";
-import { LuMoon, LuSun } from "@qwikest/icons/lucide";
+// Switch to Iconify (lucide) for consistency and tree-shaken SVGs
+import LuMoon from "~icons/lucide/moon";
+import LuSun from "~icons/lucide/sun";
+import { cn } from "~/lib/cn";
 
 const THEME_KEY = "theme";
 const LIGHT = "light"; // daisyUI default light theme
 const DARK = "dark"; // daisyUI default dark theme
 
-export const ThemeToggle = component$<{ class?: string; iconClass?: string }>(
+const ThemeToggle = component$<{ class?: string; iconClass?: string }>(
 	(props) => {
 		const theme = useSignal<string>(DARK);
 		const btnRef = useSignal<HTMLButtonElement>();
@@ -47,8 +50,8 @@ export const ThemeToggle = component$<{ class?: string; iconClass?: string }>(
 			animating.value = false;
 		});
 
-		const btnClass = props.class ?? "btn btn-ghost btn-sm";
-		const iconClass = props.iconClass ?? "w-5 h-5";
+		const btnClass = cn("btn btn-ghost btn-sm", props.class);
+		const iconClass = cn("w-5 h-5 [stroke-width:2.25]", props.iconClass);
 
 		return (
 			<button

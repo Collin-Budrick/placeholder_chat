@@ -12,7 +12,7 @@
 
 type HeadersMap = Record<string, string | undefined>;
 
-export type LogEntry = {
+type LogEntry = {
 	ts?: string;
 	phase?: "request" | "response" | "error";
 	url: string;

@@ -5,8 +5,9 @@ import * as v from "valibot";
 import BackButton from "~/components/BackButton";
 import TypeTitle from "~/components/TypeTitle";
 import { logApi } from "~/lib/log";
+import { cn } from "~/lib/cn";
 import { animateMotion } from "~/lib/motion-qwik";
-import { AuthCard } from "../../components/auth/AuthCard";
+import AuthCard from "../../components/auth/AuthCard";
 
 // Note: login now uses a plain POST form to Auth.js credentials callback.
 
@@ -289,7 +290,11 @@ export default component$(() => {
 											? serverError.value || "Invalid username or password"
 											: "yourusername"
 									}
-									class={`pill-input w-full ${serverError.value && !emailEditing.value ? "is-warning ring-1 ring-warning text-warning" : ""}`}
+									class={cn(
+										"pill-input w-full",
+										serverError.value && !emailEditing.value &&
+											"is-warning ring-1 ring-warning text-warning",
+									)}
 									autoComplete="username"
 									inputMode="text"
 									aria-invalid={
@@ -320,7 +325,11 @@ export default component$(() => {
 											? serverError.value || "Invalid username or password"
 											: "Enter your password"
 									}
-									class={`pill-input w-full ${serverError.value && !passwordEditing.value ? "is-warning ring-1 ring-warning text-warning" : ""}`}
+									class={cn(
+										"pill-input w-full",
+										serverError.value && !passwordEditing.value &&
+											"is-warning ring-1 ring-warning text-warning",
+									)}
 									autoComplete="current-password"
 									minLength={8}
 									aria-invalid={

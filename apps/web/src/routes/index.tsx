@@ -6,6 +6,7 @@ import {
 } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { timelineMotion } from "~/lib/motion-qwik";
+import { cn } from "~/lib/cn";
 
 export default component$(() => {
 	const h1Ref = useSignal<HTMLElement>();
@@ -182,21 +183,23 @@ export default component$(() => {
 								ref={h1Ref}
 								animate
 								style={{ opacity: "0" }}
-								class="text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-balance"
+								class={cn(
+									"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-balance",
+								)}
 							>
 								Social messaging, reimagined.
 							</h1>
 							<p
 								ref={subRef}
-								class="mt-4 text-base-content/70 max-w-xl mx-auto md:mx-0"
+								class={cn("mt-4 text-base-content/70 max-w-xl mx-auto md:mx-0")}
 							>
 								Real‑time chats, rich profiles, and a playful, modern UI — all
 								on a silky glass surface with a subtle grain texture.
 							</p>
-							<div
-								ref={ctaRef}
-								class="mt-8 flex items-center justify-center md:justify-start gap-4"
-							>
+								<div
+									ref={ctaRef}
+									class={cn("mt-8 flex items-center justify-center md:justify-start gap-4")}
+								>
 								<a href="/signup" class="btn btn-primary">
 									Create your account
 								</a>

@@ -6,9 +6,10 @@ import * as v from "valibot";
 import BackButton from "~/components/BackButton";
 import TypeTitle from "~/components/TypeTitle";
 import { animateMotion } from "~/lib/motion-qwik";
-import { AuthCard } from "../../components/auth/AuthCard";
+import AuthCard from "../../components/auth/AuthCard";
 import { csrfHeader } from "../../lib/csrf";
 import { api, apiFetch } from "../../lib/http";
+import { cn } from "~/lib/cn";
 
 const SignupSchema = v.object({
 	username: v.pipe(
@@ -305,16 +306,16 @@ export default component$(() => {
 														? field.error
 														: "Choose a username"
 											}
-											class={`pill-input w-full ${
+											class={cn(
+												"pill-input w-full",
 												!usernameEditing.value &&
-												(
-													usernameAvailable.value === false ||
-														usernameTaken.value ||
-														!!field.error
-												)
-													? "is-warning ring-1 ring-warning text-warning"
-													: ""
-											}`}
+													(
+														usernameAvailable.value === false ||
+															usernameTaken.value ||
+															!!field.error
+													) &&
+													"is-warning ring-1 ring-warning text-warning",
+											)}
 											required
 											minLength={2}
 											aria-invalid={
@@ -470,7 +471,11 @@ export default component$(() => {
 													? field.error
 													: "Create a password"
 											}
-											class={`pill-input w-full ${!passwordEditing.value && field.error ? "is-warning ring-1 ring-warning text-warning" : ""}`}
+											class={cn(
+												"pill-input w-full",
+												!passwordEditing.value && field.error &&
+													"is-warning ring-1 ring-warning text-warning",
+											)}
 											required
 											minLength={8}
 											autoComplete="new-password"

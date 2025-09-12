@@ -19,7 +19,7 @@ function __getFakerStarted(): { v: boolean } {
 
 type User = { id: string; name: string; email: string };
 
-export const FakerDemo = component$(() => {
+const FakerDemo = component$(() => {
 	const state = useStore<{ users: User[] }>({ users: [] });
 	const started = __getFakerStarted();
 

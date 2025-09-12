@@ -7,6 +7,7 @@ import {
 	useSignal,
 	useTask$,
 } from "@builder.io/qwik";
+import { cn } from "~/lib/cn";
 
 type Props = {
 	text: string;
@@ -34,7 +35,7 @@ type Props = {
 	resetOnReload?: boolean;
 };
 
-export const TypeTitle = component$((props: Props) => {
+const TypeTitle = component$((props: Props) => {
 	const shown = useSignal("");
 	const startedFor = useSignal<string | null>(null);
 	const elRef = useSignal<HTMLElement>();
@@ -424,7 +425,7 @@ export const TypeTitle = component$((props: Props) => {
 	});
 
 	return (
-		<h1 class={props.class} aria-label={props.text} ref={elRef}>
+		<h1 class={cn(props.class)} aria-label={props.text} ref={elRef}>
 			{shown.value}
 			{props.showCaret !== false && (
 				<span

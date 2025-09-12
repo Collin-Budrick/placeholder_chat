@@ -1,5 +1,6 @@
 import { $, component$, useOnWindow, useSignal } from "@builder.io/qwik";
 import { useLocation, useNavigate } from "@builder.io/qwik-city";
+import { cn } from "~/lib/cn";
 
 // Keep ORDER/canon at module scope so Qwik can serialize QRLs that reference them
 const ORDER = [
@@ -36,7 +37,7 @@ type BackButtonProps = {
 };
 
 // Stable module-scope QRL for back navigation to avoid HMR QRL churn
-export const backNav = $((ev: Event, elParam?: Element) => {
+const backNav = $((ev: Event, elParam?: Element) => {
 	try {
 		const current = (ev?.currentTarget as Element | null) || null;
 		const tgt = (ev?.target as Element | null) || null;
@@ -121,7 +122,7 @@ export const backNav = $((ev: Event, elParam?: Element) => {
 	}
 });
 
-export const BackButton = component$((props: BackButtonProps) => {
+const BackButton = component$((props: BackButtonProps) => {
 	const loc = useLocation();
 	const nav = useNavigate();
 	const backBtn = useSignal<HTMLButtonElement>();
@@ -450,7 +451,12 @@ export const BackButton = component$((props: BackButtonProps) => {
 		<button
 			type="button"
 			aria-label={aria}
-			class={`group relative inline-flex ${sizeCls} items-center justify-center rounded-full text-base-content/70 hover:text-base-content/90 transition-all focus:outline-none ${props.class || ""}`}
+			class={cn(
+				"group relative inline-flex",
+				sizeCls,
+				"items-center justify-center rounded-full text-base-content/70 hover:text-base-content/90 transition-all focus:outline-none",
+				props.class,
+			)}
 			ref={(el) => {
 				backBtn.value = el as HTMLButtonElement;
 			}}

@@ -6,7 +6,7 @@ import {
 	useSignal,
 } from "@builder.io/qwik";
 
-export const ScrollProgress = component$(() => {
+const ScrollProgress = component$(() => {
 	const progress = useSignal(0);
 
 	// Use declarative window handlers for scroll & resize to avoid an eager visible task.

@@ -1,4 +1,4 @@
-export function getCsrfToken(): string | null {
+function getCsrfToken(): string | null {
 	// Only run in the browser
 	if (typeof document === "undefined") return null;
 

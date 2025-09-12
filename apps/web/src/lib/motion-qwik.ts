@@ -10,7 +10,7 @@
  *   const player = await animateMotion(el, keyframes, opts);
  *   const tl = await timelineMotion(items, opts);
  */
-export async function isReducedMotion(): Promise<boolean> {
+async function isReducedMotion(): Promise<boolean> {
 	try {
 		if (typeof window === "undefined") return true;
 		return (
@@ -95,7 +95,7 @@ export async function animateMotion(
  *
  * For reduced-motion, we apply final styles synchronously and return a stub controller.
  */
-export type TLItem = {
+type TLItem = {
 	el: Element | Element[] | NodeList;
 	keyframes: Keyframe[] | PropertyIndexedKeyframes | Keyframe;
 	options?: number | KeyframeAnimationOptions;
@@ -149,7 +149,7 @@ function applyFinalStyles(
 	}
 }
 
-export type TimelineController = {
+type TimelineController = {
 	play: () => void;
 	pause: () => void;
 	cancel: () => void;

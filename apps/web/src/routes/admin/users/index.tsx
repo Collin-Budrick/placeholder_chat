@@ -8,6 +8,7 @@ import {
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { type RequestEventLoader, routeLoader$ } from "@builder.io/qwik-city";
 import { csrfHeader } from "../../../lib/csrf";
+import { cn } from "~/lib/cn";
 
 // --- types ---
 // Basic shape of a User object returned by the backend.
@@ -325,7 +326,10 @@ export default component$(() => {
 											<div class="flex items-center justify-end gap-2">
 												<button
 													type="button"
-													class={`btn btn-sm btn-accent ${u.role === "admin" ? "opacity-50 cursor-not-allowed" : ""}`}
+												class={cn(
+													"btn btn-sm btn-accent",
+													u.role === "admin" && "opacity-50 cursor-not-allowed",
+												)}
 													onClick$={() => promote(u.id)}
 													disabled={u.role === "admin" || busy.value === u.id}
 												>
@@ -345,7 +349,10 @@ export default component$(() => {
 
 												<button
 													type="button"
-													class={`btn btn-sm btn-error ${u.role === "admin" ? "opacity-50 cursor-not-allowed" : ""}`}
+												class={cn(
+													"btn btn-sm btn-error",
+													u.role === "admin" && "opacity-50 cursor-not-allowed",
+												)}
 													onClick$={() => openDelete(u.id, u.email)}
 													disabled={u.role === "admin" || busy.value === u.id}
 												>
