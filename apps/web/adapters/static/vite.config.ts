@@ -3,19 +3,36 @@ import { extendConfig } from "@builder.io/qwik-city/vite";
 import baseConfig from "../../vite.config";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default extendConfig(baseConfig as any, () => {
 	const here = fileURLToPath(import.meta.url);
 	const root = path.resolve(path.dirname(here), "../../");
 	const shimServer = path.resolve(root, "src/shims/preact.server.shim.mjs");
 	const shimRts = path.resolve(root, "src/shims/preact.rts.shim.mjs");
-	return {
+  return {
 		resolve: {
-			alias: {
-				"preact/compat/server": shimServer,
-				"preact/compat/server.mjs": shimServer,
-				"preact-render-to-string": shimRts,
-				"preact-render-to-string/stream-node": shimRts,
+			// Use array form to guarantee alias order (specific before generic)
+			alias: [
+				// Order matters: most specific first
+				{ find: "preact-render-to-string/stream-node", replacement: shimRts },
+				{ find: "preact-render-to-string/stream", replacement: shimRts },
+				{ find: "preact-render-to-string", replacement: shimRts },
+				{ find: "preact/compat/server.mjs", replacement: shimServer },
+				{ find: "preact/compat/server", replacement: shimServer },
+			],
+		},
+		// Ensure SSR module resolution also honors our shims (with ordering)
+		ssr: {
+			resolve: {
+				alias: [
+					// Order matters: most specific first
+					{ find: "preact-render-to-string/stream-node", replacement: shimRts },
+					{ find: "preact-render-to-string/stream", replacement: shimRts },
+					{ find: "preact-render-to-string", replacement: shimRts },
+					{ find: "preact/compat/server.mjs", replacement: shimServer },
+					{ find: "preact/compat/server", replacement: shimServer },
+				],
 			},
 		},
 		build: {
@@ -34,6 +51,14 @@ export default extendConfig(baseConfig as any, () => {
 					process.env.SITE_ORIGIN ||
 					process.env.BASE_URL ||
 					"https://example.com",
+			}),
+			// Rollup visualizer for SSG/SSR bundle
+			visualizer({
+				filename: "server/stats-ssg.html",
+				template: "treemap",
+				gzipSize: true,
+				brotliSize: true,
+				open: false,
 			}),
 		],
 	};

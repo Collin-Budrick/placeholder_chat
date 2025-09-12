@@ -418,7 +418,12 @@ export default component$(() => {
 							</a>
 						</p>
 						{/* Hidden prefetch for frequent next route */}
-						<Link href="/signup/" prefetch="js" class="hidden" aria-hidden="true" />
+						<Link
+							href="/signup/"
+							prefetch="js"
+							class="hidden"
+							aria-hidden="true"
+						/>
 					</AuthCard>
 				</div>
 			</div>

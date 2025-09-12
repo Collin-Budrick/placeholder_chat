@@ -19,3 +19,16 @@ export function renderToReadableStream() {
 		return {};
 	}
 }
+
+// Node-style streaming API used by preact/compat/server when available
+// Provide a minimal no-op interface so imports succeed during SSG
+export function renderToPipeableStream() {
+	return {
+		pipe() {
+			/* no-op */
+		},
+		abort() {
+			/* no-op */
+		},
+	};
+}

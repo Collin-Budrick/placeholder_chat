@@ -10,7 +10,8 @@
 	"scripts": {
 		"docker:dev": "bun ./scripts/docker-dev-proxy.cjs",
 		"docker:prod": "bun ./scripts/docker-prod-proxy.cjs",
-		"build": "qwik build",
+		"build": "bunx vite build",
+		"build:client": "bunx vite build",
 		"build.types": "tsc --incremental --noEmit",
 		"deploy": "echo 'Run \"npm run qwik add\" to install a server adapter'",
 		"dev": "concurrently -n GW,VITE,LYNX -c \"yellow.bold,cyan.bold,magenta.bold\" \"bun run gateway:dev\" \"bun run dev:web\" \"bun run lynx:auto\"",

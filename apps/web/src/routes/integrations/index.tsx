@@ -4,20 +4,27 @@ import DaisyButtonsDemo from "../../components/integrations/DaisyButtonsDemo";
 import FakerDemo from "../../components/integrations/FakerDemo";
 import IconsDemo from "../../components/integrations/IconsDemo";
 import MotionOneDemo from "../../components/integrations/MotionOneDemo";
+import PictureDemo from "../../components/integrations/PictureDemo";
 import UnpicDemo from "../../components/integrations/UnpicDemo";
 import { PreactCounterIsland } from "../../components/PreactCounterIsland";
-import PictureDemo from "../../components/integrations/PictureDemo";
 
 export default component$(() => {
-    // Prewarm faker chunk in the background to reduce first-interaction latency
-    useVisibleTask$(() => {
-        (async () => {
-            try { await import("@faker-js/faker/locale/en"); } catch {}
-        })();
-    });
+	// Prewarm faker chunk in the background to reduce first-interaction latency
+	useVisibleTask$(() => {
+		(async () => {
+			try {
+				await import("@faker-js/faker/locale/en");
+			} catch {}
+		})();
+	});
 	return (
 		<section class="container mx-auto max-w-3xl p-6 space-y-8">
-			<h1 class="text-2xl font-bold" style={{ fontSize: "1.5rem", lineHeight: "1.25" }}>Integrations</h1>
+			<h1
+				class="text-2xl font-bold"
+				style={{ fontSize: "1.5rem", lineHeight: "1.25" }}
+			>
+				Integrations
+			</h1>
 			<p class="text-zinc-400">
 				Quick demos wired up for Panda, Faker, Motion One, and DaisyUI.
 			</p>

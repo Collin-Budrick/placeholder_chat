@@ -149,27 +149,35 @@ export default component$(() => {
 				<div class="relative mx-auto max-w-7xl px-6 pt-20 pb-14">
 					<div class="grid items-center gap-10 md:gap-12 md:grid-cols-2">
 						<div class="text-center md:text-left">
-								<h1
-									ref={h1Ref}
-                            style={{ fontSize: "clamp(2.25rem, 6vw, 4.5rem)", lineHeight: "1.1" }}
-									class={cn(
-										"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-balance",
-									)}
-								>
-                        {(() => {
-                          const words = ["Social", "messaging,", "reimagined."];
-                          const nodes: any[] = [];
-                          words.forEach((w, i) => {
-                            nodes.push(
-                              <span class="word-outer inline-block overflow-hidden align-baseline" key={`w-${i}`}>
-                                <span class="word inline-block will-change-transform">{w}</span>
-                              </span>
-                            );
-                            if (i < words.length - 1) nodes.push(" ");
-                          });
-                          return nodes;
-                        })()}
-								</h1>
+							<h1
+								ref={h1Ref}
+								style={{
+									fontSize: "clamp(2.25rem, 6vw, 4.5rem)",
+									lineHeight: "1.1",
+								}}
+								class={cn(
+									"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-balance",
+								)}
+							>
+								{(() => {
+									const words = ["Social", "messaging,", "reimagined."];
+									const nodes: any[] = [];
+									words.forEach((w, i) => {
+										nodes.push(
+											<span
+												class="word-outer inline-block overflow-hidden align-baseline"
+												key={`w-${i}`}
+											>
+												<span class="word inline-block will-change-transform">
+													{w}
+												</span>
+											</span>,
+										);
+										if (i < words.length - 1) nodes.push(" ");
+									});
+									return nodes;
+								})()}
+							</h1>
 							<p
 								ref={subRef}
 								style={{ opacity: "0" }}
@@ -330,25 +338,28 @@ export default component$(() => {
 							Powerful yet friendly — a space that invites talking.
 						</p>
 						<div class="mt-6 flex gap-3">
-								<Link href="/login" prefetch="js" class="btn btn-outline">
-									Jump into a room
-								</Link>
-								<Link
-									href="/about"
-									prefetch="js"
-									class="btn btn-ghost"
-									aria-label="Learn more about Stack"
-								>
-									Learn more about Stack
-								</Link>
+							<Link href="/login" prefetch="js" class="btn btn-outline">
+								Jump into a room
+							</Link>
+							<Link
+								href="/about"
+								prefetch="js"
+								class="btn btn-ghost"
+								aria-label="Learn more about Stack"
+							>
+								Learn more about Stack
+							</Link>
 						</div>
 					</div>
 					<div class="order-1 md:order-2">
-								<div
-									class="glass-surface border-soft with-grain card bg-base-100/5 border shadow-lg min-h-[360px]"
-									style={{ contentVisibility: "auto", containIntrinsicSize: "360px 640px" }}
-								>
-								<div class="card-body p-4 sm:p-6">
+						<div
+							class="glass-surface border-soft with-grain card bg-base-100/5 border shadow-lg min-h-[360px]"
+							style={{
+								contentVisibility: "auto",
+								containIntrinsicSize: "360px 640px",
+							}}
+						>
+							<div class="card-body p-4 sm:p-6">
 								<div class="space-y-3">
 									<div class="chat chat-start">
 										<div class="chat-image avatar placeholder">

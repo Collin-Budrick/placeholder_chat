@@ -91,7 +91,7 @@ export default component$(() => {
 								href="/"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-                            <HomeIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
+								<HomeIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
 								<span class="sr-only">Home</span>
 							</Link>
 						</li>
@@ -101,7 +101,7 @@ export default component$(() => {
 								href="/about"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-                            <InfoIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
+								<InfoIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
 								<span class="sr-only">About</span>
 							</Link>
 						</li>
@@ -111,7 +111,7 @@ export default component$(() => {
 								href="/contact"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-                            <MailIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
+								<MailIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
 								<span class="sr-only">Messages</span>
 							</Link>
 						</li>
@@ -121,7 +121,7 @@ export default component$(() => {
 								href="/profile"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-                            <UserIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
+								<UserIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
 								<span class="sr-only">Account</span>
 							</Link>
 						</li>
@@ -132,7 +132,7 @@ export default component$(() => {
 									true
 								>)}
 								class="btn btn-ghost btn-sm"
-                            				iconClass="icon-sharp w-7 h-7 [stroke-width:2]"
+								iconClass="icon-sharp w-7 h-7 [stroke-width:2]"
 							/>
 						</li>
 					</ul>

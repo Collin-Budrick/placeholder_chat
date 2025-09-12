@@ -286,15 +286,18 @@ export default defineConfig(({ command, mode }): UserConfig => {
 		if (command === "build" && process.env.BUILD_TARGET !== "ssg") {
 			// @ts-expect-error
 			const { visualizer } = require("rollup-plugin-visualizer");
-			extraPlugins.push(
+			const viz =
 				visualizer?.({
 					filename: "dist/stats.html",
 					template: "treemap",
 					gzipSize: true,
 					brotliSize: true,
 					open: false,
-				}) ?? undefined,
-			);
+				}) ?? undefined;
+			if (viz) {
+				extraPlugins.push(viz);
+				try { console.log("[analyze] visualizer enabled -> dist/stats.html"); } catch {}
+			}
 		}
 	} catch (e) {}
 	try {
@@ -879,7 +882,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
       // Avoid lightningcss under Bun or during dev/SSR to prevent N-API/thread issues.
       // Also skip for SSG builds where Tailwind directives may still be present,
       // which would otherwise trigger unknown at-rule warnings from lightningcss.
-      const enableLightning = hasLightning && !isBun && command === "build" && !isSsgBuild;
+      const enableLightning =
+        hasLightning &&
+        !isBun &&
+        command === "build" &&
+        !isSsgBuild &&
+        process.env.CSS_NO_LIGHTNING !== "1";
       if (enableLightning && process.env.KNIP !== "1") {
         try { console.log("[css] lightningcss: enabled (native) for build"); } catch {}
       }

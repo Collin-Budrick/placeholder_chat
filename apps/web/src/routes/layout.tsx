@@ -1,6 +1,6 @@
 import { component$, isDev, Slot } from "@builder.io/qwik";
-import { useLocation } from "@builder.io/qwik-city";
 import type { RequestHandler } from "@builder.io/qwik-city";
+import { useLocation } from "@builder.io/qwik-city";
 import AuthWarmup from "~/components/AuthWarmup";
 import GlassNavBar from "~/components/GlassNavBar";
 import SmoothScrollProvider from "~/components/integrations/SmoothScrollProvider";
@@ -15,10 +15,11 @@ export default component$(() => {
 	// Lenis initialization moved into a leaf provider component (LenisProvider)
 
 	// View transition pre-hydration script removed.
-	const env = (import.meta as unknown as { env?: Record<string, string> }).env || {};
-	const enableSmooth = env.VITE_SMOOTH_SCROLL === '1';
-	const enableProgress = env.VITE_SCROLL_PROGRESS === '1';
-const enableReveals = env.VITE_REVEALS === '1';
+	const env =
+		(import.meta as unknown as { env?: Record<string, string> }).env || {};
+	const enableSmooth = env.VITE_SMOOTH_SCROLL === "1";
+	const enableProgress = env.VITE_SCROLL_PROGRESS === "1";
+	const enableReveals = env.VITE_REVEALS === "1";
 	const loc = useLocation();
 	const path = loc.url.pathname || "/";
 	const hideNav =
@@ -34,15 +35,15 @@ const enableReveals = env.VITE_REVEALS === '1';
 			{enableProgress && <ScrollProgress client:visible />}
 			{enableSmooth ? (
 				<SmoothScrollProvider client:idle>
-				<main id="content" class="edge-fades flex-1 overflow-auto">
-					<div
-						id="scroll-inner"
-						class="grid place-items-center min-h-full pb-24"
-					>
-						<Slot />
-						{enableReveals && <ScrollReveals client:visible />}
-					</div>
-				</main>
+					<main id="content" class="edge-fades flex-1 overflow-auto">
+						<div
+							id="scroll-inner"
+							class="grid place-items-center min-h-full pb-24"
+						>
+							<Slot />
+							{enableReveals && <ScrollReveals client:visible />}
+						</div>
+					</main>
 				</SmoothScrollProvider>
 			) : (
 				<main id="content" class="edge-fades flex-1 overflow-auto">
@@ -101,17 +102,17 @@ export const onRequest: RequestHandler = (ev) => {
 				return;
 			}
 		}
-        // Cache headers: strong for assets, and warmer for auth pages to improve perceived speed
-        // Explicitly set a very long TTL for the favicon to satisfy audits
-        if (p === "/favicon.svg") {
-            try {
-                ev.headers.set("Cache-Control", "public, max-age=31536000, immutable");
-            } catch {}
-        }
-        const isAsset =
-            /\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(
-                p,
-            );
+		// Cache headers: strong for assets, and warmer for auth pages to improve perceived speed
+		// Explicitly set a very long TTL for the favicon to satisfy audits
+		if (p === "/favicon.svg") {
+			try {
+				ev.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+			} catch {}
+		}
+		const isAsset =
+			/\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(
+				p,
+			);
 		const isQData = p.endsWith("/q-data.json");
 		const isAuthPage =
 			p === "/login" || p === "/login/" || p === "/signup" || p === "/signup/";

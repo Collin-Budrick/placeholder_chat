@@ -18,6 +18,26 @@ Install dependencies (workspace root):
 bun install
 ```
 
+### Analyze unused files/exports with Knip
+
+From the repo root, a convenience script is available to run Knip against the web app:
+
+```powershell
+bun run knip
+```
+
+It executes (Windows/PowerShell):
+
+```powershell
+& { Set-Location 'apps/web'; Set-Item -Path Env:KNIP -Value '1'; bunx knip }
+```
+
+Cross‑platform alternative (run from the web app):
+
+```bash
+cd apps/web && KNIP=1 bunx knip
+```
+
 ## Develop (all services)
 
 Run the full dev stack (shared package watch, gateway, web/Vite, Lynx launcher, desktop auto-run):

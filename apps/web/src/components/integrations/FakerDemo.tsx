@@ -23,45 +23,48 @@ const FakerDemo = component$(() => {
 	const state = useStore<{ users: User[] }>({ users: [] });
 	const started = __getFakerStarted();
 
-    const start$ = $(async () => {
-        if (isServer) return;
-        if (typeof window === "undefined") return;
-        if (started.v) return;
-        started.v = true;
-        try {
-            const { faker } = await import("@faker-js/faker/locale/en");
-            const gen = (): User => ({
-                id: faker.string.uuid(),
-                name: faker.person.fullName(),
-                email: faker.internet.email(),
-            });
-            // Emit one immediately for fast feedback
-            state.users = [gen()];
-            // Stream the rest in small idle/time-sliced chunks
-            const rest = 2; // total 3 users (1 now + 2 later)
-            let remaining = rest;
-            const enqueueNext = () => {
-                if (remaining <= 0) return;
-                remaining -= 1;
-                state.users = [...state.users, gen()];
-                if (remaining > 0) schedule();
-            };
-            const schedule = () => {
-                type W = typeof window & {
-                    requestIdleCallback?: (cb: IdleRequestCallback, opts?: { timeout?: number }) => number;
-                };
-                const ric = (window as W).requestIdleCallback;
-                if (typeof ric === "function") {
-                    ric(() => enqueueNext(), { timeout: 120 });
-                } else {
-                    setTimeout(enqueueNext, 40);
-                }
-            };
-            schedule();
-        } catch {
-            /* ignore */
-        }
-    });
+	const start$ = $(async () => {
+		if (isServer) return;
+		if (typeof window === "undefined") return;
+		if (started.v) return;
+		started.v = true;
+		try {
+			const { faker } = await import("@faker-js/faker/locale/en");
+			const gen = (): User => ({
+				id: faker.string.uuid(),
+				name: faker.person.fullName(),
+				email: faker.internet.email(),
+			});
+			// Emit one immediately for fast feedback
+			state.users = [gen()];
+			// Stream the rest in small idle/time-sliced chunks
+			const rest = 2; // total 3 users (1 now + 2 later)
+			let remaining = rest;
+			const enqueueNext = () => {
+				if (remaining <= 0) return;
+				remaining -= 1;
+				state.users = [...state.users, gen()];
+				if (remaining > 0) schedule();
+			};
+			const schedule = () => {
+				type W = typeof window & {
+					requestIdleCallback?: (
+						cb: IdleRequestCallback,
+						opts?: { timeout?: number },
+					) => number;
+				};
+				const ric = (window as W).requestIdleCallback;
+				if (typeof ric === "function") {
+					ric(() => enqueueNext(), { timeout: 120 });
+				} else {
+					setTimeout(enqueueNext, 40);
+				}
+			};
+			schedule();
+		} catch {
+			/* ignore */
+		}
+	});
 	// Client-only starter with idle+rAF scheduling
 	useTask$(({ cleanup }) => {
 		if (isServer) return;

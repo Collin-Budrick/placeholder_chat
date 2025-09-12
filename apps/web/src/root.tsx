@@ -21,7 +21,7 @@ export default component$(() => {
 							"default-src 'self'",
 							"base-uri 'self'",
 							"object-src 'none'",
-                    		"img-src 'self' data: blob: https:",
+							"img-src 'self' data: blob: https:",
 							"font-src 'self' data:",
 							"style-src 'self' 'unsafe-inline'",
 							"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
@@ -45,7 +45,11 @@ export default component$(() => {
 				{isDev && (
 					<script src={`${import.meta.env.BASE_URL}debug-warn.js`} defer />
 				)}
-				<link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+				<link
+					rel="preconnect"
+					href="https://images.unsplash.com"
+					crossOrigin="anonymous"
+				/>
 				{/* Analytics via Partytown removed; add your own script loader if needed */}
 				{/* Optional prefetch for auth route data; opt-in via VITE_PREFETCH_AUTH=1 */}
 				{(import.meta as unknown as { env?: Record<string, string> })?.env
