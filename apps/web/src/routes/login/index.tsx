@@ -1,6 +1,6 @@
 import { $, component$, useOn, useSignal, useTask$ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
-import { useNavigate } from "@builder.io/qwik-city";
+import { Link, useNavigate } from "@builder.io/qwik-city";
 import * as v from "valibot";
 import BackButton from "~/components/BackButton";
 import TypeTitle from "~/components/TypeTitle";
@@ -417,6 +417,8 @@ export default component$(() => {
 								Sign Up
 							</a>
 						</p>
+						{/* Hidden prefetch for frequent next route */}
+						<Link href="/signup/" prefetch="js" class="hidden" aria-hidden="true" />
 					</AuthCard>
 				</div>
 			</div>

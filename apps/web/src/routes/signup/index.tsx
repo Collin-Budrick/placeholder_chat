@@ -1,6 +1,6 @@
 import { $, component$, useOn, useSignal, useTask$ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
-import { routeLoader$, useNavigate } from "@builder.io/qwik-city";
+import { Link, routeLoader$, useNavigate } from "@builder.io/qwik-city";
 import { type InitialValues, useForm, valiForm$ } from "@modular-forms/qwik";
 import * as v from "valibot";
 import BackButton from "~/components/BackButton";
@@ -586,6 +586,8 @@ export default component$(() => {
 								Login
 							</a>
 						</p>
+						{/* Hidden prefetch for frequent next route */}
+						<Link href="/login/" prefetch="js" class="hidden" aria-hidden="true" />
 					</AuthCard>
 				</div>
 			</div>

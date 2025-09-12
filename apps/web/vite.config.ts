@@ -107,7 +107,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
               "base-uri 'self'",
               "object-src 'none'",
               "frame-ancestors 'none'",
-              "img-src 'self' data: blob:",
+              // Allow external images in preview (e.g., integrations demos)
+              "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
               "style-src 'self' 'unsafe-inline'",
               "script-src 'self' 'unsafe-inline' blob:",
@@ -308,14 +309,16 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			const compression = require("vite-plugin-compression2");
 			const wantGzip = process.env.ASSET_GZIP === "1";
 			const wantBrotli = process.env.ASSET_BROTLI === "1" || !wantGzip; // default to brotli-only
+			const excludeRe = /\.(?:br|gz|woff2?|avif|heic|heif|mp4|webm|zip|7z)$/i;
 			if (wantGzip) {
 				extraPlugins.push(
 					compression.default?.({
 						algorithm: "gzip",
 						ext: ".gz",
 						threshold: 10240,
+						exclude: excludeRe,
 					}) ??
-						compression({ algorithm: "gzip", ext: ".gz", threshold: 10240 }),
+						compression({ algorithm: "gzip", ext: ".gz", threshold: 10240, exclude: excludeRe }),
 				);
 			}
 			if (wantBrotli) {
@@ -324,11 +327,13 @@ export default defineConfig(({ command, mode }): UserConfig => {
 						algorithm: "brotliCompress",
 						ext: ".br",
 						threshold: 10240,
+						exclude: excludeRe,
 					}) ??
 						compression({
 							algorithm: "brotliCompress",
 							ext: ".br",
 							threshold: 10240,
+							exclude: excludeRe,
 						}),
 				);
 			}
@@ -342,6 +347,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			extraPlugins.push(
 				inspect && inspect.default ? inspect.default() : inspect(),
 			);
+		}
+	} catch (e) {}
+	try {
+		// Compile-time image transforms (when package is installed)
+		// @ts-expect-error
+		const imagetools = require("vite-imagetools");
+		const it = imagetools?.imagetools || imagetools?.default;
+		if (typeof it === "function") {
+			extraPlugins.push(it());
 		}
 	} catch (e) {}
 	try {
@@ -397,22 +411,30 @@ export default defineConfig(({ command, mode }): UserConfig => {
             const url = new URL(raw, "http://dev.local");
             if (url.pathname === "/__image_info") {
               const src = url.searchParams.get("url") || "";
-              // Provide stub info for known local assets to satisfy @unpic/qwik in dev
-              if (/\/favicon\.svg(?:$|\?)/.test(src)) {
-                res.setHeader("Content-Type", "application/json");
-                res.statusCode = 200;
-                res.end(
-                  JSON.stringify({
-                    width: 128,
-                    height: 128,
-                    type: "image/svg+xml",
-                    src,
-                  }),
-                );
+              // Provide stub info to satisfy @unpic/qwik in preview
+              try {
+                const respond = (data: any) => {
+                  res.setHeader("Content-Type", "application/json");
+                  res.statusCode = 200;
+                  res.end(JSON.stringify({ src, ...data }));
+                };
+                if (/\/favicon\.svg(?:$|\?)/.test(src)) {
+                  respond({ width: 128, height: 128, type: "image/svg+xml" });
+                  return;
+                }
+                // Heuristic for Unsplash params
+                const u = new URL(src);
+                const fm = u.searchParams.get("fm") || "jpg";
+                const w = Number(u.searchParams.get("w") || "0");
+                const mime = fm === "avif" ? "image/avif" : fm === "webp" ? "image/webp" : "image/jpeg";
+                const width = w > 0 ? w : 800;
+                const height = Math.round(width * 0.67);
+                respond({ width, height, type: mime });
                 return;
-              }
-              res.statusCode = 404;
-              res.end("not found");
+              } catch {}
+              res.statusCode = 200;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({ src, width: 800, height: 600, type: "image/jpeg" }));
               return;
             }
           } catch {}
@@ -548,6 +570,52 @@ export default defineConfig(({ command, mode }): UserConfig => {
             // Handle @unpic/qwik dev metadata requests locally
             ...(command === "serve" ? [devImageInfoPlugin()] : []),
           ...extraPlugins,
+          // Enable LightningCSS in dev under Bun by using the WASM build to avoid N-API panics.
+          // This pre-transform runs before Vite's CSS handling and is dev-only.
+          ...(() => {
+            try {
+              const isBun = !!(process as any)?.versions?.bun;
+              if (command === "serve" && isBun) {
+                // Prefer wasm impl if installed
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                const lc = require("lightningcss-wasm");
+                if (lc && typeof lc.transform === "function") {
+                  const devLightningCssPlugin = () => ({
+                    name: "dev-lightningcss-wasm",
+                    enforce: "pre",
+                    configureServer() {
+                      try {
+                        console.log("[css] lightningcss: using WASM transformer in dev (bun)");
+                      } catch {}
+                    },
+                    async transform(code: string, id: string) {
+                      // Normalize id to strip Vite query params (e.g., ?direct, ?module)
+                      const [filename, query] = id.split("?", 2);
+                      if (!filename.endsWith(".css")) return null;
+                      // Enable for CSS Modules too: *.module.css or ?module
+                      const isCssModule = /\.module\.css$/i.test(filename) || /(?:^|[?&])module(?:=|&|$)/.test(query || "");
+                      try {
+                        const result = lc.transform({
+                          filename,
+                          code: Buffer.from(code),
+                          minify: false,
+                          // Match build browserslist for consistency
+                          targets: undefined,
+                          drafts: { nesting: true },
+                        });
+                        // Return transformed CSS; Vite will still apply CSS Modules processing when applicable.
+                        return { code: result.code.toString(), map: null };
+                      } catch {
+                        return null;
+                      }
+                    },
+                  });
+                  return [devLightningCssPlugin() as any];
+                }
+              }
+            } catch {}
+            return [] as any[];
+          })(),
           // Improve cache/compression headers when using `vite preview` or Traefik preview proxy
           previewHeadersPlugin(),
 			// Run Tailwind only for the client build to avoid duplicate CSS work/logs in SSG pass
@@ -644,7 +712,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
           // Styles often use inline during dev (Tailwind, Qwik style injections)
           "style-src 'self' 'unsafe-inline'",
           // Safe asset types
-          "img-src 'self' data: blob:",
+          // Allow external images during dev for integration demos
+          "img-src 'self' data: blob: https:",
           "font-src 'self' data:",
           "object-src 'none'",
           "base-uri 'self'",
@@ -780,7 +849,31 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			},
 		},
 		// Disable CSS sourcemaps in dev to reduce served bytes
-		css: { devSourcemap: false },
+		css: (() => {
+			let hasLightning = false;
+			try {
+				hasLightning = !!require.resolve("lightningcss");
+			} catch {}
+      const isBun = !!(process as any)?.versions?.bun;
+      // Avoid lightningcss under Bun or during dev/SSR to prevent N-API/thread issues.
+      const enableLightning = hasLightning && !isBun && command === "build";
+      if (enableLightning && process.env.KNIP !== "1") {
+        try { console.log("[css] lightningcss: enabled (native) for build"); } catch {}
+      }
+			return {
+				devSourcemap: false,
+				// Prefer Lightning CSS when available for faster transforms/minify
+				...(enableLightning
+					? {
+						transformer: "lightningcss" as const,
+						lightningcss: {
+							// Use browserslist query; Vite converts it to lightningcss targets
+							browserslist: ">= 0.5%, not dead",
+						},
+					}
+					: {}),
+			};
+		})(),
 	};
 
   try {

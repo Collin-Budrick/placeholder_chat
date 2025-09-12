@@ -316,12 +316,13 @@ const server = Bun.serve({
 					const u8 = new Uint8Array(16);
 					crypto.getRandomValues(u8);
 					const nonce = btoa(String.fromCharCode(...u8));
+					const imgExtra = (process.env.CSP_IMG || "https:").trim();
 					headers["Content-Security-Policy"] = [
 						"default-src 'self'",
 						"base-uri 'self'",
 						"object-src 'none'",
 						"frame-ancestors 'none'",
-						"img-src 'self' data: blob:",
+						`img-src 'self' data: blob: ${imgExtra}`,
 						"font-src 'self' data:",
 						"style-src 'self' 'unsafe-inline'",
 						`script-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
@@ -380,12 +381,13 @@ const server = Bun.serve({
 						body = html;
 					} catch {}
 				} else {
+					const imgExtra2 = (process.env.CSP_IMG || "https:").trim();
 					headers["Content-Security-Policy"] = [
 						"default-src 'self'",
 						"base-uri 'self'",
 						"object-src 'none'",
 						"frame-ancestors 'none'",
-						"img-src 'self' data: blob:",
+						`img-src 'self' data: blob: ${imgExtra2}`,
 						"font-src 'self' data:",
 						"style-src 'self' 'unsafe-inline'",
 						"script-src 'self' 'unsafe-inline'",

@@ -150,7 +150,8 @@ export const onRequest: RequestHandler = (ev) => {
 						"base-uri 'self'",
 						"object-src 'none'",
 						"frame-ancestors 'none'",
-						"img-src 'self' data: blob:",
+						// Allow external images in dev for integration demos (e.g., Unsplash)
+						"img-src 'self' data: blob: https:",
 						"font-src 'self' data:",
 						"style-src 'self' 'unsafe-inline'",
 						"script-src 'self' 'unsafe-inline' 'unsafe-eval'",
@@ -161,7 +162,8 @@ export const onRequest: RequestHandler = (ev) => {
 						"base-uri 'self'",
 						"object-src 'none'",
 						"frame-ancestors 'none'",
-						"img-src 'self' data: blob:",
+						// Allow https images so integrations can load external sources in prod preview too
+						"img-src 'self' data: blob: https:",
 						"font-src 'self' data:",
 						"style-src 'self' 'unsafe-inline'",
 						"script-src 'self'",

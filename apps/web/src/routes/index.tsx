@@ -5,6 +5,7 @@ import {
 	useVisibleTask$,
 } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
+import { Link } from "@builder.io/qwik-city";
 import { cn } from "~/lib/cn";
 import { timelineMotion } from "~/lib/motion-qwik";
 
@@ -63,44 +64,17 @@ export default component$(() => {
 		};
 	});
 
-	// Motion One word-reveal for the headline (SplitType-like, no extra dep)
+	// Motion One word-reveal for the headline.
+	// Pre-split the headline in SSR to avoid client-side DOM rewriting that can cause CLS.
 	useVisibleTask$(() => {
 		if (isServer) return;
 		const el = h1Ref.value;
 		if (!el) return;
 		// Respect reduced motion
 		if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
-			// Ensure headline is visible with no animation
-			try {
-				el.style.visibility = "visible";
-			} catch {}
 			return;
 		}
-
-		const original = el.textContent || "";
-		// Skip if already split
-		if (el.hasAttribute("data-split")) return;
-		el.setAttribute("data-split", "1");
-
-		// Split into words while preserving spaces and provide an overflow clip wrapper
-		const parts = original.split(/(\s+)/);
-		el.textContent = "";
-		for (const p of parts) {
-			if (/^\s+$/.test(p)) {
-				el.appendChild(document.createTextNode(p));
-			} else if (p) {
-				const outer = document.createElement("span");
-				outer.className =
-					"word-outer inline-block overflow-hidden align-baseline";
-				const inner = document.createElement("span");
-				inner.className = "word inline-block will-change-transform";
-				inner.textContent = p;
-				outer.appendChild(inner);
-				el.appendChild(outer);
-			}
-		}
-
-		// Pre-set initial state for Motion animation
+		// Words are already present from SSR; set initial state for Motion animation
 		const words = Array.from(el.querySelectorAll<HTMLElement>(".word"));
 		words.forEach((w) => {
 			try {
@@ -109,10 +83,6 @@ export default component$(() => {
 				w.style.willChange = "transform, opacity";
 			} catch {}
 		});
-		// Ensure container is visible before play to avoid flicker
-		try {
-			el.style.opacity = "1";
-		} catch {}
 
 		// Build a staggered timeline using Motion One
 		const items = words.map((w, i) => ({
@@ -179,15 +149,27 @@ export default component$(() => {
 				<div class="relative mx-auto max-w-7xl px-6 pt-20 pb-14">
 					<div class="grid items-center gap-10 md:gap-12 md:grid-cols-2">
 						<div class="text-center md:text-left">
-							<h1
-								ref={h1Ref}
-                            style={{ opacity: "0", fontSize: "clamp(2.25rem, 6vw, 4.5rem)", lineHeight: "1.1" }}
-								class={cn(
-									"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-balance",
-								)}
-							>
-								Social messaging, reimagined.
-							</h1>
+								<h1
+									ref={h1Ref}
+                            style={{ fontSize: "clamp(2.25rem, 6vw, 4.5rem)", lineHeight: "1.1" }}
+									class={cn(
+										"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-balance",
+									)}
+								>
+                        {(() => {
+                          const words = ["Social", "messaging,", "reimagined."];
+                          const nodes: any[] = [];
+                          words.forEach((w, i) => {
+                            nodes.push(
+                              <span class="word-outer inline-block overflow-hidden align-baseline" key={`w-${i}`}>
+                                <span class="word inline-block will-change-transform">{w}</span>
+                              </span>
+                            );
+                            if (i < words.length - 1) nodes.push(" ");
+                          });
+                          return nodes;
+                        })()}
+								</h1>
 							<p
 								ref={subRef}
 								style={{ opacity: "0" }}
@@ -203,12 +185,12 @@ export default component$(() => {
 									"mt-8 flex items-center justify-center md:justify-start gap-4",
 								)}
 							>
-								<a href="/signup" class="btn btn-primary">
+								<Link href="/signup" prefetch="js" class="btn btn-primary">
 									Create your account
-								</a>
-								<a href="/login" class="btn btn-ghost">
+								</Link>
+								<Link href="/login" prefetch="js" class="btn btn-ghost">
 									Sign in
-								</a>
+								</Link>
 							</div>
 							<div class="mt-6 flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3">
 								<div class="badge badge-primary badge-outline badge-sm md:badge-md whitespace-nowrap">
@@ -348,16 +330,17 @@ export default component$(() => {
 							Powerful yet friendly — a space that invites talking.
 						</p>
 						<div class="mt-6 flex gap-3">
-							<a href="/login" class="btn btn-outline">
-								Jump into a room
-							</a>
-							<a
-								href="/about"
-								class="btn btn-ghost"
-								aria-label="Learn more about Stack"
-							>
-								Learn more about Stack
-							</a>
+								<Link href="/login" prefetch="js" class="btn btn-outline">
+									Jump into a room
+								</Link>
+								<Link
+									href="/about"
+									prefetch="js"
+									class="btn btn-ghost"
+									aria-label="Learn more about Stack"
+								>
+									Learn more about Stack
+								</Link>
 						</div>
 					</div>
 					<div class="order-1 md:order-2">

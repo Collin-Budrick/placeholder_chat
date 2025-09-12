@@ -1,4 +1,4 @@
-import { component$ } from "@builder.io/qwik";
+import { component$, useVisibleTask$ } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import DaisyButtonsDemo from "../../components/integrations/DaisyButtonsDemo";
 import FakerDemo from "../../components/integrations/FakerDemo";
@@ -6,11 +6,18 @@ import IconsDemo from "../../components/integrations/IconsDemo";
 import MotionOneDemo from "../../components/integrations/MotionOneDemo";
 import UnpicDemo from "../../components/integrations/UnpicDemo";
 import { PreactCounterIsland } from "../../components/PreactCounterIsland";
+import PictureDemo from "../../components/integrations/PictureDemo";
 
 export default component$(() => {
+    // Prewarm faker chunk in the background to reduce first-interaction latency
+    useVisibleTask$(() => {
+        (async () => {
+            try { await import("@faker-js/faker/locale/en"); } catch {}
+        })();
+    });
 	return (
 		<section class="container mx-auto max-w-3xl p-6 space-y-8">
-			<h1 class="text-2xl font-bold">Integrations</h1>
+			<h1 class="text-2xl font-bold" style={{ fontSize: "1.5rem", lineHeight: "1.25" }}>Integrations</h1>
 			<p class="text-zinc-400">
 				Quick demos wired up for Panda, Faker, Motion One, and DaisyUI.
 			</p>
@@ -22,6 +29,8 @@ export default component$(() => {
 				<IconsDemo client:visible />
 				{/* Keep the Unpic image eager for LCP */}
 				<UnpicDemo />
+				{/* Responsive <picture> demo (runtime source). Swap to imagetools local imports when ready. */}
+				<PictureDemo />
 				<div class="space-y-2">
 					<h2 class="text-xl font-semibold">Preact Island</h2>
 					{/* Extra guard to avoid early hydration in dev */}

@@ -39,7 +39,7 @@
 		"biome:fix": "biome check --write src --max-diagnostics=500",
 		"inspect": "VITE_INSPECT=1 bun ./scripts/dev-with-env.js"
 	},
-	"devDependencies": {
+  "devDependencies": {
 		"@builder.io/qwik": "1.16.0",
 		"@builder.io/qwik-city": "1.16.0",
 		"@builder.io/qwik-react": "0.5.6",
@@ -80,7 +80,10 @@
 		"knip": "5.63.1",
 		"vite-plugin-inspect": "11.3.3",
 		"unplugin-fonts": "1.4.0",
-		"msw": "2.11.2"
+		"msw": "2.11.2",
+		"vite-imagetools": "8.0.0",
+		"lightningcss": "1.30.1",
+		"lightningcss-wasm": "1.30.1"
 	},
 	"dependencies": {
 		"@faker-js/faker": "10.0.0",

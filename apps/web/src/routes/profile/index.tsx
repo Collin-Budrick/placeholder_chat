@@ -148,6 +148,7 @@ export default component$(() => {
 						<div class="mt-4">
 							<Link
 								href="/admin/users/"
+								prefetch="js"
 								class="btn btn-outline btn-sm w-full"
 								aria-label="Manage Users"
 							>
