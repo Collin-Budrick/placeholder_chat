@@ -15,14 +15,17 @@ export default component$(() => {
 				Quick demos wired up for Panda, Faker, Motion One, and DaisyUI.
 			</p>
 			<div class="grid gap-8 md:grid-cols-2">
-				<FakerDemo />
-				<MotionOneDemo />
-				<DaisyButtonsDemo />
-				<IconsDemo />
+				{/* Gate non-critical demos behind client:visible to trim initial JS */}
+				<FakerDemo client:visible />
+				<MotionOneDemo client:visible />
+				<DaisyButtonsDemo client:visible />
+				<IconsDemo client:visible />
+				{/* Keep the Unpic image eager for LCP */}
 				<UnpicDemo />
 				<div class="space-y-2">
 					<h2 class="text-xl font-semibold">Preact Island</h2>
-					<PreactCounterIsland />
+					{/* Extra guard to avoid early hydration in dev */}
+					<PreactCounterIsland client:visible />
 				</div>
 			</div>
 		</section>
@@ -30,14 +33,23 @@ export default component$(() => {
 });
 
 export const head: DocumentHead = {
-	title: "Integrations | Stack",
-	meta: [
-		{
-			name: "description",
-			content:
-				"Quick demos wired up for Lenis, Lottie, Panda, Faker, Motion One, and DaisyUI within the Stack app.",
-		},
-	],
+    title: "Integrations | Stack",
+    meta: [
+        {
+            name: "description",
+            content:
+                "Quick demos wired up for Lenis, Lottie, Panda, Faker, Motion One, and DaisyUI within the Stack app.",
+        },
+    ],
+    links: [
+        {
+            rel: "preload",
+            href: "/favicon.svg",
+            as: "image",
+            // Boost priority for the above‑the‑fold image
+            fetchpriority: "high" as any,
+        },
+    ],
 };
 
 export const prerender = false;

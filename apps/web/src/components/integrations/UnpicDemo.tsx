@@ -12,7 +12,8 @@ export default component$(() => {
 					height={128}
 					alt="App favicon"
 					decoding="async"
-					loading="lazy"
+					loading="eager"
+					fetchpriority="high"
 					sizes="(min-width: 768px) 128px, 25vw"
 					class="block mx-auto"
 				/>

@@ -61,93 +61,92 @@ const MotionOneDemo = component$(() => {
 			};
 			el.addEventListener("pointerenter", onEnter);
 
-			const onClick = () => {
-				try {
-					animate(
-						el,
-						{
-							filter: [
-								"hue-rotate(0deg) saturate(1) brightness(1)",
-								"hue-rotate(-140deg) saturate(1.2) brightness(1.05)",
-								"hue-rotate(0deg) saturate(1) brightness(1)",
-							],
-						},
-						{ duration: 0.65, easing: "ease-in-out" },
-					);
+            const onClick = () => {
+                try {
+                    animate(
+                        el,
+                        {
+                            filter: [
+                                "hue-rotate(0deg) saturate(1) brightness(1)",
+                                "hue-rotate(-140deg) saturate(1.2) brightness(1.05)",
+                                "hue-rotate(0deg) saturate(1) brightness(1)",
+                            ],
+                        },
+                        { duration: 0.65, easing: "ease-in-out" },
+                    );
 
-					animate(
-						el,
-						{
-							transform: [
-								"translateX(0px) scale(1)",
-								"translateX(-4px) scale(1.02)",
-								"translateX(4px) scale(1.02)",
-								"translateX(-3px) scale(1.01)",
-								"translateX(3px) scale(1.01)",
-								"translateX(0px) scale(1)",
-							],
-						},
-						{ duration: 0.35, easing: "ease-in-out" },
-					);
+                    animate(
+                        el,
+                        {
+                            transform: [
+                                "translateX(0px) scale(1)",
+                                "translateX(-4px) scale(1.02)",
+                                "translateX(4px) scale(1.02)",
+                                "translateX(-3px) scale(1.01)",
+                                "translateX(3px) scale(1.01)",
+                                "translateX(0px) scale(1)",
+                            ],
+                        },
+                        { duration: 0.35, easing: "ease-in-out" },
+                    );
+                    const wrap =
+                        wrapperRef.value || (el.parentElement as HTMLElement | null);
+                    if (!wrap) return;
+                    const count = 16;
+                    for (let i = 0; i < count; i++) {
+                        const spark = document.createElement("div");
+                        spark.setAttribute("aria-hidden", "true");
+                        spark.className =
+                            "pointer-events-none absolute rounded-full shadow";
+                        const hues = [174, 182, 188, 192, 196];
+                        const h = hues[Math.floor(Math.random() * hues.length)];
+                        spark.style.background = `oklch(0.77 0.16 ${h})`;
+                        const size = 4 + Math.random() * 4;
+                        spark.style.width = `${size}px`;
+                        spark.style.height = `${size}px`;
+                        spark.style.left = "50%";
+                        spark.style.top = "50%";
+                        spark.style.transform = "translate(-50%, -50%)";
+                        spark.style.willChange = "transform, opacity, filter";
+                        spark.style.borderRadius = "9999px";
+                        if (getComputedStyle(wrap).position === "static")
+                            wrap.style.position = "relative";
+                        wrap.appendChild(spark);
 
-					const wrap =
-						wrapperRef.value || (el.parentElement as HTMLElement | null);
-					if (!wrap) return;
-					const count = 16;
-					for (let i = 0; i < count; i++) {
-						const spark = document.createElement("div");
-						spark.setAttribute("aria-hidden", "true");
-						spark.className =
-							"pointer-events-none absolute rounded-full shadow";
-						const hues = [174, 182, 188, 192, 196];
-						const h = hues[Math.floor(Math.random() * hues.length)];
-						spark.style.background = `oklch(0.77 0.16 ${h})`;
-						const size = 4 + Math.random() * 4;
-						spark.style.width = `${size}px`;
-						spark.style.height = `${size}px`;
-						spark.style.left = "50%";
-						spark.style.top = "50%";
-						spark.style.transform = "translate(-50%, -50%)";
-						spark.style.willChange = "transform, opacity, filter";
-						spark.style.borderRadius = "9999px";
-						if (getComputedStyle(wrap).position === "static")
-							wrap.style.position = "relative";
-						wrap.appendChild(spark);
-
-						const angle =
-							(i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
-						const distance = 48 + Math.random() * 64;
-						const dx = Math.cos(angle) * distance;
-						const dy = Math.sin(angle) * distance;
-						const outDur = 0.38 + Math.random() * 0.12;
-						const fadeDur = 0.26 + Math.random() * 0.14;
-						animate([
-							[
-								spark,
-								{
-									transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(1)`,
-								},
-								{ duration: outDur, easing: "ease-out" },
-							],
-							[
-								spark,
-								{
-									transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(${1.6 + Math.random() * 0.6})`,
-									opacity: 0,
-									filter: "blur(2px)",
-								},
-								{ duration: fadeDur, easing: "ease-in" },
-							],
-						])
-							.finished.finally(() => {
-								spark.remove();
-							})
-							.catch(() => spark.remove());
-					}
-				} catch {
-					/* ignore */
-				}
-			};
+                        const angle =
+                            (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+                        const distance = 48 + Math.random() * 64;
+                        const dx = Math.cos(angle) * distance;
+                        const dy = Math.sin(angle) * distance;
+                        const outDur = 0.38 + Math.random() * 0.12;
+                        const fadeDur = 0.26 + Math.random() * 0.14;
+                        animate([
+                            [
+                                spark,
+                                {
+                                    transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(1)`,
+                                },
+                                { duration: outDur, easing: "ease-out" },
+                            ],
+                            [
+                                spark,
+                                {
+                                    transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(${1.6 + Math.random() * 0.6})`,
+                                    opacity: 0,
+                                    filter: "blur(2px)",
+                                },
+                                { duration: fadeDur, easing: "ease-in" },
+                            ],
+                        ])
+                            .finished.finally(() => {
+                                spark.remove();
+                            })
+                            .catch(() => spark.remove());
+                    }
+                } catch {
+                    /* ignore */
+                }
+            };
 			el.addEventListener("click", onClick);
 
 			cleanupRef.value = noSerialize(() => {
