@@ -20,6 +20,8 @@ services:
       CHOKIDAR_INTERVAL: "100"
       # Disable HTTPS inside Vite; Traefik terminates TLS
       NO_HTTPS: "1"
+      # Enable LightningCSS WASM pre-transform in dev under Bun
+      CSS_DEV_WASM: "1"
       # Hint for vite.config to enable WSS HMR via Traefik
       DOCKER_TRAEFIK: "1"
       # Let Auth.js trust the incoming Host header and derive URLs dynamically

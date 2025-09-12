@@ -41,6 +41,10 @@ export default component$(() => {
 					)}
 				{/* Connection hints removed (no external Lottie assets in use) */}
 				<RouterHead />
+				{/* Dev-only: enhance Qwik WARN logs with stack traces to locate source */}
+				{isDev && (
+					<script src={`${import.meta.env.BASE_URL}debug-warn.js`} defer />
+				)}
 				<link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
 				{/* Analytics via Partytown removed; add your own script loader if needed */}
 				{/* Optional prefetch for auth route data; opt-in via VITE_PREFETCH_AUTH=1 */}

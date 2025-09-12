@@ -591,12 +591,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
               ]
             : []),
           ...extraPlugins,
-          // Enable LightningCSS in dev under Bun by using the WASM build to avoid N-API panics.
-          // This pre-transform runs before Vite's CSS handling and is dev-only.
+          // Enable LightningCSS in dev under Bun using the WASM build ONLY when explicitly opted in.
+          // This avoids noisy wasm loader logs in some environments.
           ...(() => {
             try {
               const isBun = !!(process as any)?.versions?.bun;
-              if (command === "serve" && isBun) {
+              if (command === "serve" && isBun && process.env.CSS_DEV_WASM === "1") {
                 // Prefer wasm impl if installed
                 // eslint-disable-next-line @typescript-eslint/no-var-requires
                 const lc = require("lightningcss-wasm");
@@ -877,7 +877,9 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			} catch {}
       const isBun = !!(process as any)?.versions?.bun;
       // Avoid lightningcss under Bun or during dev/SSR to prevent N-API/thread issues.
-      const enableLightning = hasLightning && !isBun && command === "build";
+      // Also skip for SSG builds where Tailwind directives may still be present,
+      // which would otherwise trigger unknown at-rule warnings from lightningcss.
+      const enableLightning = hasLightning && !isBun && command === "build" && !isSsgBuild;
       if (enableLightning && process.env.KNIP !== "1") {
         try { console.log("[css] lightningcss: enabled (native) for build"); } catch {}
       }

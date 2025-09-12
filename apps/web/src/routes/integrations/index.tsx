@@ -27,15 +27,16 @@ export default component$(() => {
 				<MotionOneDemo client:visible />
 				<DaisyButtonsDemo client:visible />
 				<IconsDemo client:visible />
-				{/* Keep the Unpic image eager for LCP */}
-				<UnpicDemo />
-				{/* Responsive <picture> demo (runtime source). Swap to imagetools local imports when ready. */}
-				<PictureDemo />
+				{/* Move the Preact island higher so it isn't far down */}
 				<div class="space-y-2">
 					<h2 class="text-xl font-semibold">Preact Island</h2>
 					{/* Extra guard to avoid early hydration in dev */}
 					<PreactCounterIsland client:visible />
 				</div>
+				{/* Keep the Unpic image eager for LCP */}
+				<UnpicDemo />
+				{/* Responsive <picture> demo (runtime source). Swap to imagetools local imports when ready. */}
+				<PictureDemo />
 			</div>
 		</section>
 	);
@@ -57,32 +58,6 @@ export const head: DocumentHead = {
 			as: "image",
 			// Boost priority for the above‑the‑fold image
 			fetchpriority: "high" as any,
-		},
-		// Preload the first carousel image to optimize LCP
-		{
-			rel: "preload",
-			as: "image",
-			href:
-				"https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=480&q=45&fm=avif",
-			crossOrigin: "anonymous" as any,
-			fetchpriority: "high" as any,
-			// Provide responsive hints for browsers that support it
-			imagesrcset: (
-				[
-					240,
-					320,
-					360,
-					420,
-					480,
-				]
-					.map(
-						(w) =>
-							`https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=${w}&q=45&fm=avif ${w}w`,
-					)
-					.join(", ")
-			) as any,
-			imagesizes:
-				"(min-width: 768px) calc((min(100vw, 64rem) - 3rem - 2rem)/2), 100vw" as any,
 		},
 	],
 };
