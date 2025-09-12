@@ -73,7 +73,12 @@ export async function animateMotion(
 		if (!mod || typeof (mod as { animate?: unknown }).animate !== "function")
 			return undefined;
 		// motion.animate returns an Animation-like player
-		return (mod as { animate: typeof animate }).animate(
+		type AnimateFn = (
+			el: Element | Element[] | NodeList,
+			keyframes: Keyframe[] | PropertyIndexedKeyframes | Keyframe,
+			opts?: number | KeyframeAnimationOptions,
+		) => Animation;
+		return (mod as unknown as { animate: AnimateFn }).animate(
 			el as unknown as Element,
 			keyframes as unknown as Keyframe[] | PropertyIndexedKeyframes | Keyframe,
 			opts as unknown as number | KeyframeAnimationOptions,

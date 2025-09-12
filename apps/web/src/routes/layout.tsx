@@ -14,23 +14,36 @@ export default component$(() => {
 	// Lenis initialization moved into a leaf provider component (LenisProvider)
 
 	// View transition pre-hydration script removed.
+	const env = (import.meta as unknown as { env?: Record<string, string> }).env || {};
+	const enableSmooth = env.VITE_SMOOTH_SCROLL === '1';
+	const enableProgress = env.VITE_SCROLL_PROGRESS === '1';
+const enableReveals = env.VITE_REVEALS === '1';
 	return (
 		<>
-			// @ts-expect-error Qwik client directive
-			<ScrollProgress client:idle />
-			// @ts-expect-error Qwik client directive
-			<SmoothScrollProvider client:load>
+			{enableProgress && <ScrollProgress client:visible />}
+			{enableSmooth ? (
+				<SmoothScrollProvider client:idle>
 				<main id="content" class="edge-fades flex-1 overflow-auto">
 					<div
 						id="scroll-inner"
 						class="grid place-items-center min-h-full pb-24"
 					>
 						<Slot />
-						{/* @ts-expect-error Qwik client directive */}
-						<ScrollReveals client:idle />
+						{enableReveals && <ScrollReveals client:visible />}
 					</div>
 				</main>
-			</SmoothScrollProvider>
+				</SmoothScrollProvider>
+			) : (
+				<main id="content" class="edge-fades flex-1 overflow-auto">
+					<div
+						id="scroll-inner"
+						class="grid place-items-center min-h-full pb-24"
+					>
+						<Slot />
+						{enableReveals && <ScrollReveals client:visible />}
+					</div>
+				</main>
+			)}
 			{/* Overlay-based scroll fades (top/bottom) */}
 			<div class="viewport-fade top" aria-hidden="true" />
 			<div class="viewport-fade bottom" aria-hidden="true" />
@@ -45,8 +58,7 @@ export default component$(() => {
 			{
 				// New glass top navigation; hydrate on idle to keep auth pages light.
 			}
-			// @ts-expect-error Qwik client directive
-			<GlassNavBar client:idle />
+			<GlassNavBar client:visible />
 		</>
 	);
 });
@@ -78,11 +90,17 @@ export const onRequest: RequestHandler = (ev) => {
 				return;
 			}
 		}
-		// Cache headers: strong for assets, and warmer for auth pages to improve perceived speed
-		const isAsset =
-			/\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(
-				p,
-			);
+        // Cache headers: strong for assets, and warmer for auth pages to improve perceived speed
+        // Explicitly set a very long TTL for the favicon to satisfy audits
+        if (p === "/favicon.svg") {
+            try {
+                ev.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+            } catch {}
+        }
+        const isAsset =
+            /\.(?:js|mjs|css|woff2?|ttf|eot|png|jpe?g|gif|svg|webp|avif|ico|map)$/i.test(
+                p,
+            );
 		const isQData = p.endsWith("/q-data.json");
 		const isAuthPage =
 			p === "/login" || p === "/login/" || p === "/signup" || p === "/signup/";

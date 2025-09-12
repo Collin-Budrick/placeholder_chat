@@ -47,19 +47,19 @@ body::-webkit-scrollbar,
 }
 /* Heading defaults in base layer so utilities can override */
 @layer base {
-  /* Provide explicit sizes for h1 to avoid upcoming UA changes. */
-  h1 {
-    font-size: 2rem; /* ~text-3xl */
-    line-height: 1.2;
-  }
-  article h1,
-  aside h1,
-  nav h1,
-  section h1,
-  main h1 {
-    font-size: 1.5rem; /* ~text-2xl */
-    line-height: 1.25;
-  }
+	/* Provide explicit sizes for h1 to avoid upcoming UA changes. */
+	h1 {
+		font-size: 2rem; /* ~text-3xl */
+		line-height: 1.2;
+	}
+	article h1,
+	aside h1,
+	nav h1,
+	section h1,
+	main h1 {
+		font-size: 1.5rem; /* ~text-2xl */
+		line-height: 1.25;
+	}
 }
 /* Enable CSS View Transitions for page-level animations */
 /* Minimal View Transitions for page slides */
@@ -73,6 +73,7 @@ html {
 	will-change: transform;
 	transform: translateZ(0);
 	backface-visibility: hidden;
+	position: relative; /* allow ::before background inside the same paint context */
 }
 
 @keyframes vt-in-right {
@@ -187,6 +188,14 @@ html[data-theme="oled"] body {
 	background-color: #000;
 	color: #fff;
 }
+/* Light theme: provide a visible, non-animated fallback directly on body so
+   the page never looks plain white, even if ::before is not painted or OKLCH
+   is unsupported. The ::before animated lava will overlay this. */
+html[data-theme="light"] body,
+html[data-theme="white"] body {
+	/* keep base background for tokens; visual color comes from ::before lava */
+	background-color: #ffffff;
+}
 html[data-theme="dark"] .oled-glass,
 html[data-theme="oled"] .oled-glass {
 	background-color: #000;
@@ -234,25 +243,210 @@ html[data-theme="white"] .theme-icon-moon {
 	}
 }
 
+/* In-content lava background so backdrop-filter inside #content can sample it
+   even with paint containment. This mirrors the body::before effect. */
+#content::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	z-index: 0;
+	background:
+		linear-gradient(
+			180deg,
+			rgba(167, 139, 250, 0.16) 0%,
+			rgba(167, 139, 250, 0.1) 35%,
+			rgba(167, 139, 250, 0.06) 60%,
+			rgba(167, 139, 250, 0) 85%
+		),
+		radial-gradient(
+			closest-side at center,
+			rgba(167, 139, 250, 0.88) 0 56%,
+			transparent 57%
+		)
+		no-repeat,
+		radial-gradient(
+			closest-side at center,
+			rgba(199, 183, 255, 0.78) 0 54%,
+			transparent 55%
+		)
+		no-repeat,
+		radial-gradient(
+			closest-side at center,
+			rgba(245, 208, 254, 0.7) 0 58%,
+			transparent 59%
+		)
+		no-repeat;
+	background-size:
+		48vmax 48vmax,
+		40vmax 40vmax,
+		56vmax 56vmax;
+	background-position:
+		10% 18%,
+		82% 34%,
+		46% 76%;
+	filter: blur(60px) saturate(1.25);
+	opacity: 0.72;
+	animation: lava-drift 58s ease-in-out infinite alternate;
+}
+@supports (color: oklch(50% 0.2 260)) {
+	#content::before {
+		background:
+			linear-gradient(
+				180deg,
+				color-mix(in oklab, oklch(var(--p)) 40%, transparent) 0%,
+				color-mix(in oklab, oklch(var(--p)) 28%, transparent) 35%,
+				color-mix(in oklab, oklch(var(--p)) 18%, transparent) 60%,
+				transparent 85%
+			),
+			radial-gradient(
+				closest-side at center,
+				oklch(var(--p) / 0.9) 0 56%,
+				transparent 57%
+			)
+			no-repeat,
+			radial-gradient(
+				closest-side at center,
+				oklch(var(--p) / 0.78) 0 54%,
+				transparent 55%
+			)
+			no-repeat,
+			radial-gradient(
+				closest-side at center,
+				color-mix(in oklab, oklch(var(--p)) 65%, white) /
+				0.7 0 58%,
+				transparent 59%
+			)
+			no-repeat;
+	}
+}
+
 html[data-theme="light"] body::before,
 html[data-theme="white"] body::before {
 	content: "";
 	position: fixed;
-	inset: -15vh -15vw;
+	inset: -10vh -10vw;
 	pointer-events: none;
-	background: conic-gradient(
-		from 180deg at 50% 50%,
-		rgba(199, 183, 255, 0.35),
-		rgba(183, 224, 255, 0.35),
-		rgba(191, 255, 224, 0.35),
-		rgba(255, 214, 183, 0.35),
-		rgba(255, 192, 225, 0.35),
-		rgba(199, 183, 255, 0.726)
-	);
-	filter: blur(80px) saturate(1.15);
-	opacity: 0.55;
+	/* Layered purple blobs that drift like a lava lamp */
+	/* Fallback (broad support): explicit RGBA tints */
+	/* global wash so the page never looks plain white */
+	background:
+		linear-gradient(
+			180deg,
+			rgba(167, 139, 250, 0.16) 0%,
+			rgba(167, 139, 250, 0.1) 35%,
+			rgba(167, 139, 250, 0.06) 60%,
+			rgba(167, 139, 250, 0) 85%
+		),
+		radial-gradient(
+			closest-side at center,
+			rgba(167, 139, 250, 0.88) 0 56%,
+			transparent 57%
+		)
+		no-repeat,
+		radial-gradient(
+			closest-side at center,
+			rgba(199, 183, 255, 0.78) 0 54%,
+			transparent 55%
+		)
+		no-repeat,
+		radial-gradient(
+			closest-side at center,
+			rgba(245, 208, 254, 0.7) 0 58%,
+			transparent 59%
+		)
+		no-repeat;
+	background-size:
+		48vmax 48vmax,
+		40vmax 40vmax,
+		56vmax 56vmax;
+	background-position:
+		10% 18%,
+		82% 34%,
+		46% 76%;
+	z-index: 0;
+	filter: blur(60px) saturate(1.25);
+	opacity: 0.72;
 	transform: translateZ(0);
-	animation: pastel-spin 42s linear infinite;
+	animation: lava-drift 58s ease-in-out infinite alternate;
+}
+
+/* Prefer theme-driven OKLCH when supported */
+@supports (color: oklch(50% 0.2 260)) {
+	html[data-theme="light"] body::before,
+	html[data-theme="white"] body::before {
+		/* global wash using theme primary */
+		background:
+			linear-gradient(
+				180deg,
+				color-mix(in oklab, oklch(var(--p)) 40%, transparent) 0%,
+				color-mix(in oklab, oklch(var(--p)) 28%, transparent) 35%,
+				color-mix(in oklab, oklch(var(--p)) 18%, transparent) 60%,
+				transparent 85%
+			),
+			radial-gradient(
+				closest-side at center,
+				oklch(var(--p) / 0.9) 0 56%,
+				transparent 57%
+			)
+			no-repeat,
+			radial-gradient(
+				closest-side at center,
+				oklch(var(--p) / 0.78) 0 54%,
+				transparent 55%
+			)
+			no-repeat,
+			radial-gradient(
+				closest-side at center,
+				color-mix(in oklab, oklch(var(--p)) 65%, white) /
+				0.7 0 58%,
+				transparent 59%
+			)
+			no-repeat;
+	}
+}
+
+@keyframes lava-drift {
+	0% {
+		background-position:
+			12% 22%,
+			78% 30%,
+			48% 78%;
+		background-size:
+			44vmax 44vmax,
+			36vmax 36vmax,
+			54vmax 54vmax;
+	}
+	33% {
+		background-position:
+			20% 18%,
+			68% 56%,
+			40% 72%;
+		background-size:
+			46vmax 46vmax,
+			34vmax 34vmax,
+			52vmax 52vmax;
+	}
+	66% {
+		background-position:
+			16% 28%,
+			82% 44%,
+			58% 64%;
+		background-size:
+			42vmax 42vmax,
+			38vmax 38vmax,
+			50vmax 50vmax;
+	}
+	100% {
+		background-position:
+			12% 22%,
+			78% 30%,
+			48% 78%;
+		background-size:
+			44vmax 44vmax,
+			36vmax 36vmax,
+			54vmax 54vmax;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -301,8 +495,12 @@ html[data-theme="white"] body::before {
    - Use DaisyUI tokens via utilities on elements; these helpers only add structure/texture. */
 .glass-surface {
 	position: relative;
-	isolation: isolate;
+	/* Allow backdrop-filter to sample page/background; avoid trapping it */
+	isolation: auto;
+	overflow: hidden;
 	border-radius: 1rem; /* rounded-xl */
+	/* Tiny tint ensures Safari/Chromium render blur consistently */
+	background: oklch(var(--b1) / 0.06);
 	backdrop-filter: blur(14px) saturate(1.15);
 	-webkit-backdrop-filter: blur(14px) saturate(1.15);
 }
@@ -344,17 +542,17 @@ html[data-theme="white"] .glass-surface.border-soft {
    Ensure the blur can composite by giving the glass a light theme tint,
    avoid isolating its stacking context, and clip to rounded corners. */
 [data-glass-nav] .glass-surface {
-    isolation: auto;
-    position: relative;
-    overflow: hidden;
-    /* keep existing blur but ensure a minimal tint so Safari/Chromium sample reliably */
-    -webkit-backdrop-filter: blur(14px) saturate(1.15);
-    backdrop-filter: blur(14px) saturate(1.15);
-    background: oklch(var(--b1) / 0.06);
+	isolation: auto;
+	position: relative;
+	overflow: hidden;
+	/* keep existing blur but ensure a minimal tint so Safari/Chromium sample reliably */
+	-webkit-backdrop-filter: blur(14px) saturate(1.15);
+	backdrop-filter: blur(14px) saturate(1.15);
+	background: oklch(var(--b1) / 0.06);
 }
 [data-glass-nav] .glass-surface > * {
-    position: relative;
-    z-index: 1;
+	position: relative;
+	z-index: 1;
 }
 
 /* Ensure readable text on acrylic surfaces in both themes */
@@ -703,6 +901,8 @@ html[data-theme="white"] .bottom-nav .nav-sep {
 }
 #scroll-inner {
 	will-change: transform;
+	position: relative;
+	z-index: 1; /* ensure content sits above #content::before */
 }
 
 /* Overlay-based scroll fades (do not affect scrollbar rendering) */
@@ -741,7 +941,8 @@ html[data-theme="oled"] .viewport-fade {
 }
 html[data-theme="light"] .viewport-fade,
 html[data-theme="white"] .viewport-fade {
-	--page-bg: #ffffff;
+	/* Match the global lava tint to avoid white bands at edges */
+	--page-bg: rgba(199, 183, 255, 0.35);
 }
 .pill-input::placeholder {
 	color: rgba(0, 0, 0, 0.45);

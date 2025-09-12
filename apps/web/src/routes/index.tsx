@@ -181,7 +181,6 @@ export default component$(() => {
 						<div class="text-center md:text-left">
 							<h1
 								ref={h1Ref}
-								animate
 								style={{ opacity: "0" }}
 								class={cn(
 									"text-5xl md:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight text-balance",
@@ -191,6 +190,7 @@ export default component$(() => {
 							</h1>
 							<p
 								ref={subRef}
+								style={{ opacity: "0" }}
 								class={cn("mt-4 text-base-content/70 max-w-xl mx-auto md:mx-0")}
 							>
 								Real‑time chats, rich profiles, and a playful, modern UI — all
@@ -198,6 +198,7 @@ export default component$(() => {
 							</p>
 							<div
 								ref={ctaRef}
+								style={{ opacity: "0" }}
 								class={cn(
 									"mt-8 flex items-center justify-center md:justify-start gap-4",
 								)}
@@ -213,7 +214,7 @@ export default component$(() => {
 								<div class="badge badge-primary badge-outline badge-sm md:badge-md whitespace-nowrap">
 									End‑to‑end rooms
 								</div>
-								<div class="badge badge-neutral badge-outline badge-sm md:badge-md whitespace-nowrap">
+								<div class="badge badge-secondary badge-outline badge-sm md:badge-md whitespace-nowrap">
 									Presence
 								</div>
 								<div class="badge badge-accent badge-outline badge-sm md:badge-md whitespace-nowrap">

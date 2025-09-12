@@ -1,8 +1,13 @@
+import type { Component } from "@builder.io/qwik";
 import { $, component$ } from "@builder.io/qwik";
 import { cn } from "~/lib/cn";
 // Switch to Iconify (lucide) for consistency and tree-shaken SVGs
 import LuMoon from "~icons/lucide/moon";
 import LuSun from "~icons/lucide/sun";
+
+// Some IDE setups type unplugin-icons default exports as unknown. Cast to Qwik Component.
+const MoonIcon = LuMoon as unknown as Component<{ class?: string }>;
+const SunIcon = LuSun as unknown as Component<{ class?: string }>;
 
 const THEME_KEY = "theme";
 const LIGHT = "light"; // daisyUI default light theme
@@ -44,8 +49,8 @@ const ThemeToggle = component$<{ class?: string; iconClass?: string }>(
 				type="button"
 			>
 				{/* Render both icons; CSS hides the inactive one based on [data-theme] to avoid flicker */}
-				<LuMoon class={`theme-icon-moon ${iconClass}`} />
-				<LuSun class={`theme-icon-sun ${iconClass}`} />
+				<MoonIcon class={`theme-icon-moon ${iconClass}`} />
+				<SunIcon class={`theme-icon-sun ${iconClass}`} />
 			</button>
 		);
 	},

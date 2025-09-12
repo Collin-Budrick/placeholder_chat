@@ -1,6 +1,27 @@
 import { ofetch } from "ofetch";
 import { logApi, previewBodyMaybe, redactHeaders } from "./log";
 
+// Helper: coerce HeadersInit to a shape accepted by redactHeaders
+function toHeadersShape(
+	h: HeadersInit | undefined | null,
+): Record<string, string> | Headers | null {
+	if (!h) return null;
+	try {
+		if (h instanceof Headers) return h as Headers;
+	} catch {}
+	if (Array.isArray(h)) {
+		try {
+			return Object.fromEntries(h as [string, string][]) as Record<
+				string,
+				string
+			>;
+		} catch {
+			return {};
+		}
+	}
+	return h as unknown as Record<string, string>;
+}
+
 // In browser, use same-origin relative path so Traefik/Vite dev proxy can route /api -> gateway.
 // In SSR (Node, inside the web container), talk to the gateway service directly.
 const isBrowser =
@@ -42,8 +63,19 @@ export const api = ofetch.create({
 		if (!LOG_HTTP) return; // keep silent unless logging enabled
 		try {
 			// ofetch's handler shape can vary; be defensive with types.
-			const { request, response, options } =
-				(args as Record<string, unknown>) || {};
+			const ctx = args as unknown as {
+				request?: unknown;
+				response?: Response;
+				options?: {
+					url?: string;
+					method?: string;
+					headers?: HeadersInit;
+					body?: unknown;
+				};
+			};
+			const request = ctx?.request;
+			const response = ctx?.response;
+			const options = ctx?.options;
 			// Resolve a best-effort URL string
 			const url =
 				(options as { url?: string })?.url ??
@@ -64,7 +96,7 @@ export const api = ofetch.create({
 				method,
 				status: response?.status,
 				request: {
-					headers: redactHeaders(options?.headers as HeadersInit),
+					headers: redactHeaders(toHeadersShape(options?.headers)),
 					bodyPreview: options?.body
 						? previewBodyMaybe(options.body).preview
 						: undefined,
@@ -73,7 +105,7 @@ export const api = ofetch.create({
 						: undefined,
 				},
 				response: {
-					headers: redactHeaders(response?.headers),
+					headers: redactHeaders(response?.headers ?? null),
 				},
 			};
 			await logApi(entry);
@@ -91,13 +123,19 @@ async function _postJson(path: string, body: unknown) {
 	try {
 		const json = await api(path, {
 			method: "POST",
-			body,
-		} as { method: string; body: unknown });
+			body: body as unknown as Record<string, unknown>,
+		});
 		return { ok: true, json, status: 200 };
 	} catch (err: unknown) {
 		// ofetch throws a FetchError that may include `.status` and `.data`
-		const status = err?.status ?? err?.response?.status ?? 500;
-		const data = err?.data ?? null;
+		const e = err as {
+			status?: number;
+			response?: { status?: number };
+			data?: unknown;
+			message?: string;
+		};
+		const status = e?.status ?? e?.response?.status ?? 500;
+		const data = e?.data ?? null;
 		return { ok: false, json: data, status, error: err };
 	}
 }
@@ -149,7 +187,7 @@ export async function apiFetch(
 				status: response.status,
 				durationMs: Date.now() - start,
 				request: {
-					headers: redactHeaders(reqHeaders as HeadersInit),
+					headers: redactHeaders(toHeadersShape(reqHeaders as HeadersInit)),
 					bodyPreview: bodyPreview.preview,
 					bodySize: bodyPreview.size,
 				},
@@ -169,11 +207,11 @@ export async function apiFetch(
 				method,
 				durationMs: Date.now() - start,
 				request: {
-					headers: redactHeaders(reqHeaders as HeadersInit),
+					headers: redactHeaders(toHeadersShape(reqHeaders as HeadersInit)),
 					bodyPreview: bodyPreview.preview,
 					bodySize: bodyPreview.size,
 				},
-				message: String(err?.message ?? err),
+				message: String((err as { message?: string })?.message ?? err),
 			}));
 		throw err;
 	}

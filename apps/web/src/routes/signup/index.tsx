@@ -203,9 +203,13 @@ export default component$(() => {
 				}
 				return;
 			} else {
-				const body = parsed;
+				const body: { message?: string; error?: string } | null =
+					isJSON && parsed && typeof parsed === "object"
+						? (parsed as { message?: string; error?: string })
+						: null;
 				const msg =
-					(isJSON ? (body?.message ?? body?.error) : null) ??
+					body?.message ??
+					body?.error ??
 					(res.status === 409
 						? "Username or email already taken"
 						: `Signup failed (status ${res.status})`);
@@ -289,7 +293,7 @@ export default component$(() => {
 										<label
 											class="label"
 											aria-label="Username"
-											for={props.id as string}
+											for={(props as any)?.id as string}
 										>
 											<span class="label-text">Username</span>
 										</label>
@@ -388,7 +392,7 @@ export default component$(() => {
 										<label
 											class="label"
 											aria-label="Email"
-											for={props.id as string}
+											for={(props as any)?.id as string}
 										>
 											<span class="label-text">Email</span>
 										</label>
@@ -456,7 +460,7 @@ export default component$(() => {
 										<label
 											class="label"
 											aria-label="Password"
-											for={props.id as string}
+											for={(props as any)?.id as string}
 										>
 											<span class="label-text">Password</span>
 										</label>

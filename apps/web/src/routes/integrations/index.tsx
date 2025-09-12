@@ -33,23 +33,23 @@ export default component$(() => {
 });
 
 export const head: DocumentHead = {
-    title: "Integrations | Stack",
-    meta: [
-        {
-            name: "description",
-            content:
-                "Quick demos wired up for Lenis, Lottie, Panda, Faker, Motion One, and DaisyUI within the Stack app.",
-        },
-    ],
-    links: [
-        {
-            rel: "preload",
-            href: "/favicon.svg",
-            as: "image",
-            // Boost priority for the above‑the‑fold image
-            fetchpriority: "high" as any,
-        },
-    ],
+	title: "Integrations | Stack",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Quick demos wired up for Lenis, Lottie, Panda, Faker, Motion One, and DaisyUI within the Stack app.",
+		},
+	],
+	links: [
+		{
+			rel: "preload",
+			href: "/favicon.svg",
+			as: "image",
+			// Boost priority for the above‑the‑fold image
+			fetchpriority: "high" as any,
+		},
+	],
 };
 
 export const prerender = false;

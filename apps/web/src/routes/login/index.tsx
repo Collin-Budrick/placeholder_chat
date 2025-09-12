@@ -153,11 +153,12 @@ export default component$(() => {
 										ev.currentTarget as HTMLFormElement | null;
 									const fromTargetClosest = ((): HTMLFormElement | null => {
 										const t = ev.target as Element | null;
-										return t && typeof (t as Element).closest === "function"
-											? (t.closest as HTMLAnchorElement["closest"]).call(
-													t,
-													"form",
-												)
+										const found =
+											t && typeof t.closest === "function"
+												? t.closest("form")
+												: null;
+										return found && (found as Element).tagName === "FORM"
+											? (found as HTMLFormElement)
 											: null;
 									})();
 									const form: HTMLFormElement | null =

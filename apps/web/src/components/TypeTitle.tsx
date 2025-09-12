@@ -93,12 +93,16 @@ const TypeTitle = component$((props: Props) => {
 					const nav = perf.getEntriesByType("navigation")?.[0] as
 						| PerformanceNavigationTiming
 						| undefined;
+					// Some TS libdom versions do not include activationStart; guard access.
+					const actStart =
+						(nav as unknown as { activationStart?: number })?.activationStart ??
+						0;
 					isReload =
 						!!nav &&
 						(nav.type === "reload" ||
 							(nav.type === "navigate" &&
 								nav.transferSize === 0 &&
-								nav.activationStart > 0));
+								actStart > 0));
 				} else if (perf?.navigation) {
 					// legacy API: 1 === TYPE_RELOAD
 					isReload = perf.navigation.type === 1;

@@ -24,12 +24,21 @@ export async function initVelvette(): Promise<void> {
 		if (reduced) return; // honor reduced motion: no page transitions
 
 		// Dynamically import to keep SSR clean
-		const mod: any = await import("velvette").catch(() => null);
+		const mod = (await import("velvette").catch(() => null)) as unknown;
 		if (!mod) return;
 
 		// Try common export shapes
-		const create = (mod?.default as any) || (mod?.velvette as any) || mod;
-		if (typeof create !== "function") return;
+		type CreateFn = (opts?: {
+			effect?: string;
+			onNavigate?: (from: string, to: string) => void;
+		}) => void;
+		const maybeCreate =
+			((mod as { default?: unknown })?.default as unknown) ??
+			((mod as { velvette?: unknown })?.velvette as unknown) ??
+			mod;
+		const create: CreateFn | undefined =
+			typeof maybeCreate === "function" ? (maybeCreate as CreateFn) : undefined;
+		if (!create) return;
 
 		// Compute slide direction based on a logical route order
 		const ORDER = [
@@ -62,7 +71,9 @@ export async function initVelvette(): Promise<void> {
 		// Initialize velvette with a slide effect; if API differs, fail silently.
 		const root = document.documentElement;
 		let firstNavSkipped = false;
-		const vtHandler = (ev: any) => {
+		const vtHandler = (
+			ev: Event & { detail?: { finished?: Promise<unknown> } },
+		) => {
 			try {
 				Promise.resolve(ev?.detail?.finished)
 					.catch(() => {})
@@ -109,10 +120,13 @@ export async function initVelvette(): Promise<void> {
 			} catch {}
 		};
 		try {
-			// @ts-expect-error
-			if (import.meta.hot) {
-				// @ts-expect-error
-				import.meta.hot.dispose(() => {
+			const hot = (
+				import.meta as unknown as {
+					hot?: { dispose: (cb: () => void) => void };
+				}
+			).hot;
+			if (hot) {
+				hot.dispose(() => {
 					try {
 						w.__velvette_cleanup?.();
 					} catch {}
