@@ -185,8 +185,14 @@ html[data-theme="white"] {
 }
 html[data-theme="dark"] body,
 html[data-theme="oled"] body {
-	background-color: #000;
-	color: #fff;
+    background-color: #000;
+    color: #fff;
+}
+/* Light modes: flat light-purple background; purge decorative layers */
+html[data-theme="light"] body,
+html[data-theme="white"] body {
+    background-color: #f3e8ff !important; /* violet-100 */
+    background-image: none !important;
 }
 /* Light theme: provide a visible, non-animated fallback directly on body so
    the page never looks plain white, even if ::before is not painted or OKLCH
@@ -324,85 +330,18 @@ html[data-theme="white"] .theme-icon-moon {
 html[data-theme="light"] body::before,
 html[data-theme="white"] body::before {
 	content: "";
-	position: fixed;
-	inset: -10vh -10vw;
-	pointer-events: none;
-	/* Layered purple blobs that drift like a lava lamp */
-	/* Fallback (broad support): explicit RGBA tints */
-	/* global wash so the page never looks plain white */
-	background:
-		linear-gradient(
-			180deg,
-			rgba(167, 139, 250, 0.16) 0%,
-			rgba(167, 139, 250, 0.1) 35%,
-			rgba(167, 139, 250, 0.06) 60%,
-			rgba(167, 139, 250, 0) 85%
-		),
-		radial-gradient(
-			closest-side at center,
-			rgba(167, 139, 250, 0.88) 0 56%,
-			transparent 57%
-		)
-		no-repeat,
-		radial-gradient(
-			closest-side at center,
-			rgba(199, 183, 255, 0.78) 0 54%,
-			transparent 55%
-		)
-		no-repeat,
-		radial-gradient(
-			closest-side at center,
-			rgba(245, 208, 254, 0.7) 0 58%,
-			transparent 59%
-		)
-		no-repeat;
-	background-size:
-		48vmax 48vmax,
-		40vmax 40vmax,
-		56vmax 56vmax;
-	background-position:
-		10% 18%,
-		82% 34%,
-		46% 76%;
-	z-index: 0;
-	filter: blur(60px) saturate(1.25);
-	opacity: 0.72;
-	transform: translateZ(0);
-	animation: lava-drift 58s ease-in-out infinite alternate;
+	display: none !important;
+	background: none !important;
+	animation: none !important;
 }
 
 /* Prefer theme-driven OKLCH when supported */
 @supports (color: oklch(50% 0.2 260)) {
 	html[data-theme="light"] body::before,
 	html[data-theme="white"] body::before {
-		/* global wash using theme primary */
-		background:
-			linear-gradient(
-				180deg,
-				color-mix(in oklab, oklch(var(--p)) 40%, transparent) 0%,
-				color-mix(in oklab, oklch(var(--p)) 28%, transparent) 35%,
-				color-mix(in oklab, oklch(var(--p)) 18%, transparent) 60%,
-				transparent 85%
-			),
-			radial-gradient(
-				closest-side at center,
-				oklch(var(--p) / 0.9) 0 56%,
-				transparent 57%
-			)
-			no-repeat,
-			radial-gradient(
-				closest-side at center,
-				oklch(var(--p) / 0.78) 0 54%,
-				transparent 55%
-			)
-			no-repeat,
-			radial-gradient(
-				closest-side at center,
-				color-mix(in oklab, oklch(var(--p)) 65%, white) /
-				0.7 0 58%,
-				transparent 59%
-			)
-			no-repeat;
+		display: none !important;
+		background: none !important;
+		animation: none !important;
 	}
 }
 
@@ -494,26 +433,46 @@ html[data-theme="white"] body::before {
 /* Glass + Grain utilities (theme-aware, no hard-coded colors for fill)
    - Use DaisyUI tokens via utilities on elements; these helpers only add structure/texture. */
 .glass-surface {
-	position: relative;
-	/* Allow backdrop-filter to sample page/background; avoid trapping it */
-	isolation: auto;
-	overflow: hidden;
-	border-radius: 1rem; /* rounded-xl */
-	/* Tiny tint ensures Safari/Chromium render blur consistently */
-	background: oklch(var(--b1) / 0.06);
-	backdrop-filter: blur(14px) saturate(1.15);
-	-webkit-backdrop-filter: blur(14px) saturate(1.15);
+    position: relative;
+    /* Allow backdrop-filter to sample page/background; avoid trapping it */
+    isolation: auto;
+    overflow: hidden;
+    border-radius: 1rem; /* rounded-xl */
+    /* Tiny tint ensures Safari/Chromium render blur consistently */
+    background: oklch(var(--b1) / 0.06);
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
 }
 .glass-surface.border-soft {
 	border: 1px solid rgba(255, 255, 255, 0.12);
 }
 html[data-theme="dark"] .glass-surface.border-soft,
 html[data-theme="oled"] .glass-surface.border-soft {
-	border-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 html[data-theme="light"] .glass-surface.border-soft,
 html[data-theme="white"] .glass-surface.border-soft {
-	border-color: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+/* Keep glass neutral in light modes so it doesn't pick up page purple */
+html[data-theme="light"] .glass-surface,
+html[data-theme="white"] .glass-surface {
+    background: rgba(255, 255, 255, 0.88);
+}
+/* Dark modes: use the same soft purple used for light page background on elements only */
+html[data-theme="dark"] .glass-surface,
+html[data-theme="oled"] .glass-surface {
+    background: rgba(243, 232, 255, 0.12);
+}
+/* Ensure the nav glass also adopts the purple tint on dark */
+html[data-theme="dark"] [data-glass-nav] .glass-surface,
+html[data-theme="oled"] [data-glass-nav] .glass-surface {
+    background: rgba(243, 232, 255, 0.12);
+}
+/* Restore glass for the nav only (scoped) */
+html[data-theme="light"] [data-glass-nav] .glass-surface,
+html[data-theme="white"] [data-glass-nav] .glass-surface {
+    background: oklch(var(--b1) / 0.06);
 }
 
 /* Subtle grain over glass (dot matrix, very low opacity) */
@@ -521,12 +480,12 @@ html[data-theme="white"] .glass-surface.border-soft {
 	position: relative;
 }
 .with-grain::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	border-radius: inherit;
-	pointer-events: none;
-	z-index: 1;
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 1;
 	/* Use currentColor with low opacity via layer opacity so theme drives tint */
 	background-image: radial-gradient(
 		circle,
@@ -535,7 +494,27 @@ html[data-theme="white"] .glass-surface.border-soft {
 	);
 	background-size: 6px 6px;
 	mix-blend-mode: overlay;
-	opacity: 0.055; /* keep extremely subtle */
+    opacity: 0.055; /* keep extremely subtle */
+}
+
+/* Reduce grain over the nav so icons stay crisp */
+[data-glass-nav] .with-grain::after {
+    /* Remove texture on the nav; keep glass perfectly clean */
+    display: none !important;
+}
+
+/* Keep SVG icons sharp inside glass containers */
+[data-glass-nav] svg,
+[data-glass-nav] svg * {
+    filter: none !important;
+    shape-rendering: geometricPrecision;
+    vector-effect: non-scaling-stroke;
+}
+
+/* SVG icon crispness utilities */
+.icon-sharp {
+    vector-effect: non-scaling-stroke;
+    shape-rendering: geometricPrecision;
 }
 
 /* Scoped glass fixes for nav (robust across SSR/SSG)
@@ -551,8 +530,36 @@ html[data-theme="white"] .glass-surface.border-soft {
 	background: oklch(var(--b1) / 0.06);
 }
 [data-glass-nav] .glass-surface > * {
-	position: relative;
-	z-index: 1;
+    position: relative;
+    z-index: 1;
+}
+
+/* Auth pages: slide the nav bar down/offscreen to reduce distraction. */
+html:has(#login-root) [data-glass-nav],
+html:has(#signup-root) [data-glass-nav] {
+    --tw-translate-y: 120%;
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 220ms cubic-bezier(0.2, 0.6, 0.2, 1), opacity 160ms ease;
+}
+
+/* Auth pages: center the card perfectly and remove extra scroll space */
+html:has(#login-root) #content,
+html:has(#signup-root) #content {
+    overflow: hidden; /* no extra scroll */
+}
+html:has(#login-root) #scroll-inner,
+html:has(#signup-root) #scroll-inner {
+    min-height: 100dvh; /* viewport height including mobile UI */
+    padding-bottom: 0 !important; /* remove reserved space for bottom nav */
+}
+#login-root,
+#signup-root {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 /* Ensure readable text on acrylic surfaces in both themes */
@@ -571,17 +578,17 @@ html[data-theme="white"] .glass-surface.border-soft {
 /* Theme surfaces with subtle translucency */
 html[data-theme="dark"] .bottom-nav-surface,
 html[data-theme="oled"] .bottom-nav-surface {
-	/* Remove purple fill; keep subtle edge and depth */
-	background: transparent;
-	border-color: rgba(255, 255, 255, 0.1);
-	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    /* Apply soft purple tint to element only in dark modes */
+    background: rgba(243, 232, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 html[data-theme="light"] .bottom-nav-surface,
 html[data-theme="white"] .bottom-nav-surface {
-	/* Neutral glass — rely on external blur underlay for coloration */
-	background: transparent;
-	border-color: rgba(0, 0, 0, 0.08);
-	box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
+    /* Neutral glass regardless of page background */
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.06);
 }
 /* Soft halo that diffuses the edges into the background */
 .bottom-nav-surface::before {
@@ -937,12 +944,12 @@ html[data-theme="white"] .bottom-nav .nav-sep {
 /* Theme tuning for overlay fades */
 html[data-theme="dark"] .viewport-fade,
 html[data-theme="oled"] .viewport-fade {
-	--page-bg: #0b0b0b;
+	--page-bg: #000000; /* OLED true black */
 }
 html[data-theme="light"] .viewport-fade,
 html[data-theme="white"] .viewport-fade {
-	/* Match the global lava tint to avoid white bands at edges */
-	--page-bg: rgba(199, 183, 255, 0.35);
+    /* Match simplified light purple background */
+    --page-bg: #f3e8ff;
 }
 .pill-input::placeholder {
 	color: rgba(0, 0, 0, 0.45);

@@ -17,6 +17,7 @@ import LuUser from "~icons/lucide/user";
 
 // Some IDE/TS setups type unplugin-icons as unknown; cast to Qwik components
 const HomeIcon = LuHome as unknown as Component<{ class?: string }>;
+// Use the standard info icon for About
 const InfoIcon = LuInfo as unknown as Component<{ class?: string }>;
 const MailIcon = LuMail as unknown as Component<{ class?: string }>;
 const UserIcon = LuUser as unknown as Component<{ class?: string }>;
@@ -90,7 +91,7 @@ export default component$(() => {
 								href="/"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<HomeIcon class="w-6 h-6 [stroke-width:2.25]" />
+                            <HomeIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
 								<span class="sr-only">Home</span>
 							</Link>
 						</li>
@@ -100,7 +101,7 @@ export default component$(() => {
 								href="/about"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<InfoIcon class="w-6 h-6 [stroke-width:2.25]" />
+                            <InfoIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
 								<span class="sr-only">About</span>
 							</Link>
 						</li>
@@ -110,7 +111,7 @@ export default component$(() => {
 								href="/contact"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<MailIcon class="w-6 h-6 [stroke-width:2.25]" />
+                            <MailIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
 								<span class="sr-only">Messages</span>
 							</Link>
 						</li>
@@ -120,7 +121,7 @@ export default component$(() => {
 								href="/profile"
 								class={cn("px-2 py-1.5 rounded-lg transition-colors")}
 							>
-								<UserIcon class="w-6 h-6 [stroke-width:2.25]" />
+                            <UserIcon class="icon-sharp w-7 h-7 [stroke-width:2]" />
 								<span class="sr-only">Account</span>
 							</Link>
 						</li>
@@ -131,7 +132,7 @@ export default component$(() => {
 									true
 								>)}
 								class="btn btn-ghost btn-sm"
-								iconClass="w-6 h-6 [stroke-width:2.25]"
+                            				iconClass="icon-sharp w-7 h-7 [stroke-width:2]"
 							/>
 						</li>
 					</ul>

@@ -217,7 +217,7 @@ export default component$(() => {
 								<div class="badge badge-secondary badge-outline badge-sm md:badge-md whitespace-nowrap">
 									Presence
 								</div>
-								<div class="badge badge-accent badge-outline badge-sm md:badge-md whitespace-nowrap">
+								<div class="badge badge-warning badge-outline badge-sm md:badge-md whitespace-nowrap">
 									File drops
 								</div>
 							</div>

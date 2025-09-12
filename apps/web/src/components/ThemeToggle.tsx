@@ -16,7 +16,7 @@ const DARK = "dark"; // daisyUI default dark theme
 const ThemeToggle = component$<{ class?: string; iconClass?: string }>(
 	(props) => {
 		const btnClass = cn("btn btn-ghost btn-sm", props.class);
-		const iconClass = cn("w-5 h-5 [stroke-width:2.25]", props.iconClass);
+    const iconClass = cn("icon-sharp w-5 h-5 [stroke-width:2]", props.iconClass);
 
 		const toggle = $(async () => {
 			try {

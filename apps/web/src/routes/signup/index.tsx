@@ -238,7 +238,7 @@ export default component$(() => {
 	// no-op
 
 	return (
-		<main class="min-h-screen grid place-items-center p-6 pt-20 md:pt-24">
+		<main id="signup-root" class="min-h-screen grid place-items-center p-6 pt-20 md:pt-24">
 			<div
 				class="w-full max-w-2xl"
 				ref={(el) => {
