@@ -2,12 +2,12 @@
 
 /* Root participates in VTs, but no UA or custom animations */
 html {
-	view-transition-name: root;
+  view-transition-name: root;
 }
 ::view-transition-old(root),
 ::view-transition-new(root) {
-	animation: none !important;
-	mix-blend-mode: normal;
+  animation: none !important;
+  mix-blend-mode: normal;
 }
 
 /* Ensure nav or theme flags cannot enable animations */
@@ -15,19 +15,19 @@ html {
 :root[data-vt-nav]::view-transition-new(root),
 :root[data-theme-wipe]::view-transition-old(root),
 :root[data-theme-wipe]::view-transition-new(root) {
-	animation: none !important;
-	-webkit-mask: none !important;
-	mask: none !important;
-	clip-path: none !important;
+  animation: none !important;
+  -webkit-mask: none !important;
+  mask: none !important;
+  clip-path: none !important;
 }
 
 /* Icon visibility without animated swaps */
 .theme-icon-sun {
-	display: none;
+  display: none;
 }
 :root[data-theme="light"] .theme-icon-sun {
-	display: inline;
+  display: inline;
 }
 :root[data-theme="light"] .theme-icon-moon {
-	display: none;
+  display: none;
 }

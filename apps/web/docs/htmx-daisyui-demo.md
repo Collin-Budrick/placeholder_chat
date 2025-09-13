@@ -29,7 +29,7 @@ This HTML demonstrates a button styled with DaisyUI classes that uses htmx attri
 
     <!-- Content area that will be replaced by htmx -->
     <div id="content">
-      <div class="card w-96 bg-base-100 shadow-xl p-4">
+      <div class="card bg-base-100 w-96 p-4 shadow-xl">
         <div class="card-body">
           <h2 class="card-title">Hello from DaisyUI</h2>
           <p>This is a DaisyUI-styled content block.</p>
@@ -48,8 +48,8 @@ This HTML demonstrates a button styled with DaisyUI classes that uses htmx attri
 - Framer Motion can be used within React components to animate UI elements. Example usage (in a React component):
 
 ```tsx
-import { motion } from 'framer-motion';
-import React from 'react';
+import { motion } from "framer-motion";
+import React from "react";
 
 export function AnimatedCard() {
   return (
@@ -57,7 +57,7 @@ export function AnimatedCard() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="card w-96 bg-base-100 shadow-xl p-4"
+      className="card bg-base-100 w-96 p-4 shadow-xl"
     >
       <div className="card-body">
         <h2 className="card-title">Animated Card</h2>

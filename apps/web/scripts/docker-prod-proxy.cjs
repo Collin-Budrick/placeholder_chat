@@ -20,4 +20,3 @@ child.on("exit", (code, signal) => {
   if (signal) process.exit(1);
   process.exit(code ?? 0);
 });
-

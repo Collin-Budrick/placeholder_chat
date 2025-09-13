@@ -35,3 +35,16 @@ pnpm-lock.yaml
 package-lock.json
 yarn.lock
 server
+certs
+logs
+tmp
+public/vendor
+.vite
+**/.vite
+**/.qwik
+playwright-report
+test-results
+styled-system
+src/global.css
+scripts/**/*.mjs
+scripts/*.mjs

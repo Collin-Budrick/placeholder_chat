@@ -6,11 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "include": [
-      "src",
-      "*.config.ts",
-      "*.config.cjs"
-    ],
+    "include": ["src", "*.config.ts", "*.config.cjs"],
     "ignore": [
       "dist",
       "build",
@@ -22,11 +18,17 @@
       ".vite",
       "**/.vite",
       "**/.qwik",
-      "src/global.css"
+      "src/global.css",
+      "playwright-report",
+      "test-results",
+      "styled-system",
+      "scripts"
     ]
   },
   "formatter": {
-    "enabled": true,
+    // Delegate code formatting to Prettier to avoid tool conflicts.
+    // Biome remains enabled for linting and organizeImports.
+    "enabled": false,
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 100
@@ -70,9 +72,7 @@
       "linter": { "enabled": false }
     },
     {
-      "include": [
-        "src/routes/signup/**"
-      ],
+      "include": ["src/routes/signup/**"],
       "linter": {
         "rules": {
           "a11y": { "noLabelWithoutControl": "off" },

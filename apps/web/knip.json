@@ -8,21 +8,10 @@
     "src/root.tsx",
     "src/routes/**/*.{ts,tsx}"
   ],
-  "project": [
-    "src/**/*.{ts,tsx,js,mjs,cjs}"
-  ],
-  "ignore": [
-    "dist/**",
-    "public/**",
-    "styled-system/**",
-    "node_modules/**"
-  ],
-  "ignoreDependencies": [
-    "@qwik-city-plan"
-  ],
-  "ignoreUnresolved": [
-    "~icons/*"
-  ],
+  "project": ["src/**/*.{ts,tsx,js,mjs,cjs}"],
+  "ignore": ["dist/**", "public/**", "styled-system/**", "node_modules/**"],
+  "ignoreDependencies": ["@qwik-city-plan"],
+  "ignoreUnresolved": ["~icons/*"],
   "rules": {
     "unlisted": "off"
   },

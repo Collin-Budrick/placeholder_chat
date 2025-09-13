@@ -22,6 +22,8 @@
     "vite-imagetools": "^8.0.0"
   },
   "scripts": {
+    "fmt:check": "bunx prettier --check .",
+    "fmt:fix": "bunx prettier --write .",
     "shared:watch": "bun x tsc -p packages/shared/tsconfig.build.json --watch --preserveWatchOutput",
     "gateway:dev": "bun scripts/start-gateway.js",
     "dev:all": "bun scripts/dev-all.js",
