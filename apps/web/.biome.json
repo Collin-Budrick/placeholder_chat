@@ -26,9 +26,7 @@
     ]
   },
   "formatter": {
-    // Delegate code formatting to Prettier to avoid tool conflicts.
-    // Biome remains enabled for linting and organizeImports.
-    "enabled": false,
+    "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 100

@@ -17,15 +17,15 @@
     "dev.public": "vite --mode ssr --host 0.0.0.0",
     "dev:web": "bun ../../scripts/dev-env.js",
     "dev:web:nohmr": "bun ../../scripts/dev-nohmr.js",
-    "fmt:fix": "bunx -p prettier@3.6.2 prettier --write .",
-    "fmt:check": "bunx -p prettier@3.6.2 prettier --check .",
+    "fmt:fix": "bunx -p prettier@3.6.2 prettier --write \"**/*.{md,json,css,scss,html,yaml,yml}\"",
+    "fmt:check": "bunx -p prettier@3.6.2 prettier --check \"**/*.{md,json,css,scss,html,yaml,yml}\"",
     "gateway:dev": "bun ../../scripts/start-gateway.js",
     "lynx:auto": "bun ../../scripts/wait-and-launch.js",
     "build:ssg": "bunx vite build && bunx vite build -c adapters/static/vite.config.ts",
     "test.e2e": "bunx -p @playwright/test@1.55.0 playwright test",
     "biome:check": "biome check src --max-diagnostics=500",
-    "imports:fix": "biome check --write src --only organizeImports --max-diagnostics=500",
-    "biome:fix": "bun run imports:fix"
+    "imports:fix": "biome check --write src --max-diagnostics=500",
+    "biome:fix": "biome check --write src --max-diagnostics=500"
   },
   "devDependencies": {
     "@builder.io/qwik": "1.16.0",

@@ -15,10 +15,10 @@ import Root from "./root";
 // Guard against duplicate renders on cold start/HMR quirks in dev client mode.
 // Reuse a single render promise across accidental double invocations.
 export default function (opts: RenderOptions) {
-  const g = globalThis as unknown as {
-    __qwik_render_promise?: Promise<unknown>;
-  };
-  if (g.__qwik_render_promise) return g.__qwik_render_promise as any;
-  g.__qwik_render_promise = render(document, <Root />, opts);
-  return g.__qwik_render_promise as any;
+	const g = globalThis as unknown as {
+		__qwik_render_promise?: Promise<unknown>;
+	};
+	if (g.__qwik_render_promise) return g.__qwik_render_promise as any;
+	g.__qwik_render_promise = render(document, <Root />, opts);
+	return g.__qwik_render_promise as any;
 }

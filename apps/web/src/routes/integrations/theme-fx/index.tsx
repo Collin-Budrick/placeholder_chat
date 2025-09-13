@@ -3,17 +3,22 @@ import type { DocumentHead } from "@builder.io/qwik-city";
 // ThemeFxDemo temporarily disabled for SSG QRL debug
 
 export default component$(() => {
-  return <div class="mx-auto max-w-4xl p-6">{/* ThemeFxDemo removed for SSG debug */}</div>;
+	return (
+		<div class="mx-auto max-w-4xl p-6">
+			{/* ThemeFxDemo removed for SSG debug */}
+		</div>
+	);
 });
 
 export const prerender = true;
 
 export const head: DocumentHead = {
-  title: "Theme FX Demo | Stack",
-  meta: [
-    {
-      name: "description",
-      content: "Demonstration page for theme effects within the Stack integrations.",
-    },
-  ],
+	title: "Theme FX Demo | Stack",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Demonstration page for theme effects within the Stack integrations.",
+		},
+	],
 };

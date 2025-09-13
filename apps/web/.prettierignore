@@ -48,3 +48,4 @@ styled-system
 src/global.css
 scripts/**/*.mjs
 scripts/*.mjs
+**/*.{ts,tsx,js,jsx,cjs,mjs}
