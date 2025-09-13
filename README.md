@@ -1,4 +1,4 @@
-# goguma_chat
+# Placeholder_Chat
 
 Website, App, and Desktop application for a chat app created with performance in mind. Using LynxJS, Qwik (SSR), SolidJS server islands, Tauri, Rust, and more.
 
