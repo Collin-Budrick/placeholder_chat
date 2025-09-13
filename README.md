@@ -6,6 +6,28 @@ For contributors: please read AGENTS.md first — it captures our stack, pattern
 
 See: [AGENTS.md](AGENTS.md)
 
+## Monorepo Packages
+
+This repo is a multi‑package workspace. The most relevant packages/apps are:
+
+- `apps/web`: Qwik + Qwik City web app (SSR/SSG). Tailwind v4 + DaisyUI v5, Motion One reveals, responsive images (Unpic + `<picture>` demos), LCP preloads, and route data prefetch. Dev via Vite (SSR) with HMR, Docker dev/prod helpers.
+- `apps/gateway`: Rust (Axum) HTTP API and WS gateway. Includes auth, admin, rooms, presence, rate‑limit, frontend logs, and health endpoints. See `apps/gateway/src/main.rs`.
+- `apps/lynx`: Lynx shell (React via rspeedy) for embedded/alt flows.
+- `apps/desktop`: Tauri + Rust desktop wrapper for the web app/gateway.
+- `apps/mobile`: Rust mobile example with generated design tokens.
+- `packages/shared`: Shared TypeScript utilities/types consumed by web and Lynx; built to `dist/`.
+- `crates/*`: Rust workspace crates used by the gateway:
+  - `crates/storage` (redb), `crates/auth` (JWT), `crates/bus` (pub/sub), `crates/rooms`, `crates/presence`, `crates/rate`, `crates/proto` (Cap’n Proto), `crates/ipc`.
+- `tokens/`: Cross‑platform design tokens source and generators.
+- `docker/`, `docker-compose*.yml`, `traefik/`: Dev/prod Docker images, Compose stacks, and HTTPS/HTTP3 reverse proxy.
+- `scripts/`: Bun scripts to orchestrate dev/prod, gateway, SSG watch/preview, and LAN TLS helpers.
+
+Notable web app toggles (via env):
+
+- `VITE_REVEALS`: Enable scroll‑reveal animations (`1` in prod to enable; in dev they default on unless set to `0`).
+- `VITE_PREFETCH_ALL`: Aggressive idle prefetch for common routes (`1` in prod; in dev defaults on unless `0`).
+- `VITE_PREFETCH_AUTH`: Prefetch only auth route data (login/signup) when set to `1`.
+
 ## Prerequisites
 
 - Bun 1.x installed and on PATH (https://bun.sh)
