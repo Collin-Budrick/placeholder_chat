@@ -18,6 +18,27 @@ Install dependencies (workspace root):
 bun install
 ```
 
+### Web (apps/web) Scripts
+
+Run these from `apps/web` unless noted.
+
+- build: `bunx vite build` — client build (writes `dist/`).
+- build:client: `bunx vite build` — alias of build.
+- build.types: `bunx -p typescript@5.9.2 tsc --incremental --noEmit` — typecheck only.
+- build:ssg: `bunx vite build && bunx vite build -c adapters/static/vite.config.ts` — client + SSG/SSR builds (also writes visualizer reports: `dist/stats.html`, `server/stats-ssg.html`).
+- dev:web: `bun ../../scripts/dev-env.js` — local SSR dev via Vite.
+- dev:web:nohmr: `bun ../../scripts/dev-nohmr.js` — run SSR dev without HMR.
+- dev.public: `vite --mode ssr --host 0.0.0.0` — bind dev server on all interfaces.
+- dev.debug: `bun --inspect-brk ./node_modules/vite/bin/vite.js --mode ssr --force` — debug SSR dev.
+- docker:dev: `bun ./scripts/docker-dev-proxy.cjs` — HTTPS via Traefik (5173), gateway, Vite (5174).
+- docker:prod: `bun ./scripts/docker-prod-proxy.cjs` — prod-like HTTPS preview via Traefik.
+- fmt:fix: `bunx -p prettier@3.6.2 prettier --write "**/*.{md,json,css,scss,html,yaml,yml}"` — format non-code files (Prettier intentionally not used for TS/JS).
+- fmt:check: `bunx -p prettier@3.6.2 prettier --check "**/*.{md,json,css,scss,html,yaml,yml}"` — check non-code formatting.
+- biome:check: `biome check src --max-diagnostics=500` — lint and diagnostics for source code.
+- biome:fix: `biome check --write src --max-diagnostics=500` — apply Biome fixes/formatting for code.
+- test.e2e: `bunx -p @playwright/test@1.55.0 playwright test` — run Playwright tests in `tests/`.
+
+
 ### Analyze unused files/exports with Knip
 
 From the repo root, a convenience script is available to run Knip against the web app:

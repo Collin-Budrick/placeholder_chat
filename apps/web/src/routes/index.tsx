@@ -13,16 +13,24 @@ export default component$(() => {
 	const h1Ref = useSignal<HTMLElement>();
 	const subRef = useSignal<HTMLElement>();
 	const ctaRef = useSignal<HTMLElement>();
+	// Feature cards staggered reveal refs
+	const feat1Ref = useSignal<HTMLElement>();
+	const feat2Ref = useSignal<HTMLElement>();
+	const feat3Ref = useSignal<HTMLElement>();
+	// Live activity card (right side) reveal ref
+	const liveRef = useSignal<HTMLElement>();
 
-	// Animate subheading + CTAs with Motion One (after mount)
-	useVisibleTask$(() => {
-		if (isServer) return;
-		// Avoid CLS on subsequent navigations: run this hero animation only once per session
-		try {
-			if (sessionStorage.getItem("hero_anim_done") === "1") {
-				return;
-			}
-		} catch {}
+    // Animate subheading + CTAs with Motion One (after mount)
+    useVisibleTask$(() => {
+        if (isServer) return;
+        // In dev (docker:dev SSR with HMR), always allow the animation to run.
+        // In prod, avoid CLS on subsequent navigations by running only once per session.
+        try {
+            const isDevEnv = Boolean((import.meta as unknown as { env?: Record<string, string> })?.env?.DEV ?? true);
+            if (!isDevEnv && sessionStorage.getItem("hero_anim_done") === "1") {
+                return;
+            }
+        } catch {}
 		let cancel = false;
 		(async () => {
 			try {
@@ -60,10 +68,11 @@ export default component$(() => {
 					} catch {
 						/* ignore */
 					}
-					try {
-						sessionStorage.setItem("hero_anim_done", "1");
-					} catch {}
-				}
+                    try {
+                        const isDevEnv = Boolean((import.meta as unknown as { env?: Record<string, string> })?.env?.DEV ?? true);
+                        if (!isDevEnv) sessionStorage.setItem("hero_anim_done", "1");
+                    } catch {}
+        			}
 			} catch {
 				/* ignore */
 			}
@@ -75,14 +84,15 @@ export default component$(() => {
 
 	// Motion One word-reveal for the headline.
 	// Pre-split the headline in SSR to avoid client-side DOM rewriting that can cause CLS.
-	useVisibleTask$(() => {
-		if (isServer) return;
-		// Avoid re-running headline word animation on return navigations
-		try {
-			if (sessionStorage.getItem("hero_anim_done") === "1") {
-				return;
-			}
-		} catch {}
+    useVisibleTask$(() => {
+        if (isServer) return;
+        // In dev, run the headline animation on each visit; in prod, only once per session
+        try {
+            const isDevEnv = Boolean((import.meta as unknown as { env?: Record<string, string> })?.env?.DEV ?? true);
+            if (!isDevEnv && sessionStorage.getItem("hero_anim_done") === "1") {
+                return;
+            }
+        } catch {}
 		const el = h1Ref.value;
 		if (!el) return;
 		// Respect reduced motion
@@ -143,6 +153,107 @@ export default component$(() => {
 
 		return () => {
 			cancelled = true;
+		};
+	});
+
+	// Staggered slide-up for Feature cards using Motion One timeline when they enter viewport
+	useVisibleTask$(() => {
+		if (isServer) return;
+		const els = [feat1Ref.value, feat2Ref.value, feat3Ref.value].filter(
+			(el): el is HTMLElement => Boolean(el),
+		);
+		if (els.length === 0) return;
+		// Set initial hidden state (below the fold; no CLS risk)
+		try {
+			els.forEach((el) => {
+				el.style.opacity = "0";
+				el.style.transform = "translateY(16px)";
+				el.style.willChange = "transform, opacity";
+			});
+		} catch {}
+		const io = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((e) => e.isIntersecting)) {
+					(async () => {
+						try {
+							await timelineMotion(
+								els.map((el, i) => ({
+									el,
+									keyframes: { y: [16, 0], opacity: [0, 1] },
+									options: {
+										duration: 0.5,
+										easing: "cubic-bezier(.22,.9,.37,1)",
+									},
+									at: i * 0.12,
+								})),
+							);
+						} catch {}
+						try {
+							els.forEach((el) => (el.style.willChange = ""));
+						} catch {}
+						try {
+							io.disconnect();
+						} catch {}
+					})();
+				}
+			},
+			{ root: null, threshold: 0.15 },
+		);
+		try {
+			els.forEach((el) => io.observe(el));
+		} catch {}
+		return () => {
+			try {
+				io.disconnect();
+			} catch {}
+		};
+	});
+
+	// Live Activity card: fade + slide-in from the right when it becomes visible
+	useVisibleTask$(() => {
+		if (isServer) return;
+		const el = liveRef.value;
+		if (!el) return;
+		try {
+			el.style.opacity = "0";
+			el.style.transform = "translateX(20px)";
+			el.style.willChange = "transform, opacity";
+		} catch {}
+		const io = new IntersectionObserver(
+			(entries) => {
+				if (entries.some((e) => e.isIntersecting)) {
+					(async () => {
+						try {
+							await timelineMotion([
+								{
+									el,
+									keyframes: { x: [20, 0], opacity: [0, 1] },
+									options: {
+										duration: 0.5,
+										easing: "cubic-bezier(.22,.9,.37,1)",
+									},
+									at: 0,
+								},
+							]);
+						} catch {}
+						try {
+							el.style.willChange = "";
+						} catch {}
+						try {
+							io.disconnect();
+						} catch {}
+					})();
+				}
+			},
+			{ root: null, threshold: 0.15 },
+		);
+		try {
+			io.observe(el);
+		} catch {}
+		return () => {
+			try {
+				io.disconnect();
+			} catch {}
 		};
 	});
 
@@ -215,7 +326,7 @@ export default component$(() => {
 									Sign in
 								</Link>
 							</div>
-							<div class="mt-6 flex flex-wrap items-center justify-center gap-2 md:justify-start md:gap-3">
+						<div class="mt-6 flex flex-wrap items-center justify-center gap-2 md:justify-start md:gap-3" data-reveal>
 								<div class="badge badge-primary badge-outline badge-sm md:badge-md whitespace-nowrap">
 									End‑to‑end rooms
 								</div>
@@ -230,7 +341,7 @@ export default component$(() => {
 
 						{/* Glass showcase */}
 						<div class="relative">
-							<div class="glass-surface border-soft with-grain card bg-base-100/5 border shadow-xl">
+							<div ref={liveRef} class="glass-surface border-soft with-grain card bg-base-100/5 border shadow-xl" data-reveal data-reveal-from="right" data-reveal-force="1">
 								<div class="card-body p-5 sm:p-6">
 									<div class="flex items-center justify-between">
 										<h2 class="font-semibold">Live Activity</h2>
@@ -301,6 +412,8 @@ export default component$(() => {
 					<div
 						class="glass-surface border-soft with-grain card bg-base-100/5 border"
 						data-reveal
+						data-reveal-order="1"
+						ref={feat1Ref}
 					>
 						<div class="card-body">
 							<div class="emoji text-3xl">💬</div>
@@ -315,6 +428,8 @@ export default component$(() => {
 					<div
 						class="glass-surface border-soft with-grain card bg-base-100/5 border"
 						data-reveal
+						data-reveal-order="2"
+						ref={feat2Ref}
 					>
 						<div class="card-body">
 							<div class="emoji text-3xl">🎨</div>
@@ -329,6 +444,8 @@ export default component$(() => {
 					<div
 						class="glass-surface border-soft with-grain card bg-base-100/5 border"
 						data-reveal
+						data-reveal-order="3"
+						ref={feat3Ref}
 					>
 						<div class="card-body">
 							<div class="emoji text-3xl">⚡</div>
@@ -344,15 +461,15 @@ export default component$(() => {
 			{/* Chat Preview */}
 			<section class="mx-auto max-w-7xl px-6 py-8 md:py-10">
 				<div class="grid items-center gap-8 md:grid-cols-2">
-					<div class="order-2 md:order-1">
-						<h2 class="text-2xl font-bold md:text-3xl">
+					<div class="order-2 md:order-1" data-reveal>
+						<h2 class="text-2xl font-bold md:text-3xl" data-reveal>
 							Conversations that feel alive
 						</h2>
-						<p class="text-base-content/70 mt-3">
+						<p class="text-base-content/70 mt-3" data-reveal>
 							Reactions, short replies, link previews, and smooth transitions.
 							Powerful yet friendly — a space that invites talking.
 						</p>
-						<div class="mt-6 flex gap-3">
+						<div class="mt-6 flex gap-3" data-reveal data-reveal-order="2">
 							<Link href="/login" prefetch="js" class="btn btn-outline">
 								Jump into a room
 							</Link>
@@ -366,9 +483,10 @@ export default component$(() => {
 							</Link>
 						</div>
 					</div>
-					<div class="order-1 md:order-2">
+					<div class="order-1 md:order-2" data-reveal>
 						<div
 							class="glass-surface border-soft with-grain card bg-base-100/5 min-h-[360px] border shadow-lg"
+							data-reveal
 						>
 							<div class="card-body p-4 sm:p-6">
 								<div class="space-y-3">
@@ -422,19 +540,18 @@ export default component$(() => {
 			<section class="mx-auto max-w-7xl px-6 py-10">
 				<div
 					class="stats stats-vertical lg:stats-horizontal glass-surface border-soft with-grain bg-base-100/5 w-full border shadow"
-					data-reveal
 				>
-					<div class="stat">
+					<div class="stat" data-reveal data-reveal-order="1">
 						<div class="stat-title">Active users</div>
 						<div class="stat-value">12.3k</div>
 						<div class="stat-desc">+324 today</div>
 					</div>
-					<div class="stat">
+					<div class="stat" data-reveal data-reveal-order="2">
 						<div class="stat-title">Messages sent</div>
 						<div class="stat-value">98.4M</div>
 						<div class="stat-desc">+1.2M this week</div>
 					</div>
-					<div class="stat">
+					<div class="stat" data-reveal data-reveal-order="3">
 						<div class="stat-title">Uptime</div>
 						<div class="stat-value">99.99%</div>
 						<div class="stat-desc">Last 30 days</div>

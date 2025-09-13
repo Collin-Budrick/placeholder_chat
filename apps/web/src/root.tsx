@@ -69,6 +69,58 @@ export default component$(() => {
 						/>
 					</>
 				)}
+
+				{/* Aggressive idle prefetch of common SSG routes; opt-in via VITE_PREFETCH_ALL=1 */}
+				{(() => {
+					const env = (import.meta as unknown as { env?: Record<string, string> })
+						?.env as Record<string, string> | undefined;
+					const enabledFlag = env?.VITE_PREFETCH_ALL;
+					const isDev = Boolean(env?.DEV ?? true);
+					// In dev (including docker:dev), enable aggressive prefetch by default
+					// unless VITE_PREFETCH_ALL is explicitly set to "0". In prod, require "1".
+					const shouldPrefetch =
+						(enabledFlag === "1") || (isDev && enabledFlag !== "0");
+					return shouldPrefetch ? (
+					<>
+						<link
+							rel="prefetch"
+							href="/q-data.json"
+							as="fetch"
+							crossOrigin="anonymous"
+						/>
+						<link
+							rel="prefetch"
+							href="/about/q-data.json"
+							as="fetch"
+							crossOrigin="anonymous"
+						/>
+						<link
+							rel="prefetch"
+							href="/contact/q-data.json"
+							as="fetch"
+							crossOrigin="anonymous"
+						/>
+						<link
+							rel="prefetch"
+							href="/integrations/q-data.json"
+							as="fetch"
+							crossOrigin="anonymous"
+						/>
+						<link
+							rel="prefetch"
+							href="/login/q-data.json"
+							as="fetch"
+							crossOrigin="anonymous"
+						/>
+						<link
+							rel="prefetch"
+							href="/signup/q-data.json"
+							as="fetch"
+							crossOrigin="anonymous"
+						/>
+					</>
+					) : null;
+				})()}
 				{/* Heading defaults moved to global.css to avoid inline <style> and JSX escape warnings. */}
 				{/* Load small theme/lang initializer as an external file so a strict CSP can be enforced without inline allowances. */}
 				<script src={`${import.meta.env.BASE_URL}theme-init.js`} defer />

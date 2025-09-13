@@ -37,26 +37,51 @@ const startScrollReveals = $(async (): Promise<() => void> => {
 						if (!revealed.has(el)) {
 							revealed.add(el);
 
-							// Ensure initial state (in case it wasn't set yet)
-							try {
-								el.style.opacity = el.style.opacity || "0";
-								el.style.transform = el.style.transform || "translateY(16px)";
-							} catch {
-								/* ignore */
-							}
+                    // Ensure initial state (in case it wasn't set yet)
+                    try {
+                        const dir = (el as HTMLElement)?.dataset?.revealFrom || "bottom";
+                        const translate =
+                            dir === "right"
+                                ? "translateX(16px)"
+                                : dir === "left"
+                                  ? "translateX(-16px)"
+                                  : dir === "top"
+                                    ? "translateY(-16px)"
+                                    : "translateY(16px)"; // bottom
+                        el.style.opacity = el.style.opacity || "0";
+                        el.style.transform = el.style.transform || translate;
+                    } catch {
+                        /* ignore */
+                    }
 
-							// Animate with Motion One (lazy-loaded via animate$). Fire-and-forget but keep player for cleanup.
-							(async () => {
-								try {
-									const opts: { duration: number; easing: string } = {
-										duration: 0.5,
-										easing: "cubic-bezier(.22,.9,.37,1)",
-									};
-									const player = (await animateMotion(
-										el,
-										{ y: [16, 0], opacity: [0, 1] },
-										opts,
-									)) as Animation | undefined;
+                    // Animate with Motion One (lazy-loaded via animate$). Fire-and-forget but keep player for cleanup.
+                    (async () => {
+                        try {
+                            // Optional stagger via data-reveal-order (1-based). If present, delay each by 120ms.
+                            let order = 0;
+                            try {
+                                const raw = (el as HTMLElement)?.dataset?.revealOrder;
+                                order = Math.max(0, Math.min(20, Number(raw || 0)));
+                            } catch {}
+                            const opts: KeyframeAnimationOptions & { duration: number; easing: string } = {
+                                duration: 0.5,
+                                easing: "cubic-bezier(.22,.9,.37,1)",
+                                delay: order > 0 ? order * 120 : 0,
+                            } as KeyframeAnimationOptions as any;
+                            const dir = (el as HTMLElement)?.dataset?.revealFrom || "bottom";
+                            const keyframes =
+                                dir === "right"
+                                    ? ({ x: [16, 0], opacity: [0, 1] } as any)
+                                    : dir === "left"
+                                      ? ({ x: [-16, 0], opacity: [0, 1] } as any)
+                                      : dir === "top"
+                                        ? ({ y: [-16, 0], opacity: [0, 1] } as any)
+                                        : ({ y: [16, 0], opacity: [0, 1] } as any);
+                            const player = (await animateMotion(
+                                el,
+                                keyframes,
+                                opts,
+                            )) as Animation | undefined;
 
 									if (player) players.push(player);
 									try {
@@ -83,31 +108,41 @@ const startScrollReveals = $(async (): Promise<() => void> => {
 		);
 
 		// Initialize items and observe. Do not shift elements already in view on first paint (avoid CLS).
-		const vh = window.innerHeight || 0;
-		let heroDone = false;
-		try {
-			heroDone = sessionStorage.getItem("hero_anim_done") === "1";
-		} catch {}
-		items.forEach((item) => {
-			try {
-				const rect = item.getBoundingClientRect?.();
-				const initiallyInView = !!rect && rect.top < vh && rect.bottom > 0;
-				if (initiallyInView) {
-					// Keep visible and do not animate this element if it's already in view
-					item.style.opacity = item.style.opacity || "1";
-					item.style.transform = item.style.transform || "none";
-					// Skip observing on subsequent navigations too (no re-animate in view)
-					if (!heroDone) io.observe(item);
-				} else {
-					// Offscreen initially: set starting state and observe for reveal
-					item.style.opacity = item.style.opacity || "0";
-					item.style.transform = item.style.transform || "translateY(16px)";
-					io.observe(item);
-				}
-			} catch {
-				/* ignore */
-			}
-		});
+        const vh = window.innerHeight || 0;
+        let heroDone = false;
+        try {
+            heroDone = sessionStorage.getItem("hero_anim_done") === "1";
+        } catch {}
+        items.forEach((item) => {
+            try {
+                const rect = item.getBoundingClientRect?.();
+                const initiallyInView = !!rect && rect.top < vh && rect.bottom > 0;
+                const dir = (item as HTMLElement)?.dataset?.revealFrom || "bottom";
+                const translate =
+                    dir === "right"
+                        ? "translateX(16px)"
+                        : dir === "left"
+                          ? "translateX(-16px)"
+                          : dir === "top"
+                            ? "translateY(-16px)"
+                            : "translateY(16px)"; // bottom
+                const force = (item as HTMLElement)?.dataset?.revealForce === "1";
+                if (initiallyInView && !force) {
+                    // Keep visible and do not animate this element if it's already in view
+                    item.style.opacity = item.style.opacity || "1";
+                    item.style.transform = item.style.transform || "none";
+                    // Skip observing on subsequent navigations too (no re-animate in view)
+                    if (!heroDone) io.observe(item);
+                } else {
+                    // Offscreen initially or forced: set starting state and observe for reveal
+                    item.style.opacity = item.style.opacity || "0";
+                    item.style.transform = item.style.transform || translate;
+                    io.observe(item);
+                }
+            } catch {
+                /* ignore */
+            }
+        });
 
 		observers.push(io);
 

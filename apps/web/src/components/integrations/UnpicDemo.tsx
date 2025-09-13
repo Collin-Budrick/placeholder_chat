@@ -15,7 +15,7 @@ export default component$(() => {
 						alt="App favicon"
 						decoding="async"
 						loading="eager"
-						fetchpriority="high"
+						fetchPriority="high"
 						class="mx-auto block"
 					/>
 				) : (
@@ -26,7 +26,7 @@ export default component$(() => {
 						alt="App favicon"
 						decoding="async"
 						loading="eager"
-						fetchpriority="high"
+						fetchPriority="high"
 						sizes="(min-width: 768px) 128px, 25vw"
 						class="mx-auto block"
 					/>

@@ -131,7 +131,7 @@ export default component$(() => {
 									"client:idle",
 									true
 								>)}
-								class="btn btn-ghost btn-sm"
+								class="btn btn-ghost btn-sm w-12"
 								iconClass="icon-sharp w-7 h-7 [stroke-width:2]"
 							/>
 						</li>

@@ -9,23 +9,23 @@ import { $, component$, useSignal } from "@builder.io/qwik";
 
 export default component$(() => {
 	const carRef = useSignal<HTMLElement>();
-	// Width candidates tuned to our actual card slot. Cap at 480 to avoid oversizing.
-	const widths = [240, 320, 360, 420, 480];
+	// Width candidates tuned to our actual card slot. Cap near 400–420px to avoid oversizing.
+	const widths = [240, 320, 360, 400, 420];
 	const buildSet = (id: string, fm: "avif" | "webp" | "jpg") => {
 		// Per-image tuning: the concert image compresses well at a lower q
 		const isConcert = id === "photo-1492684223066-81342ee5ff30";
 		const q =
 			fm === "avif"
 				? isConcert
-					? 40
-					: 45
+					? 34
+					: 38
 				: fm === "webp"
 					? isConcert
-						? 58
-						: 60
-					: isConcert
 						? 52
-						: 55;
+						: 55
+					: isConcert
+						? 48
+						: 50;
 		return widths
 			.map(
 				(w) =>
@@ -33,9 +33,10 @@ export default component$(() => {
 			)
 			.join(", ");
 	};
-	// Accurately reflect the card’s column width: container max-w-3xl (64rem) with px-6 (3rem) and gap-8 (2rem), split in 2 cols.
+	// Accurately reflect the card’s column width on the Integrations page:
+	// container max-w-3xl (48rem) with p-6 (3rem total horizontal) and gap-8 (2rem), split in 2 cols.
 	const sizes =
-		"(min-width: 768px) calc((min(100vw, 64rem) - 3rem - 2rem)/2), 100vw";
+		"(min-width: 768px) calc((min(100vw, 48rem) - 3rem - 2rem)/2), 100vw";
 
 	const slides = [
 		{
@@ -61,12 +62,12 @@ export default component$(() => {
 			<div class="glass-surface border-soft with-grain card bg-base-100/5 overflow-hidden border">
 				{/* DaisyUI carousel */}
 				<div class="relative">
-					<div
+					<section
 						ref={(el) => {
 							carRef.value = el as unknown as HTMLElement;
 						}}
 						class="carousel carousel-center rounded-box w-full"
-						aria-roledescription="carousel"
+						aria-label="Image carousel"
 					>
 						{slides.map((s, i) => (
 							<div
@@ -78,22 +79,23 @@ export default component$(() => {
 									<picture>
 										<source
 											type="image/avif"
-											srcSet={buildSet(s.id, "avif")}
+											srcset={buildSet(s.id, "avif")}
 											sizes={sizes}
 										/>
 										<source
 											type="image/webp"
-											srcSet={buildSet(s.id, "webp")}
+											srcset={buildSet(s.id, "webp")}
 											sizes={sizes}
 										/>
 										{i === 0 ? (
 											<img
 												src={fallback(s.id)}
-												srcSet={buildSet(s.id, "jpg")}
+												srcset={buildSet(s.id, "jpg")}
 												sizes={sizes}
 												alt={s.alt}
 												loading="eager"
-												fetchpriority="high"
+												decoding="async"
+												fetchPriority="high"
 												class="h-full w-full object-cover"
 												width={360}
 												height={240}
@@ -101,10 +103,11 @@ export default component$(() => {
 										) : (
 											<img
 												src={fallback(s.id)}
-												srcSet={buildSet(s.id, "jpg")}
+												srcset={buildSet(s.id, "jpg")}
 												sizes={sizes}
 												alt={s.alt}
 												loading="lazy"
+												decoding="async"
 												class="h-full w-full object-cover"
 												width={360}
 												height={240}
@@ -114,67 +117,67 @@ export default component$(() => {
 								</figure>
 							</div>
 						))}
-					</div>
-					{/* Stationary overlay controls */}
-					<div class="pointer-events-none absolute top-1/2 right-2 left-2 z-10 flex -translate-y-1/2 transform justify-between">
-						<button
-							type="button"
-							class="btn btn-circle btn-ghost pointer-events-auto h-12 w-12"
-							aria-label="Previous slide"
-							onClick$={$(() => {
-								const el = carRef.value as unknown as HTMLElement | null;
-								if (!el) return;
-								try {
-									el.scrollBy({
-										left: -el.clientWidth,
-										behavior: "smooth" as ScrollBehavior,
-									});
-								} catch {
-									el.scrollLeft -= el.clientWidth;
-								}
-							})}
-						>
-							❮
-						</button>
-						<button
-							type="button"
-							class="btn btn-circle btn-ghost pointer-events-auto h-12 w-12"
-							aria-label="Next slide"
-							onClick$={$(() => {
-								const el = carRef.value as unknown as HTMLElement | null;
-								if (!el) return;
-								try {
-									el.scrollBy({
-										left: el.clientWidth,
-										behavior: "smooth" as ScrollBehavior,
-									});
-								} catch {
-									el.scrollLeft += el.clientWidth;
-								}
-							})}
-						>
-							❯
-						</button>
-					</div>
+					</section>
 				</div>
-				<div class="card-body p-4">
-					<h3 class="card-title text-base">Responsive picture carousel</h3>
-					<p class="text-sm opacity-70">
-						AVIF/WebP with JPEG fallback, accurate sizes/srcset, and eager first
-						slide for better LCP. DaisyUI carousel — no extra JS.
-					</p>
-					<div class="join justify-center">
-						{slides.map((_s, i) => (
-							<a
-								key={i}
-								href={`#pic-slide-${i + 1}`}
-								class="join-item btn btn-circle h-12 w-12"
-								aria-label={`Go to slide ${i + 1}`}
-							>
-								{i + 1}
-							</a>
-						))}
-					</div>
+				{/* Stationary overlay controls */}
+				<div class="pointer-events-none absolute top-1/2 right-2 left-2 z-10 flex -translate-y-1/2 transform justify-between">
+					<button
+						type="button"
+						class="btn btn-circle btn-ghost pointer-events-auto h-12 w-12"
+						aria-label="Previous slide"
+						onClick$={$(() => {
+							const el = carRef.value as unknown as HTMLElement | null;
+							if (!el) return;
+							try {
+								el.scrollBy({
+									left: -el.clientWidth,
+									behavior: "smooth" as ScrollBehavior,
+								});
+							} catch {
+								el.scrollLeft -= el.clientWidth;
+							}
+						})}
+					>
+						❮
+					</button>
+					<button
+						type="button"
+						class="btn btn-circle btn-ghost pointer-events-auto h-12 w-12"
+						aria-label="Next slide"
+						onClick$={$(() => {
+							const el = carRef.value as unknown as HTMLElement | null;
+							if (!el) return;
+							try {
+								el.scrollBy({
+									left: el.clientWidth,
+									behavior: "smooth" as ScrollBehavior,
+								});
+							} catch {
+								el.scrollLeft += el.clientWidth;
+							}
+						})}
+					>
+						❯
+					</button>
+				</div>
+			</div>
+			<div class="card-body p-4">
+				<h3 class="card-title text-base">Responsive picture carousel</h3>
+				<p class="text-sm opacity-70">
+					AVIF/WebP with JPEG fallback, accurate sizes/srcset, and eager first
+					slide for better LCP. DaisyUI carousel — no extra JS.
+				</p>
+				<div class="join justify-center">
+					{slides.map((s, i) => (
+						<a
+							key={s.id}
+							href={`#pic-slide-${i + 1}`}
+							class="join-item btn btn-circle h-12 w-12"
+							aria-label={`Go to slide ${i + 1}`}
+						>
+							{i + 1}
+						</a>
+					))}
 				</div>
 			</div>
 		</div>

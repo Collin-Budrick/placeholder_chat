@@ -26,7 +26,7 @@ export default component$(() => {
 				Integrations
 			</h1>
 			<p class="text-zinc-400">
-				Quick demos wired up for Panda, Faker, Motion One, and DaisyUI.
+				Quick demos wired up for Iconify, Web Images/Unpic, Faker, Motion One, Preact Island, and DaisyUI.
 			</p>
 			<div class="grid gap-8 md:grid-cols-2">
 				{/* Gate non-critical demos behind client:visible to trim initial JS */}
@@ -59,14 +59,31 @@ export const head: DocumentHead = {
 		},
 	],
 	links: [
-		{
-			rel: "preload",
-			href: "/favicon.svg",
-			as: "image",
-			// Boost priority for the above‑the‑fold image
-			fetchpriority: "high" as any,
-		},
+		// Preload the LCP image candidate used by PictureDemo's first slide.
+		// Match the <source type="image/avif"> chain so modern browsers can reuse it.
+		(() => {
+			const id = "photo-1503264116251-35a269479413"; // first slide ("Sunlit water surface...")
+			const widths = [240, 320, 360, 400, 420];
+			const q = 38; // matches PictureDemo AVIF quality for non-concert images
+			const imagesrcset = widths
+				.map(
+					(w) =>
+						`https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=${q}&fm=avif ${w}w`,
+				)
+				.join(", ");
+			const imagesizes =
+				"(min-width: 768px) calc((min(100vw, 48rem) - 3rem - 2rem)/2), 100vw";
+			return {
+				rel: "preload",
+				as: "image",
+				type: "image/avif" as any,
+				imagesrcset: imagesrcset as any,
+				imagesizes: imagesizes as any,
+			} as const;
+		})(),
 	],
 };
 
-export const prerender = false;
+// Enable SSG for this route so the LCP image and preload hints
+// are present in the initial HTML of the static build.
+export const prerender = true;

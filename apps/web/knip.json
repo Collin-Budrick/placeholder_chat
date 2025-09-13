@@ -15,18 +15,7 @@
   "rules": {
     "unlisted": "off"
   },
-  "ignoreBinaries": [
-    "qwik",
-    "tsc",
-    "concurrently",
-    "prettier",
-    "eslint",
-    "build",
-    "run",
-    "server/entry.bun.js",
-    "playwright",
-    "biome"
-  ],
+  "ignoreBinaries": [],
   "tailwind": {
     "config": ["tailwind.config.cjs"]
   }
