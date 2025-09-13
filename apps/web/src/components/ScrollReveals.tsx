@@ -82,15 +82,31 @@ const startScrollReveals = $(async (): Promise<() => void> => {
 			{ root: null, rootMargin: "0px 0px -15% 0px", threshold: 0.01 },
 		);
 
-		// Initialize items and observe
+		// Initialize items and observe. Do not shift elements already in view on first paint (avoid CLS).
+		const vh = window.innerHeight || 0;
+		let heroDone = false;
+		try {
+			heroDone = sessionStorage.getItem("hero_anim_done") === "1";
+		} catch {}
 		items.forEach((item) => {
 			try {
-				item.style.opacity = item.style.opacity || "0";
-				item.style.transform = item.style.transform || "translateY(16px)";
+				const rect = item.getBoundingClientRect?.();
+				const initiallyInView = !!rect && rect.top < vh && rect.bottom > 0;
+				if (initiallyInView) {
+					// Keep visible and do not animate this element if it's already in view
+					item.style.opacity = item.style.opacity || "1";
+					item.style.transform = item.style.transform || "none";
+					// Skip observing on subsequent navigations too (no re-animate in view)
+					if (!heroDone) io.observe(item);
+				} else {
+					// Offscreen initially: set starting state and observe for reveal
+					item.style.opacity = item.style.opacity || "0";
+					item.style.transform = item.style.transform || "translateY(16px)";
+					io.observe(item);
+				}
 			} catch {
 				/* ignore */
 			}
-			io.observe(item);
 		});
 
 		observers.push(io);

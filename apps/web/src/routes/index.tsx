@@ -17,6 +17,12 @@ export default component$(() => {
 	// Animate subheading + CTAs with Motion One (after mount)
 	useVisibleTask$(() => {
 		if (isServer) return;
+		// Avoid CLS on subsequent navigations: run this hero animation only once per session
+		try {
+			if (sessionStorage.getItem("hero_anim_done") === "1") {
+				return;
+			}
+		} catch {}
 		let cancel = false;
 		(async () => {
 			try {
@@ -54,6 +60,9 @@ export default component$(() => {
 					} catch {
 						/* ignore */
 					}
+					try {
+						sessionStorage.setItem("hero_anim_done", "1");
+					} catch {}
 				}
 			} catch {
 				/* ignore */
@@ -68,6 +77,12 @@ export default component$(() => {
 	// Pre-split the headline in SSR to avoid client-side DOM rewriting that can cause CLS.
 	useVisibleTask$(() => {
 		if (isServer) return;
+		// Avoid re-running headline word animation on return navigations
+		try {
+			if (sessionStorage.getItem("hero_anim_done") === "1") {
+				return;
+			}
+		} catch {}
 		const el = h1Ref.value;
 		if (!el) return;
 		// Respect reduced motion
@@ -354,10 +369,6 @@ export default component$(() => {
 					<div class="order-1 md:order-2">
 						<div
 							class="glass-surface border-soft with-grain card bg-base-100/5 min-h-[360px] border shadow-lg"
-							style={{
-								contentVisibility: "auto",
-								containIntrinsicSize: "360px 640px",
-							}}
 						>
 							<div class="card-body p-4 sm:p-6">
 								<div class="space-y-3">
