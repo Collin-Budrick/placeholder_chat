@@ -28,10 +28,25 @@ export default function StatsCard() {
     const el = rootRef.current;
     if (!el) return;
     if (started.current) return;
+    // Prepare hidden state for entrance animation
+    try {
+      el.style.opacity = "0";
+      el.style.transform = "translateY(16px)";
+      el.style.willChange = "transform, opacity";
+    } catch {}
 
     const start = () => {
       if (started.current) return;
       started.current = true;
+      // Fade/slide the card in from the bottom
+      try {
+        animate(el as Element, { y: [16, 0], opacity: [0, 1] } as any, {
+          duration: 0.5,
+          easing: "cubic-bezier(.22,.9,.37,1)",
+        })?.finished.finally(() => {
+          try { (el as HTMLElement).style.willChange = ""; } catch {}
+        });
+      } catch {}
       if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
         setValues(STATS.map((s) => s.format(s.target)));
         return;
@@ -61,20 +76,18 @@ export default function StatsCard() {
       });
     };
 
-    // Start immediately (island hydrates when visible), but keep IO as a safe fallback
-    start();
-    // Also guard for rare timing where hydration happens just before it scrolls in
+    // Only start when the entire card is in the viewport
     const rect = el.getBoundingClientRect();
-    const initiallyInView = rect.top < (window.innerHeight || 0) && rect.bottom > 0;
-    if (!initiallyInView) {
-      try { setTimeout(() => { if (!started.current) start(); }, 150); } catch {}
-    }
+    const vh = window.innerHeight || 0;
+    const fullyInView = rect.top >= 0 && rect.bottom <= vh;
+    if (fullyInView) start();
     const io = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) {
+      const hit = entries.some((e) => e.intersectionRatio >= 0.99);
+      if (hit) {
         start();
         try { io.disconnect(); } catch {}
       }
-    }, { root: null, threshold: 0.15 });
+    }, { root: null, threshold: [0.99] });
     try { io.observe(el); } catch {}
     return () => { try { io.disconnect(); } catch {} };
   }, []);

@@ -78,8 +78,11 @@ export async function animateMotion(
 			keyframes: Keyframe[] | PropertyIndexedKeyframes | Keyframe,
 			opts?: number | KeyframeAnimationOptions,
 		) => Animation;
+		// Normalize NodeList -> Element[] to avoid odd proxies on CSSStyleDeclaration
+		const target =
+			(el instanceof NodeList ? Array.from(el) : el) as Element | Element[] | NodeList;
 		return (mod as unknown as { animate: AnimateFn }).animate(
-			el as unknown as Element,
+			target,
 			keyframes as unknown as Keyframe[] | PropertyIndexedKeyframes | Keyframe,
 			opts as unknown as number | KeyframeAnimationOptions,
 		);
