@@ -490,7 +490,7 @@ export default component$(() => {
 						>
 							<div class="card-body p-4 sm:p-6">
 								<div class="space-y-3">
-									<div class="chat chat-start">
+									<div class="chat chat-start" data-reveal data-reveal-order="1">
 										<div class="chat-image avatar placeholder">
 											<div class="bg-base-300 text-base-content grid h-9 w-9 place-items-center rounded-full">
 												<span>A</span>
@@ -503,7 +503,7 @@ export default component$(() => {
 											You should see the new profile UI — it’s smooth.
 										</div>
 									</div>
-									<div class="chat chat-end">
+									<div class="chat chat-end" data-reveal data-reveal-order="2">
 										<div class="chat-image avatar placeholder">
 											<div class="bg-base-300 text-base-content grid h-9 w-9 place-items-center rounded-full">
 												<span>Y</span>
@@ -516,7 +516,7 @@ export default component$(() => {
 											On it. Pushing a fix to reactions now ⚡
 										</div>
 									</div>
-									<div class="chat chat-start">
+									<div class="chat chat-start" data-reveal data-reveal-order="3">
 										<div class="chat-image avatar placeholder">
 											<div class="bg-base-300 text-base-content grid h-9 w-9 place-items-center rounded-full">
 												<span>M</span>
