@@ -9,9 +9,10 @@ use serde_json::json;
 use uuid::Uuid;
 use crate::state::{AppState, ADMIN_EMAIL, is_admin_email};
 use argon2::{
-    password_hash::{PasswordHash, PasswordHasher, SaltString},
+    password_hash::{PasswordHasher, SaltString},
     Argon2,
 };
+use rand::RngCore;
 
 /// Build router for dev-only helpers (unsafe for prod).
 pub fn router() -> Router<AppState> {
@@ -191,7 +192,8 @@ async fn api_dev_reset_rate_now(
     let email: String = ADMIN_EMAIL.to_string();
     let cred: serde_json::Value = match state.storage.get_credentials(&email) { Ok(Some(v)) => v, Ok(None) => return Err((StatusCode::NOT_FOUND, "credentials not found".to_string())), Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())), };
     let user_id: String = cred.get("user_id").and_then(|v: &serde_json::Value| v.as_str()).ok_or((StatusCode::INTERNAL_SERVER_ERROR, "malformed credentials".to_string()))?.to_string();
-    let _ = state.storage.clear_rate_counter(&user_id);
+    // Clear in-memory token buckets (dev convenience); storage counters left intact
+    state.rate.clear_buckets();
     Ok(Json(json!({ "ok": true, "reset": user_id })))
 }
 

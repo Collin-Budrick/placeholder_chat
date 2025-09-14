@@ -6,13 +6,14 @@
 //   cookies; `Json<T>` parses JSON into `T`.
 // - We support tolerant login parsing (JSON, x-www-form-urlencoded, crude
 //   multipart heuristic) to play nice with dev tools and web forms.
-use axum::{Router, routing::{get, post}, extract::{State}, Json, middleware};
+use axum::{Router, routing::{get, post}, extract::{State, Query}, Json, middleware};
 use crate::middleware as gw_mw;
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use crate::state::{AppState, is_admin_email, ADMIN_EMAIL};
 use axum::http::{StatusCode, HeaderMap};
 use serde::Deserialize;
 use uuid::Uuid;
+use rand::RngCore;
 use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,

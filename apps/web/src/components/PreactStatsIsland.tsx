@@ -3,7 +3,6 @@ import StatsCard from "./preact/StatsCard";
 
 // Hydrate when visible so it only runs once scrolled into view
 export const PreactStatsIsland = qwikify$(StatsCard, {
-  eagerness: "visible",
-  clientOnly: true,
+	eagerness: "visible",
+	clientOnly: true,
 });
-

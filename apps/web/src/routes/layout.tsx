@@ -19,9 +19,10 @@ export default component$(() => {
 		(import.meta as unknown as { env?: Record<string, string> }).env || {};
 	const enableSmooth = env.VITE_SMOOTH_SCROLL === "1";
 	const enableProgress = env.VITE_SCROLL_PROGRESS === "1";
-    // Enable scroll-reveals by default in dev (SSR/HMR), unless explicitly disabled.
-    // In prod, require opt-in via VITE_REVEALS=1.
-    const enableReveals = env.VITE_REVEALS === "1" || (isDev && env.VITE_REVEALS !== "0");
+	// Enable scroll-reveals by default in dev (SSR/HMR), unless explicitly disabled.
+	// In prod, require opt-in via VITE_REVEALS=1.
+	const enableReveals =
+		env.VITE_REVEALS === "1" || (isDev && env.VITE_REVEALS !== "0");
 	const loc = useLocation();
 	const path = loc.url.pathname || "/";
 	const hideNav =
@@ -43,15 +44,16 @@ export default component$(() => {
 							class="grid min-h-full place-items-center pb-24"
 						>
 							<Slot />
-							{enableReveals && (isDev ? (
-								// In dev, hydrate immediately so reveals work reliably with HMR
-								// @ts-expect-error Qwik client directive
-								<ScrollReveals client:load />
-							) : (
-								// In prod, hydrate when visible to keep JS minimal
-								// @ts-expect-error Qwik client directive
-								<ScrollReveals client:visible />
-							))}
+							{enableReveals &&
+								(isDev ? (
+									// In dev, hydrate immediately so reveals work reliably with HMR
+									// @ts-expect-error Qwik client directive
+									<ScrollReveals client:load />
+								) : (
+									// In prod, hydrate when visible to keep JS minimal
+									// @ts-expect-error Qwik client directive
+									<ScrollReveals client:visible />
+								))}
 						</div>
 					</main>
 				</SmoothScrollProvider>
@@ -62,13 +64,14 @@ export default component$(() => {
 						class="grid min-h-full place-items-center pb-24"
 					>
 						<Slot />
-						{enableReveals && (isDev ? (
-							// @ts-expect-error Qwik client directive
-							<ScrollReveals client:load />
-						) : (
-							// @ts-expect-error Qwik client directive
-							<ScrollReveals client:visible />
-						))}
+						{enableReveals &&
+							(isDev ? (
+								// @ts-expect-error Qwik client directive
+								<ScrollReveals client:load />
+							) : (
+								// @ts-expect-error Qwik client directive
+								<ScrollReveals client:visible />
+							))}
 					</div>
 				</main>
 			)}

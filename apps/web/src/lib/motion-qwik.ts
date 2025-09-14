@@ -62,7 +62,10 @@ function isValidTarget(el: unknown): el is Element | NodeList | Element[] {
 	return false;
 }
 
-import type { AnimationOptions as MotionAnimationOptions, DOMKeyframesDefinition } from "motion";
+import type {
+	DOMKeyframesDefinition,
+	AnimationOptions as MotionAnimationOptions,
+} from "motion";
 
 export async function animateMotion(
 	el: Element | Element[] | NodeList,
@@ -89,8 +92,10 @@ export async function animateMotion(
 			opts?: number | KeyframeAnimationOptions | MotionAnimationOptions,
 		) => Animation;
 		// Normalize NodeList -> Element[] to avoid odd proxies on CSSStyleDeclaration
-		const target =
-			(el instanceof NodeList ? Array.from(el) : el) as Element | Element[] | NodeList;
+		const target = (el instanceof NodeList ? Array.from(el) : el) as
+			| Element
+			| Element[]
+			| NodeList;
 		return (mod as unknown as { animate: AnimateFn }).animate(
 			target,
 			keyframes as unknown as
@@ -98,7 +103,10 @@ export async function animateMotion(
 				| PropertyIndexedKeyframes
 				| Keyframe
 				| DOMKeyframesDefinition,
-			opts as unknown as number | KeyframeAnimationOptions | MotionAnimationOptions,
+			opts as unknown as
+				| number
+				| KeyframeAnimationOptions
+				| MotionAnimationOptions,
 		);
 	} catch (err) {
 		// Silent fallback - consumer may apply CSS fallback if undefined returned

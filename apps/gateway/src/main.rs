@@ -14,7 +14,8 @@
 use std::{net::SocketAddr, sync::Arc, time::Duration};
 
 use anyhow::Result;
-use axum::{Router, middleware, extract::DefaultBodyLimit};
+use axum::{Router, extract::DefaultBodyLimit};
+use axum::middleware::{from_fn, from_fn_with_state};
 use tower_http::{trace::TraceLayer, cors::{CorsLayer, AllowOrigin}, compression::CompressionLayer};
 use tower::timeout::TimeoutLayer;
 use axum::error_handling::HandleErrorLayer;
@@ -104,7 +105,7 @@ async fn main() -> Result<()> {
     let body_limit: usize = std::env::var("BODY_LIMIT_BYTES").ok().and_then(|s| s.parse().ok()).unwrap_or(1 * 1024 * 1024);
     let mut app: Router<_> = base
         // Policy layers (outer): rate limiting and CORS
-        .layer(middleware::from_fn_with_state(state.clone(), gw_mw::rate_limit_middleware))
+        .layer(from_fn_with_state(state.clone(), gw_mw::rate_limit_middleware))
         .layer(cors_layer)
         // Observability and resilience
         .layer(TraceLayer::new_for_http())
@@ -115,7 +116,7 @@ async fn main() -> Result<()> {
 
     if std::env::var("LOG_POST_BODY").ok().as_deref() == Some("1") {
         // Optional: verbose POST body logging (expensive). Do not enable in prod.
-        app = app.layer(middleware::from_fn(gw_mw::log_post_body_middleware));
+        app = app.layer(from_fn(gw_mw::log_post_body_middleware));
     }
 
     // 6) Bind and serve with graceful shutdown.

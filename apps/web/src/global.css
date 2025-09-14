@@ -1286,81 +1286,118 @@ html[data-theme="oled"] {
 
 /* Pastel avatars: mix DaisyUI theme token with white for a light shade */
 .pastel-avatar[data-tone] {
-  /* default to primary */
-  --av-token: var(--p);
-  /* Fallback: solid token color if color-mix unsupported */
-  background-color: oklch(var(--av-token));
+	/* default to primary */
+	--av-token: var(--p);
+	/* Fallback: solid token color if color-mix unsupported */
+	background-color: oklch(var(--av-token));
 }
 @supports (background: color-mix(in oklch, white, black)) {
-  .pastel-avatar[data-tone] {
-    /* Mix with theme base background for a light/pastel shade */
-    background: color-mix(in oklch, oklch(var(--av-token)) 28%, oklch(var(--b1)));
-  }
+	.pastel-avatar[data-tone] {
+		/* Mix with theme base background for a light/pastel shade */
+		background: color-mix(
+			in oklch,
+			oklch(var(--av-token)) 28%,
+			oklch(var(--b1))
+		);
+	}
 }
-.pastel-avatar[data-tone="p"] { --av-token: var(--p); }
-.pastel-avatar[data-tone="s"] { --av-token: var(--s); }
-.pastel-avatar[data-tone="a"] { --av-token: var(--a); }
-.pastel-avatar[data-tone="i"] { --av-token: var(--in); }
-.pastel-avatar[data-tone="su"] { --av-token: var(--su); }
-.pastel-avatar[data-tone="w"] { --av-token: var(--wa); }
-.pastel-avatar[data-tone="er"] { --av-token: var(--er); }
-.pastel-avatar[data-tone="n"] { --av-token: var(--n); }
+.pastel-avatar[data-tone="p"] {
+	--av-token: var(--p);
+}
+.pastel-avatar[data-tone="s"] {
+	--av-token: var(--s);
+}
+.pastel-avatar[data-tone="a"] {
+	--av-token: var(--a);
+}
+.pastel-avatar[data-tone="i"] {
+	--av-token: var(--in);
+}
+.pastel-avatar[data-tone="su"] {
+	--av-token: var(--su);
+}
+.pastel-avatar[data-tone="w"] {
+	--av-token: var(--wa);
+}
+.pastel-avatar[data-tone="er"] {
+	--av-token: var(--er);
+}
+.pastel-avatar[data-tone="n"] {
+	--av-token: var(--n);
+}
 
 /* Chat preview bubble contrast tweaks (scoped) */
 html[data-theme="light"] .chat-preview .chat-bubble,
 html[data-theme="white"] .chat-preview .chat-bubble {
-  background-color: oklch(var(--b2));
-  color: oklch(var(--bc));
-  border: 1px solid oklch(var(--b3));
+	background-color: oklch(var(--b2));
+	color: oklch(var(--bc));
+	border: 1px solid oklch(var(--b3));
 }
 html[data-theme="dark"] .chat-preview .chat-bubble,
 html[data-theme="oled"] .chat-preview .chat-bubble {
-  background-color: oklch(var(--b3));
-  color: oklch(var(--bc));
-  border: 1px solid color-mix(in oklch, oklch(var(--b2)) 50%, oklch(var(--b1)) 50%);
+	background-color: oklch(var(--b3));
+	color: oklch(var(--bc));
+	border: 1px solid
+		color-mix(in oklch, oklch(var(--b2)) 50%, oklch(var(--b1)) 50%);
 }
 /* Keep primary bubbles as-is */
-.chat-preview .chat-bubble-primary { border: none; }
+.chat-preview .chat-bubble-primary {
+	border: none;
+}
 
 /* Typing indicator dots inside chat bubbles */
 .typing-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin: 0 2px;
-  border-radius: 9999px;
-  background: currentColor;
-  opacity: 0.75;
-  transform-origin: center;
-  animation: typing-bounce 0.9s ease-in-out infinite;
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	margin: 0 2px;
+	border-radius: 9999px;
+	background: currentColor;
+	opacity: 0.75;
+	transform-origin: center;
+	animation: typing-bounce 0.9s ease-in-out infinite;
 }
 
 @keyframes typing-bounce {
-  0%, 60%, 100% { transform: scale(0.85); opacity: 0.6; }
-  30% { transform: scale(1); opacity: 1; }
+	0%,
+	60%,
+	100% {
+		transform: scale(0.85);
+		opacity: 0.6;
+	}
+	30% {
+		transform: scale(1);
+		opacity: 1;
+	}
 }
-.typing-dot:nth-child(1) { animation-delay: 0s; }
-.typing-dot:nth-child(2) { animation-delay: 0.12s; }
-.typing-dot:nth-child(3) { animation-delay: 0.24s; }
+.typing-dot:nth-child(1) {
+	animation-delay: 0s;
+}
+.typing-dot:nth-child(2) {
+	animation-delay: 0.12s;
+}
+.typing-dot:nth-child(3) {
+	animation-delay: 0.24s;
+}
 
 /* Hero badge contrast fixes (light theme) */
 html[data-theme="light"] .hero-badges .badge.badge-outline,
 html[data-theme="white"] .hero-badges .badge.badge-outline {
-  color: oklch(var(--bc));
-  background-color: oklch(var(--b2));
+	color: oklch(var(--bc));
+	background-color: oklch(var(--b2));
 }
 html[data-theme="light"] .hero-badges .badge.badge-primary.badge-outline,
 html[data-theme="white"] .hero-badges .badge.badge-primary.badge-outline {
-  border-color: oklch(var(--p));
-  background: color-mix(in oklch, oklch(var(--p)) 18%, oklch(var(--b1)));
+	border-color: oklch(var(--p));
+	background: color-mix(in oklch, oklch(var(--p)) 18%, oklch(var(--b1)));
 }
 html[data-theme="light"] .hero-badges .badge.badge-secondary.badge-outline,
 html[data-theme="white"] .hero-badges .badge.badge-secondary.badge-outline {
-  border-color: oklch(var(--s));
-  background: color-mix(in oklch, oklch(var(--s)) 18%, oklch(var(--b1)));
+	border-color: oklch(var(--s));
+	background: color-mix(in oklch, oklch(var(--s)) 18%, oklch(var(--b1)));
 }
 html[data-theme="light"] .hero-badges .badge.badge-warning.badge-outline,
 html[data-theme="white"] .hero-badges .badge.badge-warning.badge-outline {
-  border-color: oklch(var(--wa));
-  background: color-mix(in oklch, oklch(var(--wa)) 22%, oklch(var(--b1)));
+	border-color: oklch(var(--wa));
+	background: color-mix(in oklch, oklch(var(--wa)) 22%, oklch(var(--b1)));
 }

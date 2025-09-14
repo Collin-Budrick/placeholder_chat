@@ -24,9 +24,9 @@ export default component$(() => {
 							"img-src 'self' data: blob: https:",
 							"font-src 'self' data:",
 							"style-src 'self' 'unsafe-inline'",
-						"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
-						// Allow data: and blob: connects for integrations that fetch inline shaders/text in dev
-						"connect-src 'self' data: blob: ws: wss: http: https:",
+							"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
+							// Allow data: and blob: connects for integrations that fetch inline shaders/text in dev
+							"connect-src 'self' data: blob: ws: wss: http: https:",
 							"worker-src 'self' blob:",
 							"child-src 'self' blob:",
 						].join("; ")}
@@ -73,53 +73,54 @@ export default component$(() => {
 
 				{/* Aggressive idle prefetch of common SSG routes; opt-in via VITE_PREFETCH_ALL=1 */}
 				{(() => {
-					const env = (import.meta as unknown as { env?: Record<string, string> })
-						?.env as Record<string, string> | undefined;
+					const env = (
+						import.meta as unknown as { env?: Record<string, string> }
+					)?.env as Record<string, string> | undefined;
 					const enabledFlag = env?.VITE_PREFETCH_ALL;
 					const isDev = Boolean(env?.DEV ?? true);
 					// In dev (including docker:dev), enable aggressive prefetch by default
 					// unless VITE_PREFETCH_ALL is explicitly set to "0". In prod, require "1".
 					const shouldPrefetch =
-						(enabledFlag === "1") || (isDev && enabledFlag !== "0");
+						enabledFlag === "1" || (isDev && enabledFlag !== "0");
 					return shouldPrefetch ? (
-					<>
-						<link
-							rel="prefetch"
-							href="/q-data.json"
-							as="fetch"
-							crossOrigin="anonymous"
-						/>
-						<link
-							rel="prefetch"
-							href="/about/q-data.json"
-							as="fetch"
-							crossOrigin="anonymous"
-						/>
-						<link
-							rel="prefetch"
-							href="/contact/q-data.json"
-							as="fetch"
-							crossOrigin="anonymous"
-						/>
-						<link
-							rel="prefetch"
-							href="/integrations/q-data.json"
-							as="fetch"
-							crossOrigin="anonymous"
-						/>
-						<link
-							rel="prefetch"
-							href="/login/q-data.json"
-							as="fetch"
-							crossOrigin="anonymous"
-						/>
-						<link
-							rel="prefetch"
-							href="/signup/q-data.json"
-							as="fetch"
-							crossOrigin="anonymous"
-						/>
-					</>
+						<>
+							<link
+								rel="prefetch"
+								href="/q-data.json"
+								as="fetch"
+								crossOrigin="anonymous"
+							/>
+							<link
+								rel="prefetch"
+								href="/about/q-data.json"
+								as="fetch"
+								crossOrigin="anonymous"
+							/>
+							<link
+								rel="prefetch"
+								href="/contact/q-data.json"
+								as="fetch"
+								crossOrigin="anonymous"
+							/>
+							<link
+								rel="prefetch"
+								href="/integrations/q-data.json"
+								as="fetch"
+								crossOrigin="anonymous"
+							/>
+							<link
+								rel="prefetch"
+								href="/login/q-data.json"
+								as="fetch"
+								crossOrigin="anonymous"
+							/>
+							<link
+								rel="prefetch"
+								href="/signup/q-data.json"
+								as="fetch"
+								crossOrigin="anonymous"
+							/>
+						</>
 					) : null;
 				})()}
 				{/* Heading defaults moved to global.css to avoid inline <style> and JSX escape warnings. */}

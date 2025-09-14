@@ -3,7 +3,7 @@
 // The web app posts JSON log entries to `/api/frontend-logs`. We store them
 // as NDJSON into `logs/frontend-api.log` for quick local inspection, and
 // provide a GET endpoint to read them back in dev.
-use axum::{routing::get, routing::post, Router, response::IntoResponse, Json};
+use axum::{routing::post, Router, response::IntoResponse, Json};
 use crate::state::AppState;
 use serde_json::Value;
 use axum::http::StatusCode;

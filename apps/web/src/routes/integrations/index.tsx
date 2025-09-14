@@ -26,7 +26,10 @@ export default component$(() => {
 			if (w.__data_fetch_patch) return;
 			const origFetch = window.fetch.bind(window);
 			w.__data_fetch_patch = true;
-			const patched: typeof window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+			const patched: typeof window.fetch = ((
+				input: RequestInfo | URL,
+				init?: RequestInit,
+			) => {
 				try {
 					let url: string | undefined;
 					if (typeof input === "string") url = input;
@@ -35,7 +38,9 @@ export default component$(() => {
 					else url = String(input as RequestInfo | URL);
 					if (url && /^data:text\/plain/i.test(url)) {
 						// Parse optional charset and base64; capture payload after comma
-						const m = url.match(/^data:text\/plain(?:;charset=[^;,]+)?(;base64)?,(.*)$/i);
+						const m = url.match(
+							/^data:text\/plain(?:;charset=[^;,]+)?(;base64)?,(.*)$/i,
+						);
 						if (m) {
 							const isB64 = !!m[1];
 							const payload = m[2] || "";
@@ -51,15 +56,19 @@ export default component$(() => {
 						}
 					}
 				} catch {}
-				return origFetch(input as RequestInfo | URL, init as RequestInit | undefined);
+				return origFetch(
+					input as RequestInfo | URL,
+					init as RequestInit | undefined,
+				);
 			}) as typeof window.fetch;
 			// Preserve Bun-specific extensions like fetch.preconnect
 			type FetchWithPreconnect = typeof window.fetch & {
 				preconnect?: (origin: string) => unknown;
 			};
 			try {
-				(patched as FetchWithPreconnect).preconnect =
-					(origFetch as unknown as FetchWithPreconnect).preconnect;
+				(patched as FetchWithPreconnect).preconnect = (
+					origFetch as unknown as FetchWithPreconnect
+				).preconnect;
 			} catch {}
 			window.fetch = patched;
 		} catch {}
@@ -73,7 +82,8 @@ export default component$(() => {
 				Integrations
 			</h1>
 			<p class="text-zinc-400">
-				Quick demos wired up for Iconify, Web Images/Unpic, Faker, Motion One, Preact Island, and DaisyUI.
+				Quick demos wired up for Iconify, Web Images/Unpic, Faker, Motion One,
+				Preact Island, and DaisyUI.
 			</p>
 			<div class="grid gap-8 md:grid-cols-2">
 				{/* Gate non-critical demos behind client:visible to trim initial JS */}
@@ -125,16 +135,16 @@ export const head: DocumentHead = {
 				.join(", ");
 			const imagesizes =
 				"(min-width: 768px) calc((min(100vw, 48rem) - 3rem - 2rem)/2), 100vw";
-            const preload = {
-              rel: "preload",
-              as: "image",
-              type: "image/avif",
-              imagesrcset,
-              imagesizes,
-              // Hint priority for the hero image
-              fetchpriority: "high",
-            } as const;
-            return preload as unknown as DocumentLink;
+			const preload = {
+				rel: "preload",
+				as: "image",
+				type: "image/avif",
+				imagesrcset,
+				imagesizes,
+				// Hint priority for the hero image
+				fetchpriority: "high",
+			} as const;
+			return preload as unknown as DocumentLink;
 		})(),
 	],
 };
