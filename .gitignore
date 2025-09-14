@@ -69,3 +69,4 @@ apps/web/certs/*.pfx
 # Cookies/session artifacts (do not commit)
 cookies.txt
 apps/web/.dev.server.lock
+bun.lock
