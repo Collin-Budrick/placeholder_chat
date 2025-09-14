@@ -13,14 +13,14 @@ const AuthCard = component$((props: AuthCardProps) => {
 	const danger = "border border-red-500/60 ring-1 ring-red-500/30";
 	return (
 		<div class={`${base} ${props.error ? danger : normal}`}>
-			{props.title && (
+			{props.title ? (
 				<h2 class="mb-2 text-center text-2xl font-semibold">{props.title}</h2>
-			)}
-			{props.subtitle && (
+			) : null}
+			{props.subtitle ? (
 				<p class="text-base-content/70 mb-4 text-center text-sm">
 					{props.subtitle}
 				</p>
-			)}
+			) : null}
 			<div class="space-y-4 p-4 md:p-6">
 				<Slot />
 			</div>

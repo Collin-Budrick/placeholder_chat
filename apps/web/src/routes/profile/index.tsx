@@ -100,11 +100,11 @@ export default component$(() => {
 
 					<div class="mb-4 text-sm text-slate-200">
 						You are logged in.
-						{role.value && (
+						{role.value ? (
 							<div class="mt-2">
 								<span class="badge badge-outline mr-2">Role: {role.value}</span>
 							</div>
-						)}
+						) : null}
 					</div>
 
 					<button
@@ -144,7 +144,7 @@ export default component$(() => {
 						Logout
 					</button>
 
-					{role.value === "admin" && (
+					{role.value === "admin" ? (
 						<div class="mt-4">
 							<Link
 								href="/admin/users/"
@@ -155,7 +155,7 @@ export default component$(() => {
 								Manage Users
 							</Link>
 						</div>
-					)}
+					) : null}
 				</AuthCard>
 			) : (
 				<output

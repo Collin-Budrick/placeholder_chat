@@ -11,12 +11,12 @@ export default component$(() => {
 	return (
 		<QwikCityProvider>
 			<head>
-				<meta charset="utf-8" />
+				<meta charSet="utf-8" />
 				<meta name="color-scheme" content="dark light" />
 				{/* Dev CSP meta: ensure blob: workers allowed even if reverse proxy strips headers */}
-				{isDev && (
+				{isDev ? (
 					<meta
-						http-equiv="Content-Security-Policy"
+						httpEquiv="Content-Security-Policy"
 						content={[
 							"default-src 'self'",
 							"base-uri 'self'",
@@ -31,21 +31,28 @@ export default component$(() => {
 							"child-src 'self' blob:",
 						].join("; ")}
 					/>
-				)}
-				{!isDev &&
-					(import.meta as unknown as { env?: Record<string, string> })?.env
-						?.VITE_ENABLE_PWA === "1" && (
+				) : null}
+				{(() => {
+					const env = (import.meta as unknown as { env?: Record<string, string> })?.env as
+						| Record<string, string>
+						| undefined;
+					return !isDev && env?.VITE_ENABLE_PWA === "1" ? (
 						<link
 							rel="manifest"
 							href={`${import.meta.env.BASE_URL}manifest.json`}
 						/>
-					)}
+					) : null;
+				})()}
 				{/* Connection hints removed (no external Lottie assets in use) */}
 				<RouterHead />
-				{/* Dev-only: enhance Qwik WARN logs with stack traces to locate source */}
-				{isDev && (
-					<script src={`${import.meta.env.BASE_URL}debug-warn.js`} defer />
-				)}
+                {/* Dev-only: enhance Qwik WARN logs with stack traces when explicitly enabled */}
+                {(() => {
+                    const env = (import.meta as unknown as { env?: Record<string, string> })
+                        ?.env as Record<string, string> | undefined;
+                    return isDev && env?.VITE_DEBUG_QWIK_WARN === "1" ? (
+                        <script src={`${import.meta.env.BASE_URL}debug-warn.js`} defer />
+                    ) : null;
+                })()}
 				<link
 					rel="preconnect"
 					href="https://images.unsplash.com"
@@ -53,23 +60,27 @@ export default component$(() => {
 				/>
 				{/* Analytics via Partytown removed; add your own script loader if needed */}
 				{/* Optional prefetch for auth route data; opt-in via VITE_PREFETCH_AUTH=1 */}
-				{(import.meta as unknown as { env?: Record<string, string> })?.env
-					?.VITE_PREFETCH_AUTH === "1" && (
-					<>
-						<link
-							rel="prefetch"
-							href="/login/q-data.json"
-							as="fetch"
-							crossOrigin="anonymous"
-						/>
-						<link
-							rel="prefetch"
-							href="/signup/q-data.json"
-							as="fetch"
-							crossOrigin="anonymous"
-						/>
-					</>
-				)}
+				{(() => {
+					const env = (import.meta as unknown as { env?: Record<string, string> })?.env as
+						| Record<string, string>
+						| undefined;
+					return env?.VITE_PREFETCH_AUTH === "1" ? (
+						<>
+							<link
+								rel="prefetch"
+								href="/login/q-data.json"
+								as="fetch"
+								crossOrigin="anonymous"
+							/>
+							<link
+								rel="prefetch"
+								href="/signup/q-data.json"
+								as="fetch"
+								crossOrigin="anonymous"
+							/>
+						</>
+					) : null;
+				})()}
 
 				{/* Aggressive idle prefetch of common SSG routes; opt-in via VITE_PREFETCH_ALL=1 */}
 				{(() => {

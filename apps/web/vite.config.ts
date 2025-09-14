@@ -33,7 +33,73 @@ export default defineConfig(({ command, mode }): UserConfig => {
 		command === "build" &&
 		(mode === "production" || process.env.NODE_ENV === "production");
 	const isSsgBuild = process.env.BUILD_TARGET === "ssg";
-	const extraPlugins: any[] = [];
+  const extraPlugins: any[] = [];
+
+  // Dev-only: suppress Qwik's noisy dev-only "Symbol(skip render)" warn in server logs
+  const suppressQwikSkipWarn = () => ({
+    name: "suppress-qwik-skip-warn",
+    apply: "serve" as const,
+    configureServer() {
+      try {
+        const origWarn = console.warn.bind(console);
+        console.warn = (...args: unknown[]) => {
+          try {
+            const msg = String(args?.[0] ?? "");
+            if (/QWIK WARN/i.test(msg) && /unsupported value was passed to the JSX/i.test(msg) && /Symbol\(skip render\)/i.test(msg)) {
+              return; // drop just this noisy dev hint
+            }
+          } catch {}
+          return origWarn(...args);
+        };
+      } catch {}
+    },
+  });
+  extraPlugins.push(suppressQwikSkipWarn());
+
+  // Dev-only: optional warn tracer to catch Qwik WARN before SSR entry loads
+  const warnTrace = () => ({
+    name: "warn-trace",
+    apply: "serve" as const,
+    configureServer() {
+      try {
+        // Align with app flag; default OFF unless explicitly enabled
+        const enabled = (process.env.VITE_DEBUG_QWIK_WARN ?? "0") === "1";
+        const suppressSkip = (process.env.QWIK_SUPPRESS_SKIP_WARN ?? "0") === "1";
+        if (!enabled) return;
+        const origWarn = console.warn.bind(console);
+        let inWarn = false;
+        console.warn = (...args: unknown[]) => {
+          try {
+            if (inWarn) return origWarn(...args);
+            inWarn = true;
+            const msg = String(args?.[0] ?? "");
+            const isSkip = /Symbol\(skip render\)/i.test(msg);
+            const isQwikWarn = /QWIK WARN/i.test(msg);
+            const isUnsupported = /unsupported value was passed to the JSX/i.test(msg);
+            if (isQwikWarn || isSkip || isUnsupported) {
+              const err = new Error("vite warn trace");
+              origWarn(
+                "[trace]",
+                (err.stack || "")
+                  .split("\n")
+                  .slice(0, 10)
+                  .join("\n"),
+              );
+              if (suppressSkip && (isSkip || isUnsupported)) {
+                // Drop the noisy dev-only skip-render warnings to keep logs clean
+                return;
+              }
+            }
+          } catch {}
+          finally {
+            inWarn = false;
+          }
+          return origWarn(...args);
+        };
+      } catch {}
+    },
+  });
+  extraPlugins.push(warnTrace());
 	// Try to load Preact plugin for client/dev builds only; skip during SSG to avoid server-side imports
 	if (!process.env.BUILD_TARGET || process.env.BUILD_TARGET !== "ssg") {
 		try {

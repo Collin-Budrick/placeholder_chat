@@ -266,7 +266,7 @@ export default component$(() => {
 							<input type="hidden" name="callbackUrl" value="/profile/" />
 							{/* No server-side form action; we call signIn.submit in onSubmit$ */}
 
-							{serverError.value && (
+							{serverError.value ? (
 								<div
 									class="alert alert-error mb-3"
 									role="alert"
@@ -274,7 +274,7 @@ export default component$(() => {
 								>
 									<span>{serverError.value}</span>
 								</div>
-							)}
+							) : null}
 
 							{/* Removed hidden username decoy to allow browser autofill on the visible field */}
 

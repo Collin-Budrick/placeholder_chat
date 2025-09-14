@@ -431,7 +431,7 @@ const TypeTitle = component$((props: Props) => {
 	return (
 		<h1 class={cn(props.class)} aria-label={props.text} ref={elRef}>
 			{shown.value}
-			{props.showCaret !== false && (
+			{props.showCaret !== false ? (
 				<span
 					class={`type-caret ${phase.value === "idle" ? "blink" : ""}`}
 					style={{
@@ -443,7 +443,7 @@ const TypeTitle = component$((props: Props) => {
 					}}
 					aria-hidden="true"
 				/>
-			)}
+			) : null}
 		</h1>
 	);
 });

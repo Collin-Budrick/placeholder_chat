@@ -285,11 +285,11 @@ export default component$(() => {
 				<div class="mt-4" ref={formWrap}>
 					<AuthCard borderless error={cardError.value}>
 						<MForm onSubmit$={onSubmit$}>
-							{serverError.value && (
+							{serverError.value ? (
 								<div class="alert alert-error mb-3" role="alert">
 									<span>{serverError.value}</span>
 								</div>
-							)}
+							) : null}
 							<Field name="username">
 								{(field, props) => (
 									<div class="form-control">

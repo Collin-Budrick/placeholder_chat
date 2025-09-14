@@ -256,17 +256,17 @@ export default component$(() => {
 				</p>
 
 				{/* If the loader reported an error, show an alert. */}
-				{isError && (
+				{isError ? (
 					<div class="alert alert-error" role="alert" aria-live="polite">
 						<div>
 							<span class="font-bold">Error</span>
 							<span class="block">{loader.value?.error}</span>
 						</div>
 					</div>
-				)}
+				) : null}
 
 				{/* Toast */}
-				{toast.value && (
+				{toast.value ? (
 					<div class="fixed top-6 right-6 z-50">
 						<div class="toast toast-end">
 							<div class="alert alert-success">
@@ -276,7 +276,7 @@ export default component$(() => {
 							</div>
 						</div>
 					</div>
-				)}
+				) : null}
 
 				<div class="overflow-x-auto">
 					<table class="table-zebra table w-full">
@@ -337,16 +337,16 @@ export default component$(() => {
 													Promote
 												</button>
 
-												{u.role === "admin" && (
-													<button
-														type="button"
-														class="btn btn-sm btn-warning"
-														onClick$={() => demote(u.id)}
-														disabled={busy.value === u.id}
-													>
-														Demote
-													</button>
-												)}
+								{u.role === "admin" ? (
+									<button
+										type="button"
+										class="btn btn-sm btn-warning"
+										onClick$={() => demote(u.id)}
+										disabled={busy.value === u.id}
+									>
+										Demote
+									</button>
+								) : null}
 
 												<button
 													type="button"
@@ -371,7 +371,7 @@ export default component$(() => {
 			</div>
 
 			{/* Delete confirmation modal (simple Yes/Cancel) */}
-			{deleteOpen.value && (
+			{deleteOpen.value ? (
 				<div class="fixed inset-0 z-50 flex items-center justify-center">
 					<div
 						class="bg-base-content/50 absolute inset-0"
@@ -398,7 +398,7 @@ export default component$(() => {
 						</div>
 					</div>
 				</div>
-			)}
+			) : null}
 		</main>
 	);
 });

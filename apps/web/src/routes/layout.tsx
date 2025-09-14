@@ -35,7 +35,7 @@ export default component$(() => {
 
 	return (
 		<>
-			{enableProgress && <ScrollProgress client:visible />}
+			{enableProgress ? <ScrollProgress client:visible /> : null}
 			{enableSmooth ? (
 				<SmoothScrollProvider client:idle>
 					<main id="content" class="edge-fades flex-1 overflow-auto">
@@ -44,8 +44,8 @@ export default component$(() => {
 							class="grid min-h-full place-items-center pb-24"
 						>
 							<Slot />
-							{enableReveals &&
-								(isDev ? (
+							{enableReveals ? (
+								isDev ? (
 									// In dev, hydrate immediately so reveals work reliably with HMR
 									// @ts-expect-error Qwik client directive
 									<ScrollReveals client:load />
@@ -53,7 +53,8 @@ export default component$(() => {
 									// In prod, hydrate when visible to keep JS minimal
 									// @ts-expect-error Qwik client directive
 									<ScrollReveals client:visible />
-								))}
+								)
+							) : null}
 						</div>
 					</main>
 				</SmoothScrollProvider>
@@ -64,14 +65,15 @@ export default component$(() => {
 						class="grid min-h-full place-items-center pb-24"
 					>
 						<Slot />
-						{enableReveals &&
-							(isDev ? (
+						{enableReveals ? (
+							isDev ? (
 								// @ts-expect-error Qwik client directive
 								<ScrollReveals client:load />
 							) : (
 								// @ts-expect-error Qwik client directive
 								<ScrollReveals client:visible />
-							))}
+							)
+						) : null}
 					</div>
 				</main>
 			)}
@@ -86,11 +88,9 @@ export default component$(() => {
 				// @ts-expect-error Qwik client directive
 				<AuthWarmup client:idle />
 			)}
-			{
-				// New glass top navigation; hydrate on idle to keep auth pages light.
-			}
+			{/* New glass top navigation; hydrate on idle to keep auth pages light. */}
 			{/* Render nav in SSR to avoid CLS from late mount; its inner ThemeToggle still hydrates on idle */}
-			{!hideNav && <GlassNavBar />}
+			{!hideNav ? <GlassNavBar /> : null}
 		</>
 	);
 });

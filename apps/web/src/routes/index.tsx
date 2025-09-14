@@ -900,8 +900,9 @@ export default component$(() => {
 
 			{/* Stats (Preact island animates counters when visible) */}
 			<section class="mx-auto max-w-7xl px-6 py-10">
-				{/* @ts-expect-error Qwik React island */}
-				<PreactStatsIsland />
+				{/* Hydrate the Preact island only on visibility to avoid SSR rendering warnings */}
+				{/* @ts-expect-error Qwik client directive */}
+				<PreactStatsIsland client:visible />
 			</section>
 		</div>
 	);
