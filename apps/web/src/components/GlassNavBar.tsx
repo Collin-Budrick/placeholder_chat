@@ -127,10 +127,8 @@ export default component$(() => {
 						</li>
 						<li class="grid w-full place-items-center">
 							<ThemeToggle
-								{...({ "client:idle": true } as unknown as Record<
-									"client:idle",
-									true
-								>)}
+								// @ts-expect-error Qwik client directive
+								client:idle
 								class="btn btn-ghost btn-sm w-12"
 								iconClass="icon-sharp w-7 h-7 [stroke-width:2]"
 							/>
