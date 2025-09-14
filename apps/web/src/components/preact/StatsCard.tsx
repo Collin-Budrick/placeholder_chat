@@ -1,6 +1,7 @@
 /** @jsxImportSource preact */
 import { useEffect, useRef, useState } from "preact/hooks";
 import { animate } from "motion";
+import type { DOMKeyframesDefinition } from "motion";
 
 type Stat = {
   label: string;
@@ -40,9 +41,10 @@ export default function StatsCard() {
       started.current = true;
       // Fade/slide the card in from the bottom
       try {
-        animate(el as Element, { y: [16, 0], opacity: [0, 1] } as any, {
+        const kf: DOMKeyframesDefinition = { y: [16, 0], opacity: [0, 1] };
+        animate(el as Element, kf, {
           duration: 0.5,
-          easing: "cubic-bezier(.22,.9,.37,1)",
+          ease: [0.22, 0.9, 0.37, 1],
         })?.finished.finally(() => {
           try { (el as HTMLElement).style.willChange = ""; } catch {}
         });
@@ -56,7 +58,7 @@ export default function StatsCard() {
           const holder = { v: 0 };
           animate(holder, { v: s.target }, {
             duration: 1.2,
-            easing: "cubic-bezier(.22,.9,.37,1)",
+            ease: [0.22, 0.9, 0.37, 1],
             onUpdate: () => {
               const v = holder.v;
               setValues((prev) => {

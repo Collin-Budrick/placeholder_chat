@@ -172,6 +172,8 @@ export const onRequest: RequestHandler = (ev) => {
 		const isDev =
 			(import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV ===
 				true || process.env.NODE_ENV !== "production";
+		// Build CSP with small deviations for dev and the /integrations route
+		const isIntegrations = p === "/integrations" || p === "/integrations/";
 		const csp = (
 			isDev
 				? [
@@ -184,7 +186,8 @@ export const onRequest: RequestHandler = (ev) => {
 						"font-src 'self' data:",
 						"style-src 'self' 'unsafe-inline'",
 						"script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-						"connect-src 'self' ws: wss: http: https:",
+						// Allow data: and blob: for dev integrations that fetch shaders or inline assets
+						"connect-src 'self' data: blob: ws: wss: http: https:",
 					]
 				: [
 						"default-src 'self'",
@@ -196,7 +199,10 @@ export const onRequest: RequestHandler = (ev) => {
 						"font-src 'self' data:",
 						"style-src 'self' 'unsafe-inline'",
 						"script-src 'self'",
-						"connect-src 'self'",
+						// Narrow exception: Permit data/blob connects on the integrations page only
+						isIntegrations
+							? "connect-src 'self' data: blob:"
+							: "connect-src 'self'",
 					]
 		).join("; ");
 		ev.headers.set("Content-Security-Policy", csp);

@@ -1,5 +1,5 @@
 import { component$, useVisibleTask$ } from "@builder.io/qwik";
-import type { DocumentHead } from "@builder.io/qwik-city";
+import type { DocumentHead, DocumentLink } from "@builder.io/qwik-city";
 import DaisyButtonsDemo from "../../components/integrations/DaisyButtonsDemo";
 import FakerDemo from "../../components/integrations/FakerDemo";
 import IconsDemo from "../../components/integrations/IconsDemo";
@@ -26,13 +26,13 @@ export default component$(() => {
 			if (w.__data_fetch_patch) return;
 			const origFetch = window.fetch.bind(window);
 			w.__data_fetch_patch = true;
-			window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+			const patched: typeof window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
 				try {
 					let url: string | undefined;
 					if (typeof input === "string") url = input;
 					else if (input instanceof Request) url = input.url;
 					else if (input instanceof URL) url = input.href;
-					else url = String(input as any);
+					else url = String(input as RequestInfo | URL);
 					if (url && /^data:text\/plain/i.test(url)) {
 						// Parse optional charset and base64; capture payload after comma
 						const m = url.match(/^data:text\/plain(?:;charset=[^;,]+)?(;base64)?,(.*)$/i);
@@ -51,8 +51,17 @@ export default component$(() => {
 						}
 					}
 				} catch {}
-				return origFetch(input as any, init as any);
+				return origFetch(input as RequestInfo | URL, init as RequestInit | undefined);
+			}) as typeof window.fetch;
+			// Preserve Bun-specific extensions like fetch.preconnect
+			type FetchWithPreconnect = typeof window.fetch & {
+				preconnect?: (origin: string) => unknown;
 			};
+			try {
+				(patched as FetchWithPreconnect).preconnect =
+					(origFetch as unknown as FetchWithPreconnect).preconnect;
+			} catch {}
+			window.fetch = patched;
 		} catch {}
 	});
 	return (
@@ -68,14 +77,19 @@ export default component$(() => {
 			</p>
 			<div class="grid gap-8 md:grid-cols-2">
 				{/* Gate non-critical demos behind client:visible to trim initial JS */}
+				{/* @ts-expect-error Qwik client directive */}
 				<FakerDemo client:visible />
+				{/* @ts-expect-error Qwik client directive */}
 				<MotionOneDemo client:visible />
+				{/* @ts-expect-error Qwik client directive */}
 				<DaisyButtonsDemo client:visible />
+				{/* @ts-expect-error Qwik client directive */}
 				<IconsDemo client:visible />
 				{/* Move the Preact island higher so it isn't far down */}
 				<div class="space-y-2">
 					<h2 class="text-xl font-semibold">Preact Island</h2>
 					{/* Extra guard to avoid early hydration in dev */}
+					{/* @ts-expect-error Qwik client directive */}
 					<PreactCounterIsland client:visible />
 				</div>
 				{/* Keep the Unpic image eager for LCP */}
@@ -111,13 +125,16 @@ export const head: DocumentHead = {
 				.join(", ");
 			const imagesizes =
 				"(min-width: 768px) calc((min(100vw, 48rem) - 3rem - 2rem)/2), 100vw";
-			return {
-				rel: "preload",
-				as: "image",
-				type: "image/avif" as any,
-				imagesrcset: imagesrcset as any,
-				imagesizes: imagesizes as any,
-			} as const;
+            const preload = {
+              rel: "preload",
+              as: "image",
+              type: "image/avif",
+              imagesrcset,
+              imagesizes,
+              // Hint priority for the hero image
+              fetchpriority: "high",
+            } as const;
+            return preload as unknown as DocumentLink;
 		})(),
 	],
 };

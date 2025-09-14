@@ -24,8 +24,9 @@ export default component$(() => {
 							"img-src 'self' data: blob: https:",
 							"font-src 'self' data:",
 							"style-src 'self' 'unsafe-inline'",
-							"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
-							"connect-src 'self' ws: wss: http: https:",
+						"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
+						// Allow data: and blob: connects for integrations that fetch inline shaders/text in dev
+						"connect-src 'self' data: blob: ws: wss: http: https:",
 							"worker-src 'self' blob:",
 							"child-src 'self' blob:",
 						].join("; ")}

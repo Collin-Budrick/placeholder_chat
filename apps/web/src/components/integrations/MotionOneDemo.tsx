@@ -7,6 +7,7 @@ import {
 	useSignal,
 	useTask$,
 } from "@builder.io/qwik";
+import type { DOMKeyframesDefinition } from "motion";
 
 /**
  * Simple Motion One demo using the `motion` package.
@@ -37,8 +38,8 @@ const MotionOneDemo = component$(() => {
 				el,
 				{
 					transform: ["translateY(0px)", "translateY(-6px)", "translateY(0px)"],
-				},
-				{ duration: 2.4, easing: "ease-in-out", repeat: Infinity },
+				} as DOMKeyframesDefinition,
+				{ duration: 2.4, ease: "easeInOut", repeat: Infinity },
 			);
 
 			const onEnter = () => {
@@ -46,13 +47,13 @@ const MotionOneDemo = component$(() => {
 					animate([
 						[
 							el,
-							{ transform: "scale(1.04)" },
-							{ duration: 0.12, easing: "ease-out" },
+							{ transform: "scale(1.04)" } as DOMKeyframesDefinition,
+							{ duration: 0.12, ease: "easeOut" },
 						],
 						[
 							el,
-							{ transform: "scale(1.0)" },
-							{ duration: 0.18, easing: "ease-out" },
+							{ transform: "scale(1.0)" } as DOMKeyframesDefinition,
+							{ duration: 0.18, ease: "easeOut" },
 						],
 					]);
 				} catch {
@@ -71,8 +72,8 @@ const MotionOneDemo = component$(() => {
 								"hue-rotate(-140deg) saturate(1.2) brightness(1.05)",
 								"hue-rotate(0deg) saturate(1) brightness(1)",
 							],
-						},
-						{ duration: 0.65, easing: "ease-in-out" },
+						} as DOMKeyframesDefinition,
+						{ duration: 0.65, ease: "easeInOut" },
 					);
 
 					animate(
@@ -86,8 +87,8 @@ const MotionOneDemo = component$(() => {
 								"translateX(3px) scale(1.01)",
 								"translateX(0px) scale(1)",
 							],
-						},
-						{ duration: 0.35, easing: "ease-in-out" },
+						} as DOMKeyframesDefinition,
+						{ duration: 0.35, ease: "easeInOut" },
 					);
 					const wrap =
 						wrapperRef.value || (el.parentElement as HTMLElement | null);
@@ -125,8 +126,8 @@ const MotionOneDemo = component$(() => {
 								spark,
 								{
 									transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(1)`,
-								},
-								{ duration: outDur, easing: "ease-out" },
+								} as DOMKeyframesDefinition,
+								{ duration: outDur, ease: "easeOut" },
 							],
 							[
 								spark,
@@ -134,8 +135,8 @@ const MotionOneDemo = component$(() => {
 									transform: `translate(-50%, -50%) translate(${dx}px, ${dy}px) scale(${1.6 + Math.random() * 0.6})`,
 									opacity: 0,
 									filter: "blur(2px)",
-								},
-								{ duration: fadeDur, easing: "ease-in" },
+								} as DOMKeyframesDefinition,
+								{ duration: fadeDur, ease: "easeIn" },
 							],
 						])
 							.finished.finally(() => {

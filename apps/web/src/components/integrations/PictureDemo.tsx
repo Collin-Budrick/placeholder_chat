@@ -58,7 +58,7 @@ export default component$(() => {
 
 	return (
 		<div class="space-y-2">
-			<h2 class="text-xl font-semibold">Web Image Carousel</h2>
+			<h2 class="text-xl font-semibold">Web Images</h2>
 			<div class="glass-surface border-soft with-grain card bg-base-100/5 overflow-hidden border">
 				{/* DaisyUI carousel */}
 				<div class="relative">
@@ -95,7 +95,7 @@ export default component$(() => {
 												alt={s.alt}
 												loading="eager"
 												decoding="async"
-												fetchPriority="high"
+                                        		fetchpriority="high"
 												class="h-full w-full object-cover"
 												width={360}
 												height={240}

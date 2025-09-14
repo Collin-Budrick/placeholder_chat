@@ -62,10 +62,16 @@ function isValidTarget(el: unknown): el is Element | NodeList | Element[] {
 	return false;
 }
 
+import type { AnimationOptions as MotionAnimationOptions, DOMKeyframesDefinition } from "motion";
+
 export async function animateMotion(
 	el: Element | Element[] | NodeList,
-	keyframes: Keyframe[] | PropertyIndexedKeyframes | Keyframe,
-	opts?: number | KeyframeAnimationOptions,
+	keyframes:
+		| Keyframe[]
+		| PropertyIndexedKeyframes
+		| Keyframe
+		| DOMKeyframesDefinition,
+	opts?: number | KeyframeAnimationOptions | MotionAnimationOptions,
 ): Promise<Animation | undefined> {
 	if (!isValidTarget(el)) return undefined;
 	try {
@@ -75,16 +81,24 @@ export async function animateMotion(
 		// motion.animate returns an Animation-like player
 		type AnimateFn = (
 			el: Element | Element[] | NodeList,
-			keyframes: Keyframe[] | PropertyIndexedKeyframes | Keyframe,
-			opts?: number | KeyframeAnimationOptions,
+			keyframes:
+				| Keyframe[]
+				| PropertyIndexedKeyframes
+				| Keyframe
+				| DOMKeyframesDefinition,
+			opts?: number | KeyframeAnimationOptions | MotionAnimationOptions,
 		) => Animation;
 		// Normalize NodeList -> Element[] to avoid odd proxies on CSSStyleDeclaration
 		const target =
 			(el instanceof NodeList ? Array.from(el) : el) as Element | Element[] | NodeList;
 		return (mod as unknown as { animate: AnimateFn }).animate(
 			target,
-			keyframes as unknown as Keyframe[] | PropertyIndexedKeyframes | Keyframe,
-			opts as unknown as number | KeyframeAnimationOptions,
+			keyframes as unknown as
+				| Keyframe[]
+				| PropertyIndexedKeyframes
+				| Keyframe
+				| DOMKeyframesDefinition,
+			opts as unknown as number | KeyframeAnimationOptions | MotionAnimationOptions,
 		);
 	} catch (err) {
 		// Silent fallback - consumer may apply CSS fallback if undefined returned
@@ -105,8 +119,12 @@ export async function animateMotion(
  */
 type TLItem = {
 	el: Element | Element[] | NodeList;
-	keyframes: Keyframe[] | PropertyIndexedKeyframes | Keyframe;
-	options?: number | KeyframeAnimationOptions;
+	keyframes:
+		| Keyframe[]
+		| PropertyIndexedKeyframes
+		| Keyframe
+		| DOMKeyframesDefinition;
+	options?: number | KeyframeAnimationOptions | MotionAnimationOptions;
 	at?: number | string;
 };
 

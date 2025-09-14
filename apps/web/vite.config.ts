@@ -112,7 +112,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
               "font-src 'self' data:",
               "style-src 'self' 'unsafe-inline'",
               "script-src 'self' 'unsafe-inline' blob:",
-              "connect-src 'self'",
+              // Allow data/blob connects for integrations (e.g., shaders via data: URIs)
+              "connect-src 'self' data: blob:",
               // Allow Vite/preview to spawn blob: workers (some libs create workers dynamically)
               "worker-src 'self' blob:",
               // Back-compat for old UAs that use child-src for workers

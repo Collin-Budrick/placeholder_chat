@@ -1,5 +1,6 @@
 import { $, component$, isServer, useTask$ } from "@builder.io/qwik";
 import { animateMotion } from "~/lib/motion-qwik";
+import type { AnimationOptions as MotionAnimationOptions, DOMKeyframesDefinition } from "motion";
 
 /**
  * Module-level starter that initializes IntersectionObserver reveals.
@@ -63,20 +64,20 @@ const startScrollReveals = $(async (): Promise<() => void> => {
                                 const raw = (el as HTMLElement)?.dataset?.revealOrder;
                                 order = Math.max(0, Math.min(20, Number(raw || 0)));
                             } catch {}
-                            const opts: KeyframeAnimationOptions & { duration: number; easing: string } = {
+                            const opts: MotionAnimationOptions & { duration?: number } = {
                                 duration: 0.5,
-                                easing: "cubic-bezier(.22,.9,.37,1)",
+                                ease: [0.22, 0.9, 0.37, 1],
                                 delay: order > 0 ? order * 120 : 0,
-                            } as KeyframeAnimationOptions as any;
+                            };
                             const dir = (el as HTMLElement)?.dataset?.revealFrom || "bottom";
-                            const keyframes =
+                            const keyframes: DOMKeyframesDefinition =
                                 dir === "right"
-                                    ? ({ x: [16, 0], opacity: [0, 1] } as any)
+                                    ? { x: [16, 0], opacity: [0, 1] }
                                     : dir === "left"
-                                      ? ({ x: [-16, 0], opacity: [0, 1] } as any)
+                                      ? { x: [-16, 0], opacity: [0, 1] }
                                       : dir === "top"
-                                        ? ({ y: [-16, 0], opacity: [0, 1] } as any)
-                                        : ({ y: [16, 0], opacity: [0, 1] } as any);
+                                        ? { y: [-16, 0], opacity: [0, 1] }
+                                        : { y: [16, 0], opacity: [0, 1] };
                             const player = (await animateMotion(
                                 el,
                                 keyframes,
