@@ -140,7 +140,7 @@ services:
 
   # Traefik (dev TLS/proxy)
   traefik:
-    image: traefik:v3.5.1
+    image: traefik:v3.5.2
     command:
       - "--entrypoints.websecure.address=:5173"
       - "--log.level=INFO"

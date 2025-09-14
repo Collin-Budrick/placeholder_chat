@@ -183,7 +183,7 @@ services:
 
   # --- Traefik gateway (HTTP/3) ---
   traefik:
-    image: traefik:v3.5.1
+    image: traefik:v3.5.2
     command:
       - "--entrypoints.websecure.address=:5173"
       - "--entrypoints.websecure.http3=true"

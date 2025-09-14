@@ -84,7 +84,7 @@ services:
       - "traefik.http.services.gateway.loadbalancer.server.port=7000"
 
   traefik:
-    image: traefik:v3.5.1
+    image: traefik:v3.5.2
     command:
       - "--entrypoints.websecure.address=:5173"
       - "--entrypoints.websecure.http3=true"
