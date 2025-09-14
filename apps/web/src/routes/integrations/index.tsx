@@ -17,6 +17,44 @@ export default component$(() => {
 			} catch {}
 		})();
 	});
+
+	// Soft patch: allow libraries that fetch inline data: shaders/text to work without relaxing CSP.
+	// We intercept fetch(data:text/plain;base64,...) and return a synthetic Response locally.
+	useVisibleTask$(() => {
+		try {
+			const w = window as unknown as { __data_fetch_patch?: boolean } & Window;
+			if (w.__data_fetch_patch) return;
+			const origFetch = window.fetch.bind(window);
+			w.__data_fetch_patch = true;
+			window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+				try {
+					let url: string | undefined;
+					if (typeof input === "string") url = input;
+					else if (input instanceof Request) url = input.url;
+					else if (input instanceof URL) url = input.href;
+					else url = String(input as any);
+					if (url && /^data:text\/plain/i.test(url)) {
+						// Parse optional charset and base64; capture payload after comma
+						const m = url.match(/^data:text\/plain(?:;charset=[^;,]+)?(;base64)?,(.*)$/i);
+						if (m) {
+							const isB64 = !!m[1];
+							const payload = m[2] || "";
+							const data = isB64
+								? atob(decodeURIComponent(payload))
+								: decodeURIComponent(payload);
+							return Promise.resolve(
+								new Response(data, {
+									status: 200,
+									headers: { "Content-Type": "text/plain; charset=utf-8" },
+								}),
+							);
+						}
+					}
+				} catch {}
+				return origFetch(input as any, init as any);
+			};
+		} catch {}
+	});
 	return (
 		<section class="container mx-auto max-w-3xl space-y-8 p-6">
 			<h1
