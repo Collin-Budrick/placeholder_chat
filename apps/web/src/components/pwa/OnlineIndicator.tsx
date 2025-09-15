@@ -1,11 +1,15 @@
-import { $, component$, useSignal, useVisibleTask$ } from '@builder.io/qwik';
+import { component$, useSignal, useVisibleTask$ } from '@builder.io/qwik';
 
 export default component$(() => {
   const online = useSignal<boolean>(true);
   useVisibleTask$(() => {
     online.value = navigator.onLine;
-    const on = () => (online.value = true);
-    const off = () => (online.value = false);
+    const on = () => {
+      online.value = true;
+    };
+    const off = () => {
+      online.value = false;
+    };
     window.addEventListener('online', on);
     window.addEventListener('offline', off);
     return () => {
@@ -21,4 +25,5 @@ export default component$(() => {
     </div>
   );
 });
+
 

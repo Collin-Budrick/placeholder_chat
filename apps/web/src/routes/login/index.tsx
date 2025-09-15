@@ -1,13 +1,14 @@
-import { $, component$, useOn, useSignal, useTask$ } from "@builder.io/qwik";
+import { $, component$, useSignal } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { Link, useNavigate } from "@builder.io/qwik-city";
 import * as v from "valibot";
 import BackButton from "~/components/BackButton";
 import TypeTitle from "~/components/TypeTitle";
+import { useAuthPage } from "~/components/auth/useAuthPage";
+import AuthCard from "../../components/auth/AuthCard";
 import { cn } from "~/lib/cn";
 import { logApi } from "~/lib/log";
 import { animateMotion } from "~/lib/motion-qwik";
-import AuthCard from "../../components/auth/AuthCard";
 
 // Note: login now uses a plain POST form to Auth.js credentials callback.
 
@@ -24,76 +25,19 @@ const LoginSchema = v.object({
 
 export default component$(() => {
 	const nav = useNavigate();
-	const titleText = useSignal<string>("Log in");
-	const eraseKey = useSignal<number | null>(null);
-	const formWrap = useSignal<HTMLElement>();
-	const authContainer = useSignal<HTMLElement>();
-	const descText = useSignal<HTMLElement>();
-	const titleStartKey = useSignal<number>(0);
+	const {
+		titleText,
+		titleStartKey,
+		eraseKey,
+		setDescription,
+		setFormWrap,
+		setAuthContainer,
+		formWrap,
+		authContainer,
+		description,
+	} = useAuthPage({ title: "Log in" });
 	const emailEditing = useSignal(false);
 	const passwordEditing = useSignal(false);
-
-	// Ensure the title types on arrival/resume (belt-and-suspenders with qvisible)
-	useTask$(() => {
-		try {
-			titleStartKey.value = Date.now();
-		} catch {
-			/* ignore */
-		}
-	});
-
-	// Motion One: fade/slide in the whole auth area on visibility.
-	// Defer the lazy import to idle to keep first paint snappy and avoid
-	// competing with route chunk fetches on initial navigation.
-	useOn(
-		"qvisible",
-		$(() => {
-			if (typeof window === "undefined") return;
-			if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
-				return;
-			const root = authContainer.value;
-			if (!root) return;
-			// Prefer requestIdleCallback when available, else fall back to setTimeout
-			type W = typeof window & {
-				requestIdleCallback?: (
-					cb: IdleRequestCallback,
-					opts?: { timeout?: number },
-				) => number;
-			};
-			type IdleShim = (cb: () => void) => number;
-			const idle: IdleShim = (window as W).requestIdleCallback
-				? (cb) => (window as W).requestIdleCallback?.(cb as IdleRequestCallback)
-				: (cb) => window.setTimeout(cb, 250);
-			idle(() => {
-				try {
-					void animateMotion(
-						root,
-						{ opacity: [0, 1], y: [24, 0] },
-						{
-							duration: 0.45,
-							easing: "cubic-bezier(.22,.9,.37,1)",
-						},
-					);
-				} catch {
-					/* ignore */
-				}
-			});
-			// Kick the TypeTitle to type on arrival
-			try {
-				titleStartKey.value = Date.now();
-			} catch {
-				/* ignore */
-			}
-			// Ensure any previous title-typing cache is cleared for auth pages
-			try {
-				const ls = globalThis.localStorage;
-				ls?.removeItem("typetitle:/login|Log in");
-				ls?.removeItem("typetitle:/signup|Sign Up");
-			} catch {
-				/* ignore */
-			}
-		}),
-	);
 
 	// Client-only sign-in against gateway
 	const submitting = useSignal(false);
@@ -108,9 +52,7 @@ export default component$(() => {
 		>
 			<div
 				class="w-full max-w-2xl"
-				ref={(el) => {
-					authContainer.value = el;
-				}}
+				ref={setAuthContainer}
 			>
 				<div class="mb-4">
 					<BackButton class="mb-2" fallbackHref="/" />
@@ -130,14 +72,12 @@ export default component$(() => {
 					/>
 					<p
 						class="text-base-content/70 mt-2"
-						ref={(el) => {
-							descText.value = el as HTMLElement;
-						}}
+						ref={setDescription}
 					>
 						Welcome back. Please enter your details.
 					</p>
 				</div>
-				<div class="mt-4" ref={formWrap}>
+				<div class="mt-4" ref={setFormWrap}>
 					<AuthCard borderless>
 						<form
 							id="login-form"
@@ -381,7 +321,7 @@ export default component$(() => {
 											},
 										);
 									}
-									const desc = descText.value;
+									const desc = description.value;
 									if (desc) {
 										void animateMotion(
 											desc,

@@ -34,6 +34,7 @@ type BackButtonProps = {
 	fallbackHref?: string; // used when no history to go back
 	hoverDistance?: number; // px distance from center to reveal flashlight
 	sizeClass?: string; // e.g., 'size-9'
+	targetHref?: string; // force navigation target when provided
 };
 
 // Stable module-scope QRL for back navigation to avoid HMR QRL churn
@@ -293,7 +294,17 @@ const BackButton = component$((props: BackButtonProps) => {
 	const path = (loc.url.pathname || "").toLowerCase();
 	const isSignup = path === "/signup" || path === "/signup/";
 	const isLogin = path === "/login" || path === "/login/";
-	const explicitTarget = isSignup ? "/login" : isLogin ? "/" : null;
+	const sanitizedTarget = (() => {
+		try {
+			const raw = props.targetHref;
+			if (!raw) return null;
+			const trimmed = raw.trim();
+			return trimmed.length ? trimmed : null;
+		} catch {
+			return null;
+		}
+	})();
+	const explicitTarget = sanitizedTarget ?? (isSignup ? "/login" : isLogin ? "/" : null);
 
 	// Component-scoped explicit nav for SPA + VT when target is known
 	const goExplicit = $(async (ev: Event, elParam?: Element) => {

@@ -1,12 +1,13 @@
-import { component$, isDev, Slot } from "@builder.io/qwik";
+import { Slot, component$, isDev } from "@builder.io/qwik";
 import type { DocumentHead, RequestHandler } from "@builder.io/qwik-city";
 import { useLocation } from "@builder.io/qwik-city";
 import AuthWarmup from "~/components/AuthWarmup";
 import GlassNavBar from "~/components/GlassNavBar";
-import SmoothScrollProvider from "~/components/integrations/SmoothScrollProvider";
+import RoutePrefetch from "~/components/RoutePrefetch";
 import ScrollProgress from "~/components/ScrollProgress";
 import ScrollReveals from "~/components/ScrollReveals";
-import RoutePrefetch from "~/components/RoutePrefetch";
+import SmoothScrollProvider from "~/components/integrations/SmoothScrollProvider";
+
 
 /**
  * Layout component: renders the site navigation and a <Slot /> for route content.
@@ -38,29 +39,37 @@ export default component$(() => {
 
 	return (
 		<>
-			{enableProgress ? <ScrollProgress client:visible /> : null}
+			{enableProgress ? (
+				<>
+					{/* @ts-expect-error Qwik client directive */}
+					<ScrollProgress client:visible />
+				</>
+			) : null}
 			{enableSmooth ? (
-				<SmoothScrollProvider client:idle>
-					<main id="content" class="edge-fades flex-1 overflow-auto">
-						<div
-							id="scroll-inner"
-							class="grid min-h-full place-items-center pb-24"
-						>
-							<Slot />
-							{enableReveals ? (
-								isDev ? (
-									// In dev, hydrate immediately so reveals work reliably with HMR
-									// @ts-expect-error Qwik client directive
-									<ScrollReveals client:load />
-								) : (
-									// In prod, hydrate when visible to keep JS minimal
-									// @ts-expect-error Qwik client directive
-									<ScrollReveals client:visible />
-								)
-							) : null}
-						</div>
-					</main>
-				</SmoothScrollProvider>
+				<>
+					{/* @ts-expect-error Qwik client directive */}
+					<SmoothScrollProvider client:idle>
+						<main id="content" class="edge-fades flex-1 overflow-auto">
+							<div
+								id="scroll-inner"
+								class="grid min-h-full place-items-center pb-24"
+							>
+								<Slot />
+								{enableReveals ? (
+									isDev ? (
+										// In dev, hydrate immediately so reveals work reliably with HMR
+										// @ts-expect-error Qwik client directive
+										<ScrollReveals client:load />
+									) : (
+										// In prod, hydrate when visible to keep JS minimal
+										// @ts-expect-error Qwik client directive
+										<ScrollReveals client:visible />
+									)
+								) : null}
+							</div>
+						</main>
+					</SmoothScrollProvider>
+				</>
 			) : (
 				<main id="content" class="edge-fades flex-1 overflow-auto">
 					<div
@@ -70,17 +79,17 @@ export default component$(() => {
 						<Slot />
 						{enableReveals ? (
 							isDev ? (
-								// @ts-expect-error Qwik client directive
-								<ScrollReveals client:load />
-							) : (
-								// @ts-expect-error Qwik client directive
-								<ScrollReveals client:visible />
-							)
+							// @ts-expect-error Qwik client directive
+							<ScrollReveals client:load />
+						) : (
+							// @ts-expect-error Qwik client directive
+							<ScrollReveals client:visible />
+						)
 						) : null}
 					</div>
 				</main>
 			)}
-			{/* Overlay-based scroll fades (top/bottom) */}
+		{/* Overlay-based scroll fades (top/bottom) */}
 			<div class="viewport-fade top" aria-hidden="true" />
 			<div class="viewport-fade bottom" aria-hidden="true" />
 			{/* In production, idle warmup reduces first paint JS; keep eager in dev */}
@@ -307,3 +316,4 @@ export const onStaticGenerate = async () => {
 	}
 	return { routes: base };
 };
+

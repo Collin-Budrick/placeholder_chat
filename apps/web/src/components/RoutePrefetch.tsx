@@ -13,14 +13,16 @@ export default component$(() => {
     if (isServer) return;
 
     // Env toggle (SSR-injected into client bundle by Vite)
-    const env = (import.meta as unknown as { env?: Record<string, string> }).env || {};
+    type ImportMetaWithEnv = ImportMeta & { env?: Record<string, string> };
+    const env = ((import.meta as ImportMetaWithEnv).env) ?? {};
     const enabled = env.VITE_PREFETCH_ALL === "1";
     if (!enabled) return;
 
     // Respect user/device constraints
     try {
       // Prefer the standard Network Information API when available
-      const conn = (navigator as unknown as { connection?: any })?.connection;
+      type NavigatorWithConnection = Navigator & { connection?: { saveData?: boolean; effectiveType?: string } };
+      const conn = (navigator as NavigatorWithConnection).connection;
       const saveData = !!conn?.saveData;
       const slow = typeof conn?.effectiveType === "string" && /(^|-)2g$/.test(conn.effectiveType);
       if (saveData || slow) return;
@@ -34,6 +36,7 @@ export default component$(() => {
     const w = window as W;
     let idleId: number | undefined;
     let timeoutId: number | undefined;
+    let controller: AbortController | null = null;
 
     const run = async () => {
       try {
@@ -54,8 +57,9 @@ export default component$(() => {
         } catch {}
 
         // Include a small allowlist of public routes that are commonly next steps
-        ["/", "/about", "/contact", "/login", "/signup"].forEach((p) => hrefs.add(p));
-
+        for (const p of ["/", "/about", "/contact", "/login", "/signup"]) {
+          hrefs.add(p);
+        }
         // Normalize and filter candidates
         const candidates = Array.from(hrefs)
           .map((p) => {
@@ -71,7 +75,9 @@ export default component$(() => {
           .filter((p) => !p.startsWith("/admin") && p !== "/profile");
 
         // Deduplicate and prefetch the q-data for each candidate when idle
-        const controller = new AbortController();
+        controller?.abort();
+        controller = new AbortController();
+        const signal = controller.signal;
 
         const prefetchOne = async (path: string) => {
           // Build q-data URL
@@ -82,7 +88,7 @@ export default component$(() => {
               credentials: "same-origin",
               cache: "force-cache",
               mode: "same-origin",
-              signal: controller.signal,
+              signal,
             });
             const ct = res.headers.get("content-type") || "";
             if (!res.ok || !/json/i.test(ct)) return;
@@ -97,9 +103,6 @@ export default component$(() => {
         // Soft limit: prefetch up to 5 routes to avoid over-fetching
         const list = candidates.slice(0, 5);
         await Promise.all(list.map(prefetchOne));
-
-        // Cleanup hook to abort if the component unmounts mid-prefetch
-        return () => controller.abort();
       } catch {
         /* ignore */
       }
@@ -124,9 +127,16 @@ export default component$(() => {
         }
       } catch {}
       if (timeoutId !== undefined) clearTimeout(timeoutId);
+      controller?.abort();
     };
   });
 
   return null;
 });
+
+
+
+
+
+
 

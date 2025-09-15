@@ -21,8 +21,9 @@ export default component$(() => {
     try {
       const list = await api<Sub[]>('/api/push/subscriptions', { headers: { Accept: 'application/json' } });
       subs.value = Array.isArray(list) ? list : [];
-    } catch (e: any) {
-      error.value = String(e?.message || e);
+    } catch (err) {
+      const message = err instanceof Error ? err.message ?? err.toString() : String(err);
+      error.value = message;
     } finally {
       loading.value = false;
     }
@@ -32,8 +33,9 @@ export default component$(() => {
     sending.value = true; error.value = null;
     try {
       await postJson('/api/push/test', { title: title.value, body: body.value, url: url.value }, { headers: { ...csrfHeader() } });
-    } catch (e: any) {
-      error.value = String(e?.message || e);
+    } catch (err) {
+      const message = err instanceof Error ? err.message ?? err.toString() : String(err);
+      error.value = message;
     } finally {
       sending.value = false;
     }
@@ -43,8 +45,9 @@ export default component$(() => {
     sending.value = true; error.value = null;
     try {
       await postJson('/api/push/send_to_user', { user_id: userId.value, title: title.value, body: body.value, url: url.value }, { headers: { ...csrfHeader() } });
-    } catch (e: any) {
-      error.value = String(e?.message || e);
+    } catch (err) {
+      const message = err instanceof Error ? err.message ?? err.toString() : String(err);
+      error.value = message;
     } finally {
       sending.value = false;
     }
@@ -80,14 +83,14 @@ export default component$(() => {
           <h2 class="card-title text-base">Send Test Notification</h2>
           {error.value ? <p class="text-error text-sm">{error.value}</p> : null}
           <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
-            <input value={title.value} onInput$={(e, el) => (title.value = el.value)} placeholder="Title" class="input input-bordered input-sm" />
-            <input value={body.value} onInput$={(e, el) => (body.value = el.value)} placeholder="Body" class="input input-bordered input-sm" />
-            <input value={url.value} onInput$={(e, el) => (url.value = el.value)} placeholder="URL" class="input input-bordered input-sm" />
-            <input value={userId.value} onInput$={(e, el) => (userId.value = el.value)} placeholder="User ID (optional)" class="input input-bordered input-sm" />
+            <input value={title.value} onInput$={$((_event, el) => { title.value = el.value; })} placeholder="Title" class="input input-bordered input-sm" />
+            <input value={body.value} onInput$={$((_event, el) => { body.value = el.value; })} placeholder="Body" class="input input-bordered input-sm" />
+            <input value={url.value} onInput$={$((_event, el) => { url.value = el.value; })} placeholder="URL" class="input input-bordered input-sm" />
+            <input value={userId.value} onInput$={$((_event, el) => { userId.value = el.value; })} placeholder="User ID (optional)" class="input input-bordered input-sm" />
           </div>
           <div class="flex gap-2">
-            <button disabled={sending.value} onClick$={sendTest} class="btn btn-primary btn-sm w-fit">Send to All</button>
-            <button disabled={sending.value || !userId.value} onClick$={sendToUser} class="btn btn-outline btn-sm w-fit">Send to User</button>
+            <button type="button" disabled={sending.value} onClick$={sendTest} class="btn btn-primary btn-sm w-fit">Send to All</button>
+            <button type="button" disabled={sending.value || !userId.value} onClick$={sendToUser} class="btn btn-outline btn-sm w-fit">Send to User</button>
           </div>
         </div>
       </div>
@@ -96,6 +99,6 @@ export default component$(() => {
 });
 
 export const head: DocumentHead = {
-  title: 'Admin · Push | Stack',
+  title: 'Admin - Push | Stack',
   meta: [{ name: 'description', content: 'List push subscriptions and send a test notification.' }],
 };

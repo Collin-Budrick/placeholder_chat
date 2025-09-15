@@ -1,12 +1,13 @@
 import { component$, useVisibleTask$ } from "@builder.io/qwik";
 import type { DocumentHead, DocumentLink } from "@builder.io/qwik-city";
+import BackButton from "../../components/BackButton";
 import DaisyButtonsDemo from "../../components/integrations/DaisyButtonsDemo";
 import FakerDemo from "../../components/integrations/FakerDemo";
 import IconsDemo from "../../components/integrations/IconsDemo";
 import MotionOneDemo from "../../components/integrations/MotionOneDemo";
 import PictureDemo from "../../components/integrations/PictureDemo";
-import UnpicDemo from "../../components/integrations/UnpicDemo";
 import { PreactCounterIsland } from "../../components/PreactCounterIsland";
+import UnpicDemo from "../../components/integrations/UnpicDemo";
 
 export default component$(() => {
 	// Prewarm faker chunk in the background to reduce first-interaction latency
@@ -75,6 +76,7 @@ export default component$(() => {
 	});
 	return (
 		<section class="container mx-auto max-w-3xl space-y-8 p-6">
+			<BackButton class="self-start" fallbackHref="/" targetHref="/" />
 			<h1
 				class="text-2xl font-bold"
 				style={{ fontSize: "1.5rem", lineHeight: "1.25" }}
@@ -87,19 +89,18 @@ export default component$(() => {
 			</p>
 			<div class="grid gap-8 md:grid-cols-2">
 				{/* Gate non-critical demos behind client:visible to trim initial JS */}
-				{/* @ts-expect-error Qwik client directive */}
+				{/* @ts-expect-error client directive */}
 				<FakerDemo client:visible />
-				{/* @ts-expect-error Qwik client directive */}
+				{/* @ts-expect-error client directive */}
 				<MotionOneDemo client:visible />
-				{/* @ts-expect-error Qwik client directive */}
+				{/* @ts-expect-error client directive */}
 				<DaisyButtonsDemo client:visible />
-				{/* @ts-expect-error Qwik client directive */}
+				{/* @ts-expect-error client directive */}
 				<IconsDemo client:visible />
 				{/* Move the Preact island higher so it isn't far down */}
 				<div class="space-y-2">
 					<h2 class="text-xl font-semibold">Preact Island</h2>
 					{/* Extra guard to avoid early hydration in dev */}
-					{/* @ts-expect-error Qwik client directive */}
 					<PreactCounterIsland client:visible />
 				</div>
 				{/* Keep the Unpic image eager for LCP */}
@@ -152,3 +153,6 @@ export const head: DocumentHead = {
 // Enable SSG for this route so the LCP image and preload hints
 // are present in the initial HTML of the static build.
 export const prerender = true;
+
+
+

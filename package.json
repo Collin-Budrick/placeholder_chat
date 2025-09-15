@@ -9,7 +9,7 @@
   "dependencies": {
     "@builder.io/qwik": "1.16.0",
     "@builder.io/qwik-city": "1.16.0",
-    "@openai/codex": "^0.36.0",
+    "@openai/codex": "0.36.0",
     "ignore": "7.0.5",
     "typescript": "5.9.2",
     "vite": "7.1.5"

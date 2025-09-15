@@ -1,15 +1,15 @@
-import { $, component$, useOn, useSignal, useTask$ } from "@builder.io/qwik";
+import { $, component$, useSignal } from "@builder.io/qwik";
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { Link, routeLoader$, useNavigate } from "@builder.io/qwik-city";
 import { type InitialValues, useForm, valiForm$ } from "@modular-forms/qwik";
 import * as v from "valibot";
-import BackButton from "~/components/BackButton";
-import TypeTitle from "~/components/TypeTitle";
-import { cn } from "~/lib/cn";
-import { animateMotion } from "~/lib/motion-qwik";
 import AuthCard from "../../components/auth/AuthCard";
 import { csrfHeader } from "../../lib/csrf";
 import { api, apiFetch } from "../../lib/http";
+import AuthHeader from "~/components/auth/AuthHeader";
+import { useAuthPage } from "~/components/auth/useAuthPage";
+import { cn } from "~/lib/cn";
+import { animateMotion } from "~/lib/motion-qwik";
 
 const SignupSchema = v.object({
 	username: v.pipe(
@@ -33,47 +33,7 @@ export const useFormLoader = routeLoader$<InitialValues<SignupForm>>(() => ({
 
 export default component$(() => {
 	const nav = useNavigate();
-	const titleText = useSignal<string>("Sign Up");
-	const eraseKey = useSignal<number | null>(null);
-	const switchingTo = useSignal<"login" | null>(null);
-	const formWrap = useSignal<HTMLElement>();
-	const authContainer = useSignal<HTMLElement>();
-	const descText = useSignal<HTMLElement>();
-	const titleStartKey = useSignal<number>(0);
-
-	// Motion One: fade/slide in the whole auth area on visibility
-	useOn(
-		"qvisible",
-		$(() => {
-			if (typeof window === "undefined") return;
-			if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)
-				return;
-			const root = authContainer.value;
-			if (!root) return;
-			void animateMotion(
-				root,
-				{ opacity: [0, 1], y: [24, 0] },
-				{
-					duration: 0.45,
-					easing: "cubic-bezier(.22,.9,.37,1)",
-				},
-			);
-			// Kick the TypeTitle to type on arrival
-			try {
-				titleStartKey.value = Date.now();
-			} catch {
-				/* ignore */
-			}
-			// Ensure any previous title-typing cache is cleared for auth pages
-			try {
-				const ls = globalThis.localStorage;
-				ls?.removeItem("typetitle:/login|Log in");
-				ls?.removeItem("typetitle:/signup|Sign Up");
-			} catch {
-				/* ignore */
-			}
-		}),
-	);
+	const auth = useAuthPage({ title: "Sign Up" });
 
 	const [, { Form: MForm, Field }] = useForm<SignupForm>({
 		loader: useFormLoader(),
@@ -92,15 +52,6 @@ export default component$(() => {
 	const emailTaken = useSignal(false);
 	const emailEditing = useSignal(false);
 	const passwordEditing = useSignal(false);
-
-	// Ensure the title types on arrival/resume (belt-and-suspenders with qvisible)
-	useTask$(() => {
-		try {
-			titleStartKey.value = Date.now();
-		} catch {
-			/* ignore */
-		}
-	});
 
 	// submission state for the signup form
 	const submitting = useSignal(false);
@@ -130,8 +81,7 @@ export default component$(() => {
 		} catch (err: unknown) {
 			const status =
 				(err as { status?: number; response?: { status?: number } })?.status ??
-				(err as { status?: number; response?: { status?: number } })?.response
-					?.status ??
+				(err as { status?: number; response?: { status?: number } })?.response?.status ??
 				null;
 			if (status === 429) {
 				usernameAvailable.value = null;
@@ -148,8 +98,6 @@ export default component$(() => {
 			checkingUsername.value = false;
 		}
 	});
-
-	// submission state defined above for handler closures
 
 	const onSubmit$ = $(async (values: SignupForm) => {
 		await new Promise((resolve) => setTimeout(resolve, 0));
@@ -202,30 +150,28 @@ export default component$(() => {
 					await nav("/profile");
 				}
 				return;
-			} else {
-				const body: { message?: string; error?: string } | null =
-					isJSON && parsed && typeof parsed === "object"
-						? (parsed as { message?: string; error?: string })
-						: null;
-				const msg =
-					body?.message ??
-					body?.error ??
-					(res.status === 409
-						? "Username or email already taken"
-						: `Signup failed (status ${res.status})`);
-				serverError.value = msg;
-				if (res.status === 409) {
-					const lower = String(
-						body?.message || body?.error || "",
-					).toLowerCase();
-					if (lower.includes("username")) {
-						usernameTaken.value = true;
-						cardError.value = true;
-						usernameAvailable.value = false;
-					} else if (lower.includes("email")) {
-						emailTaken.value = true;
-						cardError.value = true;
-					}
+			}
+
+			const body: { message?: string; error?: string } | null =
+				isJSON && parsed && typeof parsed === "object"
+					? (parsed as { message?: string; error?: string })
+					: null;
+			const msg =
+				body?.message ??
+				body?.error ??
+				(res.status === 409
+					? "Username or email already taken"
+					: `Signup failed (status ${res.status})`);
+			serverError.value = msg;
+			if (res.status === 409) {
+				const lower = String(body?.message || body?.error || "").toLowerCase();
+				if (lower.includes("username")) {
+					usernameTaken.value = true;
+					cardError.value = true;
+					usernameAvailable.value = false;
+				} else if (lower.includes("email")) {
+					emailTaken.value = true;
+					cardError.value = true;
 				}
 			}
 		} catch {
@@ -235,54 +181,21 @@ export default component$(() => {
 		}
 	});
 
-	// no-op
-
 	return (
 		<main
 			id="signup-root"
 			class="grid min-h-screen place-items-center p-6 pt-20 md:pt-24"
 		>
-			<div
-				class="w-full max-w-2xl"
-				ref={(el) => {
-					authContainer.value = el as HTMLElement;
-				}}
-			>
-				<div class="mb-4">
-					<BackButton class="mb-2" fallbackHref="/login" />
-					<TypeTitle
-						text={titleText.value}
-						class="text-3xl font-semibold tracking-tight"
-						startDelayMs={200}
-						speedMs={45}
-						suppressTyping={false}
-						cache={false}
-						resetOnReload
-						startKey={titleStartKey.value}
-						eraseKey={eraseKey.value}
-						onErased$={$(() => {
-							if (switchingTo.value === "login") {
-								const navDelay = 180;
-								setTimeout(() => {
-									try {
-										void nav("/login");
-									} catch {
-										/* ignore */
-									}
-								}, navDelay);
-							}
-						})}
-					/>
-					<p
-						class="text-base-content/70 mt-2"
-						ref={(el) => {
-							descText.value = el as HTMLElement;
-						}}
-					>
-						Create your account. Please enter your details.
-					</p>
-				</div>
-				<div class="mt-4" ref={formWrap}>
+			<div class="w-full max-w-2xl" ref={auth.setAuthContainer}>
+				<AuthHeader
+					backHref="/login"
+					title={auth.titleText.value}
+					description="Create your account. Please enter your details."
+					titleStartKey={auth.titleStartKey.value}
+					eraseKey={auth.eraseKey.value}
+					setDescription={auth.setDescription}
+				/>
+				<div class="mt-4" ref={auth.setFormWrap}>
 					<AuthCard borderless error={cardError.value}>
 						<MForm onSubmit$={onSubmit$}>
 							{serverError.value ? (
@@ -296,7 +209,7 @@ export default component$(() => {
 										<label
 											class="label"
 											aria-label="Username"
-											for={(props as any)?.id as string}
+											for={(props as { id?: string })?.id ?? undefined}
 										>
 											<span class="label-text">Username</span>
 										</label>
@@ -395,7 +308,7 @@ export default component$(() => {
 										<label
 											class="label"
 											aria-label="Email"
-											for={(props as any)?.id as string}
+											for={(props as { id?: string })?.id ?? undefined}
 										>
 											<span class="label-text">Email</span>
 										</label>
@@ -410,10 +323,13 @@ export default component$(() => {
 														? field.error
 														: "you@example.com"
 											}
-											class={`pill-input w-full ${emailTaken.value || (!!field.error && !emailEditing.value) ? "is-warning ring-warning text-warning ring-1" : ""}`}
+											class={`pill-input w-full ${
+												emailTaken.value || (!!field.error && !emailEditing.value)
+													? "is-warning ring-warning text-warning ring-1"
+													: ""
+											}`}
 											aria-invalid={
-												emailTaken.value ||
-												(!!field.error && !emailEditing.value)
+												emailTaken.value || (!!field.error && !emailEditing.value)
 													? "true"
 													: undefined
 											}
@@ -463,7 +379,7 @@ export default component$(() => {
 										<label
 											class="label"
 											aria-label="Password"
-											for={(props as any)?.id as string}
+											for={(props as { id?: string })?.id ?? undefined}
 										>
 											<span class="label-text">Password</span>
 										</label>
@@ -478,8 +394,7 @@ export default component$(() => {
 											}
 											class={cn(
 												"pill-input w-full",
-												!passwordEditing.value &&
-													field.error &&
+												!passwordEditing.value && field.error &&
 													"is-warning ring-warning text-warning ring-1",
 											)}
 											required
@@ -540,7 +455,7 @@ export default component$(() => {
 								preventdefault:click
 								onClick$={$((e: Event) => {
 									e.preventDefault();
-									const el = formWrap.value;
+									const el = auth.formWrap.value;
 									if (el) {
 										// Quick fade for responsiveness
 										void animateMotion(
@@ -553,7 +468,7 @@ export default component$(() => {
 											},
 										);
 									}
-									const desc = descText.value;
+									const desc = auth.description.value;
 									if (desc) {
 										void animateMotion(
 											desc,
@@ -574,10 +489,8 @@ export default component$(() => {
 									// Fast safety fallback: if SPA nav fails, force navigation
 									setTimeout(() => {
 										try {
-											if (
-												(globalThis.location?.pathname || "") === "/signup" ||
-												(globalThis.location?.pathname || "") === "/signup/"
-											) {
+											const path = globalThis.location?.pathname || "";
+											if (path === "/signup" || path === "/signup/") {
 												globalThis.location.assign("/login/");
 											}
 										} catch {

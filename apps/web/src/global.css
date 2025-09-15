@@ -1,9 +1,9 @@
 /* src/global.css */
 @import "tailwindcss";
 /* Load Tailwind plugins (Tailwind v4 style) */
-/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind plugin directive */
+/* stylelint-disable-next-line at-rule-no-unknown */
 @plugin "daisyui";
-/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind plugin directive */
+/* stylelint-disable-next-line at-rule-no-unknown */
 @plugin "tailwindcss-animate";
 /* Fallback include: In some preview/proxy setups Tailwind's @plugin processing can be skipped.
    Import DaisyUI's prebuilt CSS to ensure components (e.g., .btn) and theme variables exist. */
@@ -211,8 +211,8 @@ html[data-theme="oled"] body {
 /* Light modes: flat light-purple background; purge decorative layers */
 html[data-theme="light"] body,
 html[data-theme="white"] body {
-	background-color: #f3e8ff !important; /* violet-100 */
-	background-image: none !important;
+	background-color: #f3e8ff; /* violet-100 */
+	background-image: none;
 }
 /* Light theme: provide a visible, non-animated fallback directly on body so
    the page never looks plain white, even if ::before is not painted or OKLCH
@@ -229,7 +229,7 @@ html[data-theme="oled"] .oled-glass {
 }
 
 ::selection {
-	background: color-mix(in oklab, #c7b7ff 35%, black);
+	background-color: color-mix(in oklab, #c7b7ff 35%, black);
 	color: #000;
 }
 
@@ -245,7 +245,7 @@ html[data-theme="white"] ::selection {
 
 html[data-theme="dark"] ::selection,
 html[data-theme="oled"] ::selection {
-	background: color-mix(in oklab, #c7b7ff 35%, black);
+	background-color: color-mix(in oklab, #c7b7ff 35%, black);
 	color: #fff;
 }
 
@@ -350,18 +350,18 @@ html[data-theme="white"] .theme-icon-moon {
 html[data-theme="light"] body::before,
 html[data-theme="white"] body::before {
 	content: "";
-	display: none !important;
-	background: none !important;
-	animation: none !important;
+	display: none;
+	background: none;
+	animation: none;
 }
 
 /* Prefer theme-driven OKLCH when supported */
 @supports (color: oklch(50% 0.2 260)) {
 	html[data-theme="light"] body::before,
 	html[data-theme="white"] body::before {
-		display: none !important;
-		background: none !important;
-		animation: none !important;
+		display: none;
+		background: none;
+		animation: none;
 	}
 }
 
@@ -520,13 +520,13 @@ html[data-theme="white"] [data-glass-nav] .glass-surface {
 /* Reduce grain over the nav so icons stay crisp */
 [data-glass-nav] .with-grain::after {
 	/* Remove texture on the nav; keep glass perfectly clean */
-	display: none !important;
+	display: none;
 }
 
 /* Keep SVG icons sharp inside glass containers */
 [data-glass-nav] svg,
 [data-glass-nav] svg * {
-	filter: none !important;
+	filter: none;
 	shape-rendering: geometricPrecision;
 	vector-effect: non-scaling-stroke;
 }
@@ -573,15 +573,15 @@ html:has(#signup-root) #content {
 html:has(#login-root) #scroll-inner,
 html:has(#signup-root) #scroll-inner {
 	min-height: 100dvh; /* viewport height including mobile UI */
-	padding-bottom: 0 !important; /* remove reserved space for bottom nav */
+	padding-bottom: 0; /* remove reserved space for bottom nav */
 }
 #login-root,
 #signup-root {
 	min-height: 100dvh;
 	display: grid;
 	place-items: center;
-	padding-top: 0 !important;
-	padding-bottom: 0 !important;
+	padding-top: 0;
+	padding-bottom: 0;
 }
 
 /* Ensure readable text on acrylic surfaces in both themes */
@@ -1291,10 +1291,10 @@ html[data-theme="oled"] {
 	/* Fallback: solid token color if color-mix unsupported */
 	background-color: oklch(var(--av-token));
 }
-@supports (background: color-mix(in oklch, white, black)) {
+@supports (background-color: color-mix(in oklch, white, black)) {
 	.pastel-avatar[data-tone] {
 		/* Mix with theme base background for a light/pastel shade */
-		background: color-mix(
+		background-color: color-mix(
 			in oklch,
 			oklch(var(--av-token)) 28%,
 			oklch(var(--b1))
@@ -1389,15 +1389,15 @@ html[data-theme="white"] .hero-badges .badge.badge-outline {
 html[data-theme="light"] .hero-badges .badge.badge-primary.badge-outline,
 html[data-theme="white"] .hero-badges .badge.badge-primary.badge-outline {
 	border-color: oklch(var(--p));
-	background: color-mix(in oklch, oklch(var(--p)) 18%, oklch(var(--b1)));
+	background-color: color-mix(in oklch, oklch(var(--p)) 18%, oklch(var(--b1)));
 }
 html[data-theme="light"] .hero-badges .badge.badge-secondary.badge-outline,
 html[data-theme="white"] .hero-badges .badge.badge-secondary.badge-outline {
 	border-color: oklch(var(--s));
-	background: color-mix(in oklch, oklch(var(--s)) 18%, oklch(var(--b1)));
+	background-color: color-mix(in oklch, oklch(var(--s)) 18%, oklch(var(--b1)));
 }
 html[data-theme="light"] .hero-badges .badge.badge-warning.badge-outline,
 html[data-theme="white"] .hero-badges .badge.badge-warning.badge-outline {
 	border-color: oklch(var(--wa));
-	background: color-mix(in oklch, oklch(var(--wa)) 22%, oklch(var(--b1)));
+	background-color: color-mix(in oklch, oklch(var(--wa)) 22%, oklch(var(--b1)));
 }

@@ -33,7 +33,7 @@ export default component$(() => {
         try {
           const res = await fetch('/api/push/public-key', { headers: { Accept: 'application/json' } });
           if (res.ok) {
-            const j = await res.json().catch(() => null) as any;
+            const j = (await res.json().catch(() => null)) as { publicKey?: string } | null;
             if (j && typeof j.publicKey === 'string' && j.publicKey.length > 0) vapidKey = j.publicKey;
           }
         } catch {}

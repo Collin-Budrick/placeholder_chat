@@ -1,6 +1,6 @@
 import { $, component$, useSignal, useVisibleTask$ } from '@builder.io/qwik';
-import { postJson } from '~/lib/http';
 import { csrfHeader } from '~/lib/csrf';
+import { postJson } from '~/lib/http';
 
 export default component$(() => {
   const supported = typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
@@ -38,7 +38,7 @@ export default component$(() => {
         try {
           const res = await fetch('/api/push/public-key', { headers: { Accept: 'application/json' } });
           if (res.ok) {
-            const j = await res.json().catch(() => null) as any;
+            const j = (await res.json().catch(() => null)) as { publicKey?: string } | null;
             if (j && typeof j.publicKey === 'string' && j.publicKey.length > 0) key = j.publicKey;
           }
         } catch {}
@@ -49,8 +49,9 @@ export default component$(() => {
       // send to backend
       await postJson('/api/push/subscribe', sub, { headers: { ...csrfHeader() } });
       enabled.value = true;
-    } catch (e: any) {
-      error.value = String(e?.message || e);
+    } catch (e: unknown) {
+      const message = (e as { message?: unknown })?.message;
+      error.value = String(message ?? e);
     } finally {
       busy.value = false;
     }
@@ -69,8 +70,9 @@ export default component$(() => {
         await sub.unsubscribe();
       }
       enabled.value = false;
-    } catch (e: any) {
-      error.value = String(e?.message || e);
+    } catch (e: unknown) {
+      const message = (e as { message?: unknown })?.message;
+      error.value = String(message ?? e);
     } finally {
       busy.value = false;
     }
@@ -89,9 +91,9 @@ export default component$(() => {
               {error.value ? <p class="text-error text-sm">{error.value}</p> : null}
               <div class="flex items-center gap-2">
                 {!enabled.value ? (
-                  <button disabled={busy.value} onClick$={doSubscribe} class="btn btn-primary btn-sm">Enable</button>
+                  <button type="button" disabled={busy.value} onClick$={doSubscribe} class="btn btn-primary btn-sm">Enable</button>
                 ) : (
-                  <button disabled={busy.value} onClick$={doUnsubscribe} class="btn btn-outline btn-sm">Disable</button>
+                  <button type="button" disabled={busy.value} onClick$={doUnsubscribe} class="btn btn-outline btn-sm">Disable</button>
                 )}
                 <span class="text-xs opacity-70">Permission: {hasPermission.value}</span>
               </div>

@@ -19,6 +19,13 @@ function __getFakerStarted(): { v: boolean } {
 
 type User = { id: string; name: string; email: string };
 
+const MAX_USERS = 3;
+const SKELETON_SHAPES: Array<{ name: string; email: string }> = [
+	{ name: "w-24", email: "w-40" },
+	{ name: "w-20", email: "w-36" },
+	{ name: "w-28", email: "w-44" },
+];
+
 const FakerDemo = component$(() => {
 	const state = useStore<{ users: User[] }>({ users: [] });
 	const started = __getFakerStarted();
@@ -35,15 +42,13 @@ const FakerDemo = component$(() => {
 				name: faker.person.fullName(),
 				email: faker.internet.email(),
 			});
-			// Emit one immediately for fast feedback
 			state.users = [gen()];
-			// Stream the rest in small idle/time-sliced chunks
-			const rest = 2; // total 3 users (1 now + 2 later)
+			const rest = Math.max(0, MAX_USERS - 1);
 			let remaining = rest;
 			const enqueueNext = () => {
 				if (remaining <= 0) return;
 				remaining -= 1;
-				state.users = [...state.users, gen()];
+				state.users = [...state.users, gen()].slice(0, MAX_USERS);
 				if (remaining > 0) schedule();
 			};
 			const schedule = () => {
@@ -118,29 +123,38 @@ const FakerDemo = component$(() => {
 	return (
 		<div class="space-y-2">
 			<h2 class="text-xl font-semibold">Faker</h2>
-			<ul class="space-y-1">
-				{state.users.length === 0 ? (
-					<>
-						<li class="flex items-center gap-3">
-							<div class="skeleton h-3 w-24 rounded"></div>
-							<div class="skeleton h-3 w-40 rounded"></div>
+			<ul class="space-y-1.5">
+				{Array.from({ length: MAX_USERS }).map((_, index) => {
+					const user = state.users[index];
+					if (!user) {
+						const shape =
+							SKELETON_SHAPES[index] ??
+							SKELETON_SHAPES[SKELETON_SHAPES.length - 1];
+						return (
+							<li
+								key={`placeholder-${index}`}
+								class="min-h-[1.75rem]"
+							>
+								<div class="grid min-h-[1.75rem] grid-cols-[minmax(0,auto)_auto_minmax(0,1fr)] items-center gap-x-3">
+									<div class={`skeleton h-3 ${shape.name} rounded`}></div>
+									<div class="skeleton h-3 w-4 rounded"></div>
+									<div class={`skeleton h-3 ${shape.email} rounded`}></div>
+								</div>
+							</li>
+						);
+					}
+					return (
+						<li key={user.id} class="min-h-[1.75rem]">
+							<div class="grid min-h-[1.75rem] grid-cols-[minmax(0,auto)_auto_minmax(0,1fr)] items-center gap-x-2 text-sm text-zinc-300">
+								<span class="min-w-0 truncate font-medium">{user.name}</span>
+								<span class="text-zinc-500">—</span>
+								<span class="min-w-0 truncate text-xs text-zinc-400">
+									{user.email}
+								</span>
+							</div>
 						</li>
-						<li class="flex items-center gap-3">
-							<div class="skeleton h-3 w-20 rounded"></div>
-							<div class="skeleton h-3 w-36 rounded"></div>
-						</li>
-						<li class="flex items-center gap-3">
-							<div class="skeleton h-3 w-28 rounded"></div>
-							<div class="skeleton h-3 w-44 rounded"></div>
-						</li>
-					</>
-				) : (
-					state.users.map((u) => (
-						<li key={u.id} class="text-sm text-zinc-300">
-							{u.name} — <span class="text-zinc-400">{u.email}</span>
-						</li>
-					))
-				)}
+					);
+				})}
 			</ul>
 		</div>
 	);

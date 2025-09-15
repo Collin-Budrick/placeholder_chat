@@ -1,13 +1,12 @@
 /// <reference lib="webworker" />
 /* eslint-disable no-restricted-globals */
-import { setupServiceWorker } from '@builder.io/qwik-city/service-worker';
-import { precacheAndRoute, cleanupOutdatedCaches, matchPrecache } from 'workbox-precaching';
+import { setupServiceWorker } from '@builder.io/qwik-city/service-worker';import { BackgroundSyncPlugin } from 'workbox-background-sync';
+import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from 'workbox-precaching';
 import { registerRoute, setCatchHandler } from 'workbox-routing';
-import { NetworkFirst, StaleWhileRevalidate, CacheFirst } from 'workbox-strategies';
-import { BackgroundSyncPlugin } from 'workbox-background-sync';
+import { CacheFirst, NetworkFirst, StaleWhileRevalidate } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 
-declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: any };
+declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: Array<unknown> };
 
 // Initialize Qwik City's service worker hooks (routing-aware)
 setupServiceWorker();
@@ -82,25 +81,25 @@ registerRoute(
 
 // API background sync for simple POST actions (likes/comments/cart). Keep narrow to avoid sensitive endpoints.
 try {
+  const notifyQueue = (type: 'bg-sync:queued' | 'bg-sync:replayed') => {
+    try {
+      const bc = new BroadcastChannel('app-events');
+      bc.postMessage({ type, queue: 'api-queue' });
+      bc.close();
+    } catch {}
+  };
   const apiQueue = new BackgroundSyncPlugin('api-queue', {
     maxRetentionTime: 24 * 60,
-    callbacks: {
-      queueDidReplay: async () => {
-        try {
-          const bc = new BroadcastChannel('app-events');
-          bc.postMessage({ type: 'bg-sync:replayed', queue: 'api-queue' });
-          bc.close();
-        } catch {}
-      },
-      requestWillEnqueue: async () => {
-        try {
-          const bc = new BroadcastChannel('app-events');
-          bc.postMessage({ type: 'bg-sync:queued', queue: 'api-queue' });
-          bc.close();
-        } catch {}
-      },
+    onSync: async ({ queue }) => {
+      await queue.replayRequests();
+      notifyQueue('bg-sync:replayed');
     },
   });
+  const originalFetchDidFail = apiQueue.fetchDidFail?.bind(apiQueue);
+  apiQueue.fetchDidFail = async (options) => {
+    notifyQueue('bg-sync:queued');
+    return originalFetchDidFail ? originalFetchDidFail(options) : undefined;
+  };
   registerRoute(
     ({ url, request }) =>
       url.origin === self.location.origin &&
@@ -116,7 +115,9 @@ try {
 
 // Offline fallback for navigations
 setCatchHandler(async ({ event }) => {
-  if (event.request.mode === 'navigate') {
+  const fetchEvent = 'request' in event ? (event as FetchEvent) : undefined;
+  const request = fetchEvent?.request;
+  if (request?.mode === 'navigate') {
     try {
       const resp = await matchPrecache('/offline.html');
       if (resp) return resp;
@@ -126,44 +127,56 @@ setCatchHandler(async ({ event }) => {
 });
 
 // Push Notifications: display basic notifications from server payload
-self.addEventListener('push', (event) => {
-  try {
-    const data = (event.data && event.data.json && event.data.json()) || {};
-    const title = data.title || 'Notification';
-    const options: NotificationOptions = {
-      body: data.body || '',
-      icon: data.icon || '/favicon.svg',
-      badge: data.badge || '/favicon.svg',
-      data: { url: data.url || '/', ...data },
-    };
-    event.waitUntil(self.registration.showNotification(title, options));
-  } catch {
-    // If JSON parse fails, show a generic notification
-    const text = event.data ? String(event.data) : 'Update available';
-    event.waitUntil(self.registration.showNotification('Notification', { body: text }));
-  }
+self.addEventListener('push', (event: PushEvent) => {
+  event.waitUntil((async () => {
+    try {
+      const payload = event.data?.json?.() as Record<string, unknown> | undefined;
+      const record = (payload && typeof payload === 'object') ? payload as Record<string, unknown> : {};
+      const titleValue = record.title;
+      const bodyValue = record.body;
+      const iconValue = record.icon;
+      const badgeValue = record.badge;
+      const urlValue = record.url;
+      const title = typeof titleValue === 'string' && titleValue.length > 0 ? titleValue : 'Notification';
+      const options: NotificationOptions = {
+        body: typeof bodyValue === 'string' ? bodyValue : '',
+        icon: typeof iconValue === 'string' ? iconValue : '/favicon.svg',
+        badge: typeof badgeValue === 'string' ? badgeValue : '/favicon.svg',
+        data: { url: typeof urlValue === 'string' ? urlValue : '/', ...record },
+      };
+      await self.registration.showNotification(title, options);
+    } catch {
+      try {
+        const fallback = (await event.data?.text?.()) ?? 'Update available';
+        await self.registration.showNotification('Notification', { body: fallback });
+      } catch {
+        await self.registration.showNotification('Notification', { body: 'Update available' });
+      }
+    }
+  })());
 });
 
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || '/';
-  event.waitUntil(
-    (async () => {
-      const allClients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
-      const client = allClients.find((c: any) => 'focus' in c);
-      if (client) {
-        (client as any).navigate(url);
-        return (client as any).focus();
-      }
-      return self.clients.openWindow(url);
-    })(),
-  );
+  const data = event.notification.data as { url?: string } | undefined;
+  const url = typeof data?.url === 'string' ? data.url : '/';
+  event.waitUntil((async () => {
+    const allClients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+    const windowClient = allClients.find((client): client is WindowClient => 'focus' in client);
+    if (windowClient) {
+      try {
+        await windowClient.navigate?.(url);
+      } catch {}
+      return windowClient.focus();
+    }
+    return self.clients.openWindow(url);
+  })());
 });
 
 // Support immediate activation when prompted from the client
-self.addEventListener('message', (event) => {
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
   try {
-    if ((event.data as any) === 'SKIP_WAITING') {
+    if (typeof event.data === 'string' && event.data === 'SKIP_WAITING') {
       void self.skipWaiting();
     }
   } catch {}

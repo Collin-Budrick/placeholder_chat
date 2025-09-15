@@ -208,7 +208,9 @@ export default component$(() => {
 							);
 						} catch {}
 						try {
-							els.forEach((el) => (el.style.willChange = ""));
+							els.forEach((el) => {
+								el.style.willChange = "";
+							});
 						} catch {}
 						try {
 							io.disconnect();
@@ -219,7 +221,9 @@ export default component$(() => {
 			{ root: null, threshold: 0.15 },
 		);
 		try {
-			els.forEach((el) => io.observe(el));
+			els.forEach((el) => {
+				io.observe(el);
+			});
 		} catch {}
 		return () => {
 			try {
@@ -313,7 +317,7 @@ export default component$(() => {
 												},
 												at: 0,
 											},
-										] as const)
+										])
 									: []),
 								...(right
 									? ([
@@ -326,7 +330,7 @@ export default component$(() => {
 												},
 												at: 0,
 											},
-										] as const)
+										])
 									: []),
 							]);
 						} catch {}
@@ -345,7 +349,9 @@ export default component$(() => {
 			{ root: null, threshold: 0.15 },
 		);
 		try {
-			els.forEach((el) => io.observe(el));
+			els.forEach((el) => {
+				io.observe(el);
+			});
 		} catch {}
 		return () => {
 			try {
@@ -590,22 +596,21 @@ export default component$(() => {
 							>
 								{(() => {
 									const words = ["Social", "messaging,", "reimagined."];
-									const nodes: any[] = [];
-									words.forEach((w, i) => {
-										nodes.push(
-											<span
-												class="word-outer inline-block overflow-hidden align-baseline"
-												key={`w-${i}`}
-												style={{ paddingBottom: "0.12em" }}
-											>
+									return words.map((word, index) => (
+										<span
+											class="word-outer inline-block overflow-hidden align-baseline"
+											key={word}
+											style={{
+										paddingBottom: "0.12em",
+										marginRight: index < words.length - 1 ? "0.35ch" : undefined,
+									}}
+										>
 												<span class="word inline-block will-change-transform">
-													{w}
+													{word}
 												</span>
-											</span>,
-										);
-										if (i < words.length - 1) nodes.push(" ");
-									});
-									return nodes;
+												{index < words.length - 1 ? " " : null}
+										</span>
+									));
 								})()}
 							</h1>
 							<p
@@ -901,7 +906,6 @@ export default component$(() => {
 			{/* Stats (Preact island animates counters when visible) */}
 			<section class="mx-auto max-w-7xl px-6 py-10">
 				{/* Hydrate the Preact island only on visibility to avoid SSR rendering warnings */}
-				{/* @ts-expect-error Qwik client directive */}
 				<PreactStatsIsland client:visible />
 			</section>
 		</div>

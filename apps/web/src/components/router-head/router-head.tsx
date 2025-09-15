@@ -66,7 +66,7 @@ export const RouterHead = component$(() => {
 	}
 
 	const stylesSuspicious = head.styles.some(
-		(s) => hasSymbolValue(s.props as any) || typeof s.style !== "string",
+		(s) => hasSymbolValue(s.props as Record<string, unknown> | undefined) || typeof s.style !== "string",
 	);
 
 	return (
@@ -168,7 +168,7 @@ export const RouterHead = component$(() => {
 				: head.styles.map((s) => {
 						if (
 							process.env.NODE_ENV !== "production" &&
-							hasSymbolValue(s.props as any)
+							hasSymbolValue(s.props as Record<string, unknown> | undefined)
 						) {
 							console.warn(
 								"[router-head] style props contained a Symbol; dropping",
@@ -183,7 +183,7 @@ export const RouterHead = component$(() => {
 						return (
 							<style
 								key={safeKey(s.key)}
-								{...sanitizeProps(s.props as any)}
+								{...sanitizeProps(s.props as Record<string, unknown> | undefined)}
 								{...extra}
 							/>
 						);
