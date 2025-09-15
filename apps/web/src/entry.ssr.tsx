@@ -11,8 +11,8 @@
  *
  */
 import {
-    type RenderToStreamOptions,
-    renderToStream,
+	type RenderToStreamOptions,
+	renderToStream,
 } from "@builder.io/qwik/server";
 import Root from "./root";
 
@@ -24,53 +24,59 @@ import Root from "./root";
 // Dev-only: optional warn tracing to locate source of JSX warnings.
 // Disabled by default; enable by setting VITE_DEBUG_QWIK_WARN=1.
 try {
-    const dev = import.meta.env.DEV;
-    const env = (import.meta as unknown as { env?: Record<string, string> })
-        ?.env as Record<string, string> | undefined;
-    // Suppress the noisy dev-only skip-render warnings by default in dev.
-    const suppressSkip = dev && (env?.VITE_SUPPRESS_QWIK_SKIP_WARN ?? "1") !== "0";
-    if (suppressSkip) {
-        const origWarn = console.warn.bind(console);
-        console.warn = (...args: unknown[]) => {
-            try {
-                const msg = String(args?.[0] ?? "");
-                if (/unsupported value was passed to the JSX/i.test(msg) && /Symbol\(skip render\)/i.test(msg)) {
-                    return; // drop
-                }
-            } catch {}
-            return origWarn(...args);
-        };
-    }
-    const enabled = dev && env?.VITE_DEBUG_QWIK_WARN === "1";
-    if (enabled) {
-        const origWarn = console.warn.bind(console);
-        let inWarn = false;
-        console.warn = (...args: unknown[]) => {
-            try {
-                if (inWarn) return origWarn(...args);
-                inWarn = true;
-                const msg = String(args?.[0] ?? "");
-                const isSkip = /\bSymbol\(skip render\)/i.test(msg);
-                const isUnsupported = /unsupported value was passed to the JSX/i.test(msg);
-                if (isSkip || isUnsupported) {
-                    const err = new Error("QWIK JSX skip render trace");
-                    origWarn("[trace]", err.stack?.split("\n").slice(0, 8).join("\n"));
-                    // Suppress the noisy dev-only warning
-                    return;
-                }
-            } catch {}
-            finally {
-                inWarn = false;
-            }
-            return origWarn(...args);
-        };
-    }
+	const dev = import.meta.env.DEV;
+	const env = (import.meta as unknown as { env?: Record<string, string> })
+		?.env as Record<string, string> | undefined;
+	// Suppress the noisy dev-only skip-render warnings by default in dev.
+	const suppressSkip =
+		dev && (env?.VITE_SUPPRESS_QWIK_SKIP_WARN ?? "1") !== "0";
+	if (suppressSkip) {
+		const origWarn = console.warn.bind(console);
+		console.warn = (...args: unknown[]) => {
+			try {
+				const msg = String(args?.[0] ?? "");
+				if (
+					/unsupported value was passed to the JSX/i.test(msg) &&
+					/Symbol\(skip render\)/i.test(msg)
+				) {
+					return; // drop
+				}
+			} catch {}
+			return origWarn(...args);
+		};
+	}
+	const enabled = dev && env?.VITE_DEBUG_QWIK_WARN === "1";
+	if (enabled) {
+		const origWarn = console.warn.bind(console);
+		let inWarn = false;
+		console.warn = (...args: unknown[]) => {
+			try {
+				if (inWarn) return origWarn(...args);
+				inWarn = true;
+				const msg = String(args?.[0] ?? "");
+				const isSkip = /\bSymbol\(skip render\)/i.test(msg);
+				const isUnsupported = /unsupported value was passed to the JSX/i.test(
+					msg,
+				);
+				if (isSkip || isUnsupported) {
+					const err = new Error("QWIK JSX skip render trace");
+					origWarn("[trace]", err.stack?.split("\n").slice(0, 8).join("\n"));
+					// Suppress the noisy dev-only warning
+					return;
+				}
+			} catch {
+			} finally {
+				inWarn = false;
+			}
+			return origWarn(...args);
+		};
+	}
 } catch {}
 
 export default function (opts: RenderToStreamOptions) {
-    // Server shims removed - rely on component-level guards (typeof window / useTask$)
+	// Server shims removed - rely on component-level guards (typeof window / useTask$)
 
-    return renderToStream(<Root />, {
+	return renderToStream(<Root />, {
 		...opts,
 		// Keep preload pressure conservative; be stricter in production to curb unused JS
 		preloader: (() => {

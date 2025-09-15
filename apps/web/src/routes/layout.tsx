@@ -1,6 +1,5 @@
 import { component$, isDev, Slot } from "@builder.io/qwik";
-import type { RequestHandler } from "@builder.io/qwik-city";
-import type { DocumentHead } from "@builder.io/qwik-city";
+import type { DocumentHead, RequestHandler } from "@builder.io/qwik-city";
 import { useLocation } from "@builder.io/qwik-city";
 import AuthWarmup from "~/components/AuthWarmup";
 import GlassNavBar from "~/components/GlassNavBar";
@@ -230,14 +229,14 @@ export const onRequest: RequestHandler = (ev) => {
 // Default document head for all routes under this layout.
 // Individual routes can override title/meta as needed.
 export const head: DocumentHead = {
-  title: "Stack • Fast, modern messaging",
-  meta: [
-    {
-      name: "description",
-      content:
-        "Fast, modern chat app with Qwik SSR and a Rust gateway. Secure dev HTTPS via Traefik, realtime rooms, presence, and admin tools.",
-    },
-  ],
+	title: "Stack • Fast, modern messaging",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Fast, modern chat app with Qwik SSR and a Rust gateway. Secure dev HTTPS via Traefik, realtime rooms, presence, and admin tools.",
+		},
+	],
 };
 
 // Explicit list of static routes to prerender at build time

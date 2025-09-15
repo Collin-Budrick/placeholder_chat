@@ -337,16 +337,16 @@ export default component$(() => {
 													Promote
 												</button>
 
-								{u.role === "admin" ? (
-									<button
-										type="button"
-										class="btn btn-sm btn-warning"
-										onClick$={() => demote(u.id)}
-										disabled={busy.value === u.id}
-									>
-										Demote
-									</button>
-								) : null}
+												{u.role === "admin" ? (
+													<button
+														type="button"
+														class="btn btn-sm btn-warning"
+														onClick$={() => demote(u.id)}
+														disabled={busy.value === u.id}
+													>
+														Demote
+													</button>
+												) : null}
 
 												<button
 													type="button"

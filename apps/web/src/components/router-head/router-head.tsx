@@ -32,7 +32,9 @@ export const RouterHead = component$(() => {
 
 	const safeKey = (k: unknown): string | undefined => {
 		try {
-			return typeof k === "string" || typeof k === "number" ? String(k) : undefined;
+			return typeof k === "string" || typeof k === "number"
+				? String(k)
+				: undefined;
 		} catch {
 			return undefined;
 		}
@@ -51,7 +53,8 @@ export const RouterHead = component$(() => {
 	// In dev, short-circuit to a minimal head to avoid any noisy SSR sentinel warnings from dynamic head entries.
 	const dev = import.meta.env.DEV;
 	if (dev) {
-		const title = head.title && String(head.title).trim().length > 0 ? head.title : "Stack";
+		const title =
+			head.title && String(head.title).trim().length > 0 ? head.title : "Stack";
 		return (
 			<>
 				<title>{title}</title>
@@ -62,7 +65,9 @@ export const RouterHead = component$(() => {
 		);
 	}
 
-	const stylesSuspicious = head.styles.some((s) => hasSymbolValue(s.props as any) || typeof s.style !== 'string');
+	const stylesSuspicious = head.styles.some(
+		(s) => hasSymbolValue(s.props as any) || typeof s.style !== "string",
+	);
 
 	return (
 		<>
@@ -111,12 +116,12 @@ export const RouterHead = component$(() => {
 							href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
 							as="style"
 						/>
-                    <link
-                        rel="stylesheet"
-                        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
-                        media="all"
-                        crossOrigin="anonymous"
-                    />
+						<link
+							rel="stylesheet"
+							href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
+							media="all"
+							crossOrigin="anonymous"
+						/>
 						<noscript>
 							<link
 								rel="stylesheet"
@@ -132,7 +137,10 @@ export const RouterHead = component$(() => {
 			{/* View transitions CSS removed */}
 
 			{head.meta.map((m) => {
-				const { key, ...rest } = m as unknown as { key?: unknown } & Record<string, unknown>;
+				const { key, ...rest } = m as unknown as { key?: unknown } & Record<
+					string,
+					unknown
+				>;
 				return <meta key={safeKey(key)} {...sanitizeProps(rest)} />;
 			})}
 			{(() => {
@@ -148,19 +156,38 @@ export const RouterHead = component$(() => {
 			})()}
 
 			{head.links.map((l) => {
-				const { key, ...rest } = l as unknown as { key?: unknown } & Record<string, unknown>;
+				const { key, ...rest } = l as unknown as { key?: unknown } & Record<
+					string,
+					unknown
+				>;
 				return <link key={safeKey(key)} {...sanitizeProps(rest)} />;
 			})}
 
-			{stylesSuspicious ? null : head.styles.map((s) => {
-				if (process.env.NODE_ENV !== "production" && hasSymbolValue(s.props as any)) {
-					console.warn("[router-head] style props contained a Symbol; dropping");
-				}
-				const hasDS = Boolean(s.props?.dangerouslySetInnerHTML);
-				const dsValue = typeof s.style === "string" ? s.style : undefined;
-				const extra = hasDS || dsValue === undefined ? {} : { dangerouslySetInnerHTML: dsValue };
-				return <style key={safeKey(s.key)} {...sanitizeProps(s.props as any)} {...extra} />;
-			})}
+			{stylesSuspicious
+				? null
+				: head.styles.map((s) => {
+						if (
+							process.env.NODE_ENV !== "production" &&
+							hasSymbolValue(s.props as any)
+						) {
+							console.warn(
+								"[router-head] style props contained a Symbol; dropping",
+							);
+						}
+						const hasDS = Boolean(s.props?.dangerouslySetInnerHTML);
+						const dsValue = typeof s.style === "string" ? s.style : undefined;
+						const extra =
+							hasDS || dsValue === undefined
+								? {}
+								: { dangerouslySetInnerHTML: dsValue };
+						return (
+							<style
+								key={safeKey(s.key)}
+								{...sanitizeProps(s.props as any)}
+								{...extra}
+							/>
+						);
+					})}
 
 			{/* Avoid rendering head.scripts in SSR to prevent dev-only Symbol(skip render) warnings.
 			   Qwik will inject required framework scripts automatically. */}
