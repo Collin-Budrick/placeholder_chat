@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import dotenv from 'dotenv';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import url from 'node:url';
@@ -29,6 +30,9 @@ if (!repoRoot) {
 const manifestPath = path.join(repoRoot, 'apps', 'gateway', 'Cargo.toml');
 
 const env = { ...process.env };
+// Load .env files for convenience (root and apps/gateway)
+dotenv.config({ path: path.join(repoRoot, '.env') });
+dotenv.config({ path: path.join(repoRoot, 'apps', 'gateway', '.env') });
 // Set helpful dev defaults if not provided
 if (!env.CORS_ALLOW_ORIGINS || env.CORS_ALLOW_ORIGINS === '') {
   env.CORS_ALLOW_ORIGINS = 'http://127.0.0.1:5173,http://localhost:5173';

@@ -4,6 +4,7 @@ import { Link, useNavigate } from "@builder.io/qwik-city";
 import { csrfHeader } from "~/lib/csrf";
 import { logApi } from "~/lib/log";
 import AuthCard from "../../components/auth/AuthCard";
+import ManageNotifications from "~/components/pwa/ManageNotifications";
 export const prerender = true;
 
 export default component$(() => {
@@ -145,7 +146,7 @@ export default component$(() => {
 					</button>
 
 					{role.value === "admin" ? (
-						<div class="mt-4">
+						<div class="mt-4 grid grid-cols-1 gap-2">
 							<Link
 								href="/admin/users/"
 								prefetch="js"
@@ -154,8 +155,20 @@ export default component$(() => {
 							>
 								Manage Users
 							</Link>
+							<Link
+								href="/admin/push/"
+								prefetch="js"
+								class="btn btn-outline btn-sm w-full"
+								aria-label="Push Admin"
+							>
+								Push Admin
+							</Link>
 						</div>
 					) : null}
+
+					{/* Notifications toggle */}
+					{/* @ts-expect-error client directive for Qwik */}
+					<ManageNotifications client:visible />
 				</AuthCard>
 			) : (
 				<output

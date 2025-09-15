@@ -13,11 +13,13 @@ pub mod rooms;
 pub mod ws;
 pub mod logs;
 pub mod root;
+pub mod push;
 
 /// Merge all route groups into a single router.
 pub fn all() -> Router<AppState> {
     Router::new()
         .merge(root::router())
+        .merge(push::router())
         .merge(ws::router())
         .merge(rooms::router())
         .merge(logs::router())

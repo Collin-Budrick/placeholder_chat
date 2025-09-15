@@ -216,3 +216,16 @@ export async function apiFetch(
 		throw err;
 	}
 }
+
+// Lightweight JSON POST wrapper using the shared ofetch instance.
+export async function postJson(
+  path: string,
+  body: unknown,
+  opts?: { headers?: HeadersInit },
+): Promise<unknown> {
+  return api(path, {
+    method: 'POST',
+    body: body as Record<string, unknown>,
+    headers: opts?.headers,
+  });
+}

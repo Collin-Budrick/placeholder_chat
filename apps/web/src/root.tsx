@@ -2,6 +2,9 @@ import { component$, isDev } from "@builder.io/qwik";
 import { QwikCityProvider, RouterOutlet } from "@builder.io/qwik-city";
 import VelvetteInit from "~/components/integrations/VelvetteInit";
 import PWARegister from "~/components/pwa/PWARegister";
+import PushSubscribe from "~/components/pwa/PushSubscribe";
+import OnlineIndicator from "~/components/pwa/OnlineIndicator";
+import SyncToaster from "~/components/pwa/SyncToaster";
 import { RouterHead } from "./components/router-head/router-head";
 import "./global.css";
 // Ensure DaisyUI component styles are present even if Tailwind plugin processing
@@ -172,9 +175,24 @@ export default component$(() => {
             <PWARegister client:visible />
           ) : null;
         })()}
+        {(() => {
+          const env = (
+            import.meta as unknown as { env?: Record<string, string> }
+          )?.env as Record<string, string> | undefined;
+          return env?.VITE_ENABLE_PUSH === "1" ? (
+            // @ts-expect-error Qwik client directive
+            <PushSubscribe client:idle />
+          ) : null;
+        })()}
 				{/* RouterOutlet renders routes that include their own #content container.
             Avoid wrapping in another #content to keep View Transitions working. */}
 				<RouterOutlet />
+        {/* Offline notice overlay when navigator is offline */}
+        {/* @ts-expect-error Qwik client directive */}
+        <OnlineIndicator client:visible />
+        {/* Toasts for background sync events */}
+        {/* @ts-expect-error Qwik client directive */}
+        <SyncToaster client:visible />
 			</body>
 		</QwikCityProvider>
 	);

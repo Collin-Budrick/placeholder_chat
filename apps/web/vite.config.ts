@@ -314,6 +314,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
           registerType: "autoUpdate",
           // Ensure the plugin is enabled only when env toggled
           disable: false,
+          // Generate PNG icons from SVG if explicitly enabled; avoids requiring sharp deps by default
+          pwaAssets: {
+            disabled: (env.VITE_PWA_ASSETS !== "1"),
+            image: "public/favicon.svg",
+            includeManifestIcons: true,
+          },
           includeAssets: [
             "favicon.svg",
             "theme-init.js",

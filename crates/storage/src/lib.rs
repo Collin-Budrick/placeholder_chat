@@ -33,6 +33,10 @@ const SEQS_TABLE: TableDefinition<&str, Vec<u8>> = TableDefinition::new("seqs");
 const USERS_TABLE: TableDefinition<&str, Vec<u8>> = TableDefinition::new("users");
 const PRESENCE_TABLE: TableDefinition<&str, Vec<u8>> = TableDefinition::new("presence");
 const RATE_TABLE: TableDefinition<&str, Vec<u8>> = TableDefinition::new("rate");
+// Push subscriptions: key = endpoint, value = JSON { endpoint, keys: { p256dh, auth }, created_at }
+const PUSH_SUBS_TABLE: TableDefinition<&str, Vec<u8>> = TableDefinition::new("push_subs");
+// Secondary index: key = "<user_id>|<endpoint>", value = empty (or endpoint bytes for convenience)
+const PUSH_SUBS_BY_USER_TABLE: TableDefinition<&str, Vec<u8>> = TableDefinition::new("push_subs_by_user");
 
 // Additional tables for auth
 const CREDENTIALS_TABLE: TableDefinition<&str, Vec<u8>> = TableDefinition::new("credentials");
@@ -67,6 +71,8 @@ impl Storage {
             let _ = write_txn.open_table(USERS_TABLE)?;
             let _ = write_txn.open_table(PRESENCE_TABLE)?;
             let _ = write_txn.open_table(RATE_TABLE)?;
+            let _ = write_txn.open_table(PUSH_SUBS_TABLE)?;
+            let _ = write_txn.open_table(PUSH_SUBS_BY_USER_TABLE)?;
             // auth tables
             let _ = write_txn.open_table(CREDENTIALS_TABLE)?;
             let _ = write_txn.open_table(OAUTH_TABLE)?;
@@ -83,6 +89,119 @@ impl Storage {
 
     fn db_path(&self) -> PathBuf {
         self.base.join("db.redb")
+    }
+
+    /// Store or update a push subscription keyed by endpoint.
+    pub fn put_push_subscription(&self, endpoint: &str, sub_json: &Value) -> Result<()> {
+        let bytes = serde_json::to_vec(sub_json)?;
+        let write_txn = self.db.begin_write()?;
+        {
+            let mut table = write_txn.open_table(PUSH_SUBS_TABLE)?;
+            table.insert(endpoint, &bytes)?;
+        }
+        write_txn.commit()?;
+        Ok(())
+    }
+
+    /// Store or update a push subscription and (optionally) index it by user.
+    pub fn put_push_subscription_with_user(&self, endpoint: &str, user_id: Option<&str>, sub_json: &Value) -> Result<()> {
+        let bytes = serde_json::to_vec(sub_json)?;
+        let write_txn = self.db.begin_write()?;
+        {
+            let mut subs = write_txn.open_table(PUSH_SUBS_TABLE)?;
+            subs.insert(endpoint, &bytes)?;
+        }
+        if let Some(uid) = user_id {
+            let mut idx = write_txn.open_table(PUSH_SUBS_BY_USER_TABLE)?;
+            let key = format!("{}|{}", uid, endpoint);
+            idx.insert(key.as_str(), &endpoint.as_bytes().to_vec())?;
+        }
+        write_txn.commit()?;
+        Ok(())
+    }
+
+    /// List all push subscriptions (returns JSON values).
+    pub fn list_push_subscriptions(&self) -> Result<Vec<Value>> {
+        let read_txn = self.db.begin_read()?;
+        let table = read_txn.open_table(PUSH_SUBS_TABLE)?;
+        let mut out = Vec::new();
+        let iter = table.iter()?;
+        for pair in iter {
+            let (_k, v) = pair?;
+            let bytes = v.value();
+            if bytes.is_empty() { continue; }
+            if let Ok(val) = serde_json::from_slice::<Value>(bytes.as_slice()) {
+                out.push(val);
+            }
+        }
+        Ok(out)
+    }
+
+    /// Delete a push subscription by endpoint.
+    pub fn delete_push_subscription(&self, endpoint: &str) -> Result<()> {
+        // Try to read the user_id to clean up index entry
+        let maybe_user: Option<String> = {
+            let read_txn = self.db.begin_read()?;
+            let table = read_txn.open_table(PUSH_SUBS_TABLE)?;
+            match table.get(endpoint)? {
+                Some(v) => {
+                    let bytes = v.value();
+                    if bytes.is_empty() { None } else {
+                        let val: Value = serde_json::from_slice(bytes.as_slice()).unwrap_or(Value::Null);
+                        val.get("user_id").and_then(|v| v.as_str()).map(|s| s.to_string())
+                    }
+                }
+                None => None,
+            }
+        };
+
+        let write_txn = self.db.begin_write()?;
+        {
+            let mut subs = write_txn.open_table(PUSH_SUBS_TABLE)?;
+            let _ = subs.remove(endpoint);
+            if let Some(uid) = maybe_user {
+                let mut idx = write_txn.open_table(PUSH_SUBS_BY_USER_TABLE)?;
+                let key = format!("{}|{}", uid, endpoint);
+                let _ = idx.remove(key.as_str());
+            }
+        }
+        write_txn.commit()?;
+        Ok(())
+    }
+
+    /// List push subscriptions for a specific user (uses secondary index and loads the subs).
+    pub fn list_push_subscriptions_for_user(&self, user_id: &str) -> Result<Vec<Value>> {
+        let prefix = format!("{}|", user_id);
+        // Collect endpoints for the given user
+        let mut endpoints: Vec<String> = Vec::new();
+        {
+            let read_txn = self.db.begin_read()?;
+            let idx = read_txn.open_table(PUSH_SUBS_BY_USER_TABLE)?;
+            let iter = idx.iter()?;
+            for pair in iter {
+                let (k, _v) = pair?;
+                let key = k.value();
+                if key.starts_with(prefix.as_str()) {
+                    // value may contain endpoint or be empty; prefer parsing from key
+                    let endpoint = key[prefix.len()..].to_string();
+                    endpoints.push(endpoint);
+                }
+            }
+        }
+        // Load subs from main table
+        let read_txn = self.db.begin_read()?;
+        let subs = read_txn.open_table(PUSH_SUBS_TABLE)?;
+        let mut out: Vec<Value> = Vec::new();
+        for ep in endpoints {
+            if let Some(v) = subs.get(ep.as_str())? {
+                let bytes = v.value();
+                if bytes.is_empty() { continue; }
+                if let Ok(val) = serde_json::from_slice::<Value>(bytes.as_slice()) {
+                    out.push(val);
+                }
+            }
+        }
+        Ok(out)
     }
 
     /// Build a lexicographically sortable key for a message.
