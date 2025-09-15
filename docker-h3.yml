@@ -21,3 +21,4 @@ services:
     ports:
       - "5173:5173/tcp"
       - "${HTTP3_PORT:-5173}:${HTTP3_PORT:-5173}/udp"
+

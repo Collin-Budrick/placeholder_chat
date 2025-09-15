@@ -19,7 +19,7 @@ This repo is a multi‑package workspace. The most relevant packages/apps are:
 - `crates/*`: Rust workspace crates used by the gateway:
   - `crates/storage` (redb), `crates/auth` (JWT), `crates/bus` (pub/sub), `crates/rooms`, `crates/presence`, `crates/rate`, `crates/proto` (Cap’n Proto), `crates/ipc`.
 - `tokens/`: Cross‑platform design tokens source and generators.
-- `docker/`, `docker-compose*.yml`, `traefik/`: Dev/prod Docker images, Compose stacks, and HTTPS/HTTP3 reverse proxy.
+- `docker/`, `docker-*.yml`, `traefik/`: Dev/prod Docker images, Compose stacks, and HTTPS/HTTP3 reverse proxy.
 - `scripts/`: Bun scripts to orchestrate dev/prod, gateway, SSG watch/preview, and LAN TLS helpers.
 
 Notable web app toggles (via env):
@@ -141,7 +141,8 @@ This repo includes Bun-driven helper scripts and Compose files for both dev (wit
 Recommended first-time setup for trusted HTTPS on your LAN (Windows PowerShell step is optional but recommended):
 
 ```sh
-# 1) Generate a LAN-trusted dev certificate with mkcert (host machine)
+# 1) Generate a LAN‑trusted dev certificate with mkcert (host machine)
+#    Run this whenever your LAN IPv4 changes.
 bun run mkcert:lan
 
 # 2) Open firewall for TCP/UDP 5173 (Windows)
@@ -168,11 +169,7 @@ bun run docker:dev:ssg
 # Prod preview: SSG web on 5174, Traefik fronts HTTPS on 5173, gateway behind /api
 bun run docker:prod
 
-# Build gateway images with BuildKit + cargo-chef cache
-bun run docker:build:gateway:dev   # dev base (sccache, cargo)
-bun run docker:build:gateway:prod  # minimal runtime image
-
-# Force a clean rebuild of gateway images (still benefits from cache mounts)
+# Force a clean rebuild of the gateway container
 bun run docker:rebuild-gateway
 
 # Safely prune caches (prompts): BuildKit + named volumes (cargo-*/sccache)
@@ -182,20 +179,26 @@ bun scripts/docker-cache-prune.mjs --buildkit --yes
 bun scripts/docker-cache-prune.mjs --volumes  --yes
 bun scripts/docker-cache-prune.mjs --all      --dry-run
 
-# Legacy/advanced (optional)
-bun run docker:up      # base compose
-bun run docker:uph3    # base + HTTP/3 overlay
-bun run docker:devall  # monolithic dev-all compose
+Direct docker compose usage (optional):
+# Dev SSR stack
+docker compose -f docker-dev.yml up
+# Dev SSG + preview stack
+docker compose -f docker-dev-web.yml up
+# Prod-like preview stack
+docker compose -f docker-prod.yml up
 ```
 
 Ports and endpoints:
 - HTTPS entry (Traefik): `5173/tcp` (and `5173/udp` for HTTP/3). Visit `https://localhost:5173/` or `https://<LAN-IP>:5173/`.
 - Vite dev server (HTTP): `5174` (direct access: `http://localhost:5174/`).
 - Gateway service: proxied at `https://<LAN-IP>:5173/api`.
+ - On startup, a small `announce` sidecar prints friendly links to the terminal when Traefik is ready.
 
 TLS/certificates:
-- `bun run mkcert:lan` installs mkcert’s local CA (host) and generates `apps/web/certs/dev.(crt|key)` covering `localhost`, `127.0.0.1`, and your `PUBLIC_IP` from `.env`.
-- Traefik loads that cert and serves HTTPS for both dev and prod composes.
+- `bun run mkcert:lan` installs mkcert’s local CA (host) and generates `apps/web/certs/dev.(crt|key)` covering `localhost`, `127.0.0.1`, and your current LAN IPv4.
+- Run `bun run mkcert:lan` again if your LAN IP changes; certs and `.env` will refresh.
+- The Docker scripts also write `.env` `PUBLIC_IP`/`HMR_HOST` via `scripts/write-public-ip-env.mjs` before starting.
+- Traefik loads the dev cert and serves HTTPS for both dev and prod stacks.
 - For other devices, install mkcert’s root CA on those devices to avoid warnings (`mkcert -CAROOT`).
 
 ## Documentation

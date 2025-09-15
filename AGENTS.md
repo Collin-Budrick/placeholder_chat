@@ -138,8 +138,8 @@ Static assets are served by Bun in Docker and Vite during development. There is 
 ### Infra & Docker
 - `docker/web.Dockerfile`: Bun-based builder for Qwik app and static runner image (serves `dist` with Bun).
 - `docker/gateway.Dockerfile`: Multi-stage Rust build for gateway using cargo-chef and sccache; slim Debian runtime.
-- `docker-compose.dev-web.yml`: Dev stack with SSG builder, preview server, gateway, and Traefik (TLS/H3); routes `/` and `/api`.
-- `docker-compose.yml` / `docker-compose.prod.yml` / `docker-compose.h3.yml`: Compose variants for local SSR/prod and HTTP/3.
+- `docker-dev-web.yml`: Dev stack with SSG builder, preview server, gateway, and Traefik (TLS/H3); routes `/` and `/api`.
+- `docker-dev.yml` / `docker-prod.yml` / `docker-h3.yml`: Compose variants for local SSR/prod and HTTP/3.
 - `traefik/dynamic.yml`: Traefik file provider for TLS certs and reusable middlewares (security, cache, compression).
 
 ### Scripts

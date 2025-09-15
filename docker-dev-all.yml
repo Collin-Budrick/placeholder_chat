@@ -90,3 +90,4 @@ services:
       - "traefik.http.routers.traefik-host.entrypoints=websecure"
       - "traefik.http.routers.traefik-host.tls=true"
       - "traefik.http.routers.traefik-host.service=api@internal"
+
