@@ -1,0 +1,31 @@
+# Default compose wrapper for convenience commands like:
+#   docker compose up
+#   docker compose down
+# It reuses the dev SSR stack from docker-dev.yml so existing muscle memory keeps working.
+
+services:
+  web:
+    extends:
+      file: ./docker-dev.yml
+      service: web
+  gateway:
+    extends:
+      file: ./docker-dev.yml
+      service: gateway
+  traefik:
+    extends:
+      file: ./docker-dev.yml
+      service: traefik
+  announce:
+    extends:
+      file: ./docker-dev.yml
+      service: announce
+
+volumes:
+  bun_cache:
+  root_node_modules:
+  web_node_modules:
+  lynx_node_modules:
+  cargo_registry:
+  cargo_git:
+  cargo_target:
