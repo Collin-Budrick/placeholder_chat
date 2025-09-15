@@ -13,9 +13,12 @@ function run(cmd, args, opts = {}) {
 async function main() {
   const certDir = path.resolve('apps/web/certs');
   const hostsFile = path.join(certDir, '.hosts');
-  if (!fs.existsSync(hostsFile)) {
-    console.log('[mkcert:lan] Hosts file missing; preparing...');
-    const code = await run('bun', ['scripts/regen-mkcert-hosts.mjs']);
+  // Always refresh hosts to pick up current LAN IPv4 automatically
+  // This updates `.env` PUBLIC_IP/HMR_HOST and rewrites `.hosts`.
+  console.log('[mkcert:lan] Detecting LAN IPv4 and refreshing hosts ...');
+  {
+    const passArgs = process.argv.slice(2);
+    const code = await run('bun', ['scripts/regen-mkcert-hosts.mjs', ...passArgs]);
     if (code !== 0) process.exit(code);
   }
   const hostsRaw = fs.readFileSync(hostsFile, 'utf8').trim();
@@ -46,4 +49,3 @@ async function main() {
 }
 
 main().catch((e) => { console.error(e); process.exit(1); });
-

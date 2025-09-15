@@ -88,6 +88,8 @@ services:
     command:
       - "--entrypoints.websecure.address=:5173"
       - "--entrypoints.websecure.http3=true"
+      - "--ping=true"
+      - "--ping.entrypoint=websecure"
       - "--log.level=INFO"
       - "--api.dashboard=true"
       - "--providers.docker=true"
@@ -111,6 +113,28 @@ services:
       - "traefik.http.routers.traefik-host.entrypoints=websecure"
       - "traefik.http.routers.traefik-host.tls=true"
       - "traefik.http.routers.traefik-host.service=api@internal"
+
+  announce:
+    image: alpine:3
+    environment:
+      PUBLIC_IP: ${PUBLIC_IP:-127.0.0.1}
+    command:
+      - sh
+      - -c
+      - |
+        echo "";
+        echo "Traefik ready. Open:";
+        echo "  - Web (prod preview): https://localhost:5173  (or https://$${PUBLIC_IP}:5173)";
+        echo "  - Dashboard:          https://traefik.$${PUBLIC_IP}:5173";
+        echo "";
+        while true; do sleep 3600; done
+    depends_on:
+      web:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
+      traefik:
+        condition: service_started
 
 volumes:
   cargo-registry:

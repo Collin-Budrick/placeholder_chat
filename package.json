@@ -31,7 +31,7 @@
     "desktop:dev": "cargo run -p desktop_app",
     "desktop:build": "cargo build -p desktop_app --release",
     "docker:env": "bun scripts/write-public-ip-env.mjs",
-    "docker:dev": "bun scripts/write-public-ip-env.mjs && docker compose -p stack -f docker-compose.yml up web gateway traefik",
+    "docker:dev": "bun scripts/write-public-ip-env.mjs && docker compose -p stack -f docker-compose.yml up web gateway traefik announce",
     "docker:dev:ssg": "bun scripts/write-public-ip-env.mjs && docker compose -p stack -f docker-compose.dev-web.yml up --build",
     "docker:prod": "bun scripts/write-public-ip-env.mjs && docker compose -f docker-compose.prod.yml up --build",
     "docker:rebuild-gateway": "bun scripts/write-public-ip-env.mjs && docker compose -p stack -f docker-compose.yml build gateway && docker compose -p stack -f docker-compose.yml up -d gateway",
