@@ -85,11 +85,27 @@ async fn api_signup(
     if let Err(e) = state.storage.put_user(&user_id, &user_obj) { return Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())); }
 
     // 4) Hash password with Argon2 using a random salt, then store credentials
+    //    Argon2 is CPU-bound; run it on a blocking thread to avoid stalling the async runtime.
     let mut salt_bytes: [u8; 16] = [0u8; 16];
     rand::rng().fill_bytes(&mut salt_bytes);
     let salt: SaltString = SaltString::encode_b64(&salt_bytes).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    let argon2: Argon2<'_> = Argon2::default();
-    let pwd_hash: String = match argon2.hash_password(password.as_bytes(), &salt) { Ok(ph) => ph.to_string(), Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())), };
+    let pwd_hash: String = match tokio::task::spawn_blocking({
+        let password = password.clone();
+        let salt = salt;
+        move || {
+            let argon2: Argon2<'_> = Argon2::default();
+            argon2
+                .hash_password(password.as_bytes(), &salt)
+                .map(|ph| ph.to_string())
+                .map_err(|e| e.to_string())
+        }
+    })
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?
+    {
+        Ok(h) => h,
+        Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+    };
     let cred_obj = serde_json::json!({ "user_id": user_id, "password_hash": pwd_hash, "created_at": chrono::Utc::now().timestamp() });
     if let Err(e) = state.storage.put_credentials(&email, &cred_obj) { return Err((StatusCode::INTERNAL_SERVER_ERROR, e.to_string())); }
 
@@ -195,9 +211,36 @@ async fn api_login(
     };
 
     let user_id: String = creds_val.get("user_id").and_then(|v| v.as_str()).ok_or((StatusCode::INTERNAL_SERVER_ERROR, "malformed credentials".to_string()))?.to_string();
-    let stored_hash: &str = creds_val.get("password_hash").and_then(|v| v.as_str()).ok_or((StatusCode::INTERNAL_SERVER_ERROR, "malformed credentials".to_string()))?;
-    let parsed_hash: PasswordHash<'_> = PasswordHash::new(stored_hash).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
-    if Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_err() { return Err((StatusCode::UNAUTHORIZED, serde_json::json!({ "message": "invalid credentials" }).to_string())); }
+    // Take an owned copy of the stored hash so we can verify in a 'static blocking task
+    let stored_hash_string: String = creds_val
+        .get("password_hash")
+        .and_then(|v| v.as_str())
+        .ok_or((StatusCode::INTERNAL_SERVER_ERROR, "malformed credentials".to_string()))?
+        .to_string();
+    // Argon2 verify is CPU-bound; offload to a blocking thread and operate purely on owned data
+    let verify_res: Result<bool, String> = tokio::task::spawn_blocking({
+        let password = password.clone();
+        let stored_hash_string = stored_hash_string.clone();
+        move || {
+            let parsed_hash: PasswordHash<'_> = PasswordHash::new(&stored_hash_string)
+                .map_err(|e| e.to_string())?;
+            Ok(Argon2::default()
+                .verify_password(password.as_bytes(), &parsed_hash)
+                .is_ok())
+        }
+    })
+    .await
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+    match verify_res {
+        Ok(true) => {}
+        Ok(false) => {
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                serde_json::json!({ "message": "invalid credentials" }).to_string(),
+            ));
+        }
+        Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, e)),
+    }
 
     // 4) Ensure a user record exists for this credentials entry (safety for seeded admin)
     match state.storage.get_user(&user_id) {

@@ -31,12 +31,8 @@ pub fn router() -> Router<AppState> {
 /// - Each line is a complete JSON object, which makes it easy to stream,
 ///   tail, and process without loading the entire file.
 async fn api_frontend_logs(Json(mut entry): Json<Value>) -> impl IntoResponse {
-    use tokio::fs as afs;
-    let log_dir = std::path::Path::new("logs");
-    if let Err(e) = afs::create_dir_all(log_dir).await {
-        tracing::error!("failed to create logs dir: {:?}", e);
-    }
-    let log_path = log_dir.join("frontend-api.log");
+    // Return immediately; perform file IO in the background to avoid delaying the caller.
+    // Best-effort logging only.
     if entry.get("ts").is_none() {
         if let Some(obj) = entry.as_object_mut() {
             obj.insert("ts".to_string(), serde_json::Value::String(chrono::Utc::now().to_rfc3339()));
@@ -46,19 +42,26 @@ async fn api_frontend_logs(Json(mut entry): Json<Value>) -> impl IntoResponse {
         Ok(s) => s + "\n",
         Err(_) => "{}\n".to_string(),
     };
-    match afs::OpenOptions::new().create(true).append(true).open(&log_path).await {
-        Ok(mut fh) => {
-            if let Err(e) = fh.write_all(line.as_bytes()).await {
-                tracing::error!("failed to write log line: {:?}", e);
-                return (StatusCode::INTERNAL_SERVER_ERROR, "write-failed").into_response();
+    tokio::spawn(async move {
+        use tokio::fs as afs;
+        let log_dir = std::path::Path::new("logs");
+        if let Err(e) = afs::create_dir_all(log_dir).await {
+            tracing::error!("failed to create logs dir: {:?}", e);
+            return;
+        }
+        let log_path = log_dir.join("frontend-api.log");
+        match afs::OpenOptions::new().create(true).append(true).open(&log_path).await {
+            Ok(mut fh) => {
+                if let Err(e) = fh.write_all(line.as_bytes()).await {
+                    tracing::error!("failed to write log line: {:?}", e);
+                }
             }
-            (StatusCode::NO_CONTENT, "").into_response()
+            Err(e) => {
+                tracing::error!("failed to open log file: {:?}", e);
+            }
         }
-        Err(e) => {
-            tracing::error!("failed to open log file: {:?}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, "write-failed").into_response()
-        }
-    }
+    });
+    (StatusCode::NO_CONTENT, "").into_response()
 }
 
 /// Return the current frontend logs (text)

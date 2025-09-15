@@ -1,6 +1,7 @@
 import { component$, isDev } from "@builder.io/qwik";
 import { QwikCityProvider, RouterOutlet } from "@builder.io/qwik-city";
 import VelvetteInit from "~/components/integrations/VelvetteInit";
+import PWARegister from "~/components/pwa/PWARegister";
 import { RouterHead } from "./components/router-head/router-head";
 import "./global.css";
 // Ensure DaisyUI component styles are present even if Tailwind plugin processing
@@ -61,11 +62,7 @@ export default component$(() => {
 						<script src={`${import.meta.env.BASE_URL}debug-warn.js`} defer />
 					) : null;
 				})()}
-				<link
-					rel="preconnect"
-					href="https://images.unsplash.com"
-					crossOrigin="anonymous"
-				/>
+				{/* Remove unused third-party preconnects to avoid competing with critical resources */}
 				{/* Analytics via Partytown removed; add your own script loader if needed */}
 				{/* Optional prefetch for auth route data; opt-in via VITE_PREFETCH_AUTH=1 */}
 				{(() => {
@@ -165,6 +162,16 @@ export default component$(() => {
 						<VelvetteInit client:idle />
 					) : null;
 				})()}
+        {/* Register the PWA service worker when enabled via env */}
+        {(() => {
+          const env = (
+            import.meta as unknown as { env?: Record<string, string> }
+          )?.env as Record<string, string> | undefined;
+          return env?.VITE_ENABLE_PWA === "1" ? (
+            // @ts-expect-error Qwik client directive
+            <PWARegister client:visible />
+          ) : null;
+        })()}
 				{/* RouterOutlet renders routes that include their own #content container.
             Avoid wrapping in another #content to keep View Transitions working. */}
 				<RouterOutlet />

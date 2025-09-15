@@ -90,6 +90,7 @@ export default component$(() => {
 								aria-current={isActive("/") ? "page" : undefined}
 								href="/"
 								class={cn("rounded-lg px-2 py-1.5 transition-colors")}
+								data-prefetch
 							>
 								<HomeIcon class="icon-sharp h-7 w-7 [stroke-width:2]" />
 								<span class="sr-only">Home</span>
@@ -100,6 +101,7 @@ export default component$(() => {
 								aria-current={isActive("/about") ? "page" : undefined}
 								href="/about"
 								class={cn("rounded-lg px-2 py-1.5 transition-colors")}
+								data-prefetch
 							>
 								<InfoIcon class="icon-sharp h-7 w-7 [stroke-width:2]" />
 								<span class="sr-only">About</span>
@@ -110,6 +112,7 @@ export default component$(() => {
 								aria-current={isActive("/contact") ? "page" : undefined}
 								href="/contact"
 								class={cn("rounded-lg px-2 py-1.5 transition-colors")}
+								data-prefetch
 							>
 								<MailIcon class="icon-sharp h-7 w-7 [stroke-width:2]" />
 								<span class="sr-only">Messages</span>
@@ -120,6 +123,7 @@ export default component$(() => {
 								aria-current={isActive("/profile") ? "page" : undefined}
 								href="/profile"
 								class={cn("rounded-lg px-2 py-1.5 transition-colors")}
+								data-prefetch
 							>
 								<UserIcon class="icon-sharp h-7 w-7 [stroke-width:2]" />
 								<span class="sr-only">Account</span>

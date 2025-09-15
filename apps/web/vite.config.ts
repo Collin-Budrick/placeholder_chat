@@ -12,7 +12,7 @@ import tailwindcss from "@tailwindcss/vite";
 import { join } from "path";
 import Fonts from "unplugin-fonts/vite";
 import Icons from "unplugin-icons/vite";
-import { defineConfig, type UserConfig } from "vite";
+import { defineConfig, loadEnv, type UserConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import pkg from "./package.json";
 
@@ -33,6 +33,8 @@ export default defineConfig(({ command, mode }): UserConfig => {
 		command === "build" &&
 		(mode === "production" || process.env.NODE_ENV === "production");
 	const isSsgBuild = process.env.BUILD_TARGET === "ssg";
+  // Load Vite env vars so they are available in config time
+  const env = loadEnv(mode, process.cwd(), "");
   const extraPlugins: any[] = [];
 
   // Dev-only: suppress Qwik's noisy dev-only "Symbol(skip render)" warn in server logs
@@ -295,15 +297,108 @@ export default defineConfig(({ command, mode }): UserConfig => {
 			return true as any;
 		}
 	};
-	// Optional plugins: load if present
-	try {
-		// Load PWA only for production client builds (avoid SW caching in dev/SSG)
-		if (isProdBuild && !isSsgBuild) {
-			// @ts-expect-error
-			const { VitePWA } = require("@vite-pwa/qwik");
-			extraPlugins.push(VitePWA({ registerType: "auto" }));
-		}
-	} catch (e) {}
+  // Optional plugins: load if present
+  try {
+    // Load PWA only for production client builds (avoid SW caching in dev/SSG)
+    const enablePwa = env.VITE_ENABLE_PWA === "1" || process.env.VITE_ENABLE_PWA === "1";
+    if (isProdBuild && !isSsgBuild && enablePwa) {
+      // @ts-expect-error
+      const { VitePWA } = require("vite-plugin-pwa");
+      extraPlugins.push(
+        VitePWA({
+          // Use injectManifest so our Qwik City SW can be extended and precache injected
+          strategies: "injectManifest",
+          srcDir: "src",
+          filename: "entry.service-worker.ts",
+          // Auto update on new versions
+          registerType: "autoUpdate",
+          // Ensure the plugin is enabled only when env toggled
+          disable: false,
+          includeAssets: [
+            "favicon.svg",
+            "theme-init.js",
+          ],
+          manifest: {
+            name: "Stack",
+            short_name: "Stack",
+            description:
+              "Fast, modern chat app with Qwik SSR and a Rust gateway.",
+            start_url: "/",
+            scope: "/",
+            display: "standalone",
+            background_color: "#ffffff",
+            theme_color: "#000000",
+            icons: [
+              // If you add PNG icons later, keep these entries and add 192/512 sizes.
+              {
+                src: "/favicon.svg",
+                sizes: "any",
+                type: "image/svg+xml",
+                purpose: "any maskable",
+              },
+            ],
+          },
+          workbox: {
+            // Precache key assets emitted by Vite/Qwik
+            globPatterns: [
+              "**/*.{js,css,html,ico,png,svg,webp,avif,ttf,woff,woff2,json,txt}",
+            ],
+            // Provide an offline fallback for navigations
+            navigateFallback: "/offline.html",
+            navigateFallbackDenylist: [
+              // Never hijack API, WS or dev endpoints
+              /\/api\//,
+              /\/ws\b/,
+            ],
+            cleanupOutdatedCaches: true,
+            runtimeCaching: [
+              // HTML documents: prefer fresh network, fall back to cache
+              {
+                urlPattern: ({ request }: any) => request.mode === "navigate",
+                handler: "NetworkFirst",
+                options: {
+                  cacheName: "pages",
+                  networkTimeoutSeconds: 3,
+                  expiration: { maxEntries: 50, maxAgeSeconds: 7 * 24 * 60 * 60 },
+                },
+              },
+              // Qwik route data JSON: keep fresh but serve cached quickly
+              {
+                urlPattern: ({ url }: any) => /\/[^?]*q-data\.json$/i.test(url.pathname),
+                handler: "StaleWhileRevalidate",
+                options: {
+                  cacheName: "q-data",
+                  expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 },
+                  cacheableResponse: { statuses: [200] },
+                },
+              },
+              // Static assets (JS/CSS/workers): revalidate in background
+              {
+                urlPattern: ({ request }: any) =>
+                  ["script", "style", "worker"].includes(request.destination),
+                handler: "StaleWhileRevalidate",
+                options: {
+                  cacheName: "assets",
+                  expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+                },
+              },
+              // Images (same-origin only to avoid CSP connect-src issues)
+              {
+                urlPattern: ({ url, request }: any) =>
+                  url.origin === self.location.origin && request.destination === "image",
+                handler: "CacheFirst",
+                options: {
+                  cacheName: "images",
+                  expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+                  cacheableResponse: { statuses: [200] },
+                },
+              },
+            ],
+          },
+        }),
+      );
+    }
+  } catch (e) {}
 	try {
 		if (process.env.USE_MKCERT === "1") {
 			// Enable trusted HTTPS in dev using mkcert with optional custom hosts

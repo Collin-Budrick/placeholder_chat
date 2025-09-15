@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline | Stack</title>
+    <link rel="icon" href="/favicon.svg" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="stylesheet" href="/vt.css" />
+    <style>
+      :root { color-scheme: light dark; }
+      body { display: grid; place-items: center; min-height: 100dvh; margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
+      .card { max-width: 28rem; padding: 1.25rem; border-radius: 0.75rem; border: 1px solid var(--fallback-bc, oklch(0.5 0 0)); background: color-mix(in oklab, currentColor 3%, transparent); }
+      .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.6rem 0.9rem; border-radius: 0.6rem; border: 1px solid; text-decoration: none; }
+    </style>
+  </head>
+  <body class="bg-base-100 text-base-content">
+    <main class="card">
+      <h1 class="text-xl font-semibold">You’re offline</h1>
+      <p class="mt-2 opacity-80">Some content may be unavailable. Try again when you’re back online.</p>
+      <div class="mt-4 flex gap-2">
+        <a class="btn border-base-300" href="/">Go home</a>
+        <button class="btn border-base-300" onclick="location.reload()">Retry</button>
+      </div>
+    </main>
+  </body>
+  <script src="/theme-init.js" defer></script>
+</html>
+

@@ -6,6 +6,7 @@ import GlassNavBar from "~/components/GlassNavBar";
 import SmoothScrollProvider from "~/components/integrations/SmoothScrollProvider";
 import ScrollProgress from "~/components/ScrollProgress";
 import ScrollReveals from "~/components/ScrollReveals";
+import RoutePrefetch from "~/components/RoutePrefetch";
 
 /**
  * Layout component: renders the site navigation and a <Slot /> for route content.
@@ -23,6 +24,8 @@ export default component$(() => {
 	// In prod, require opt-in via VITE_REVEALS=1.
 	const enableReveals =
 		env.VITE_REVEALS === "1" || (isDev && env.VITE_REVEALS !== "0");
+  // Aggressive route prefetch (idle); opt-in only
+  const enablePrefetchAll = env.VITE_PREFETCH_ALL === "1";
 	const loc = useLocation();
 	const path = loc.url.pathname || "/";
 	const hideNav =
@@ -88,6 +91,12 @@ export default component$(() => {
 				// @ts-expect-error Qwik client directive
 				<AuthWarmup client:idle />
 			)}
+
+			{/* Idle route data prefetch: guarded by VITE_PREFETCH_ALL=1 */}
+			{enablePrefetchAll ? (
+				// @ts-expect-error Qwik client directive
+				<RoutePrefetch client:idle />
+			) : null}
 			{/* New glass top navigation; hydrate on idle to keep auth pages light. */}
 			{/* Render nav in SSR to avoid CLS from late mount; its inner ThemeToggle still hydrates on idle */}
 			{!hideNav ? <GlassNavBar /> : null}

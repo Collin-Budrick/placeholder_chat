@@ -28,6 +28,7 @@
     "biome:fix": "biome check --write src --max-diagnostics=500"
   },
   "devDependencies": {
+    "vite-plugin-pwa": "1.0.3",
     "@builder.io/qwik": "1.16.0",
     "@builder.io/qwik-city": "1.16.0",
     "@builder.io/qwik-react": "0.5.6",
