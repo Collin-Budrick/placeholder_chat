@@ -1,9 +1,4 @@
-import {
-	component$,
-	isServer,
-	useSignal,
-	useVisibleTask$,
-} from "@builder.io/qwik";
+import { component$, useSignal, useVisibleTask$ } from "@builder.io/qwik";
 import { animateMotion } from "~/lib/motion-qwik";
 
 type Stat = {
@@ -46,74 +41,78 @@ const COUNTER_DURATION_MS = 1200;
 
 const easeOutCubic = (t: number) => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
 
-export const StatsCard = component$(() => {
+export default component$(() => {
 	const rootRef = useSignal<HTMLElement>();
 	const values = useSignal<string[]>(STATS.map((stat) => stat.initial));
-	const started = useSignal(false);
 
-	useVisibleTask$(() => {
-		if (isServer) return;
+	useVisibleTask$(async ({ cleanup }) => {
 		if (typeof window === "undefined") return;
 
 		const el = rootRef.value;
-		if (!el || started.value) return;
-		started.value = true;
+		if (!el) return;
+
+		try {
+			el.style.opacity = "0";
+			el.style.transform = "translateY(16px)";
+			el.style.willChange = "transform, opacity";
+		} catch {
+			/* ignore */
+		}
+
+		if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+			values.value = STATS.map((stat) => stat.format(stat.target));
+			try {
+				el.style.opacity = "1";
+				el.style.transform = "none";
+				el.style.willChange = "";
+			} catch {
+				/* ignore */
+			}
+			return;
+		}
 
 		let cancelled = false;
 		let frameId = 0;
-
-		(async () => {
-			try {
-				el.style.opacity = "0";
-				el.style.transform = "translateY(16px)";
-				el.style.willChange = "transform, opacity";
-			} catch {}
-
-			const reduced =
-				window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
-			if (reduced) {
+		const start = window.performance?.now?.() ?? Date.now();
+		const step = (now: number) => {
+			if (cancelled) return;
+			const progress = easeOutCubic((now - start) / COUNTER_DURATION_MS);
+			values.value = STATS.map((stat) => stat.format(stat.target * progress));
+			if (progress < 1) {
+				frameId = window.requestAnimationFrame(step);
+			} else {
 				values.value = STATS.map((stat) => stat.format(stat.target));
-				try {
-					el.style.opacity = "1";
-					el.style.transform = "none";
-					el.style.willChange = "";
-				} catch {}
-				return;
 			}
+		};
+		frameId = window.requestAnimationFrame(step);
 
-			const start = window.performance?.now?.() ?? Date.now();
-			const step = (now: number) => {
-				if (cancelled) return;
-				const progress = easeOutCubic((now - start) / COUNTER_DURATION_MS);
-				values.value = STATS.map((stat) => stat.format(stat.target * progress));
-				if (progress < 1) {
-					frameId = window.requestAnimationFrame(step);
-				} else {
-					values.value = STATS.map((stat) => stat.format(stat.target));
-				}
-			};
-			frameId = window.requestAnimationFrame(step);
-
-			try {
-				const player = await animateMotion(el, { y: [16, 0], opacity: [0, 1] }, {
-					duration: 0.5,
-					easing: "cubic-bezier(.22,.9,.37,1)",
-				});
-				await player?.finished;
-			} catch {}
-			try {
-				el.style.willChange = "";
-			} catch {}
-		})();
-
-		return () => {
+		cleanup(() => {
 			cancelled = true;
 			if (frameId) {
 				try {
 					window.cancelAnimationFrame(frameId);
-				} catch {}
+				} catch {
+					/* ignore */
+				}
 			}
-		};
+		});
+
+		try {
+			const player = await animateMotion(
+				el,
+				{ y: [16, 0], opacity: [0, 1] },
+				{ duration: 0.5, easing: "cubic-bezier(.22,.9,.37,1)" },
+			);
+			await player?.finished;
+		} catch {
+			/* ignore */
+		} finally {
+			try {
+				el.style.willChange = "";
+			} catch {
+				/* ignore */
+			}
+		}
 	});
 
 	return (
@@ -131,5 +130,3 @@ export const StatsCard = component$(() => {
 		</div>
 	);
 });
-
-export default StatsCard;
