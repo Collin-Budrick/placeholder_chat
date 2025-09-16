@@ -9,7 +9,8 @@ export default component$(() => {
 
       try {
         // Use Vite PWA helper when plugin is present (resolved at build time)
-        const { registerSW } = await import('virtual:pwa-register');
+        const moduleId = 'virtual:pwa-register';
+        const { registerSW } = (await import(/* @vite-ignore */ moduleId)) as typeof import('virtual:pwa-register');
         const updateSW = registerSW({
           immediate: true,
           onNeedRefresh() {
