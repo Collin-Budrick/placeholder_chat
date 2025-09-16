@@ -7,7 +7,7 @@ import {
 import type { DocumentHead } from "@builder.io/qwik-city";
 import { Link } from "@builder.io/qwik-city";
 import Avatar from "~/components/Avatar";
-import { PreactStatsIsland } from "~/components/PreactStatsIsland";
+import StatsCard from "~/components/StatsCard";
 import { pastelFor } from "~/lib/avatar-color";
 import { cn } from "~/lib/cn";
 import { animateMotion, timelineMotion } from "~/lib/motion-qwik";
@@ -903,10 +903,10 @@ export default component$(() => {
 				</div>
 			</section>
 
-			{/* Stats (Preact island animates counters when visible) */}
+			{/* Stats (Qwik counters animate when visible) */}
 			<section class="mx-auto max-w-7xl px-6 py-10">
-				{/* Hydrate the Preact island only on visibility to avoid SSR rendering warnings */}
-				<PreactStatsIsland client:visible />
+				{/* Animated counter card */}
+				<StatsCard />
 			</section>
 		</div>
 	);
