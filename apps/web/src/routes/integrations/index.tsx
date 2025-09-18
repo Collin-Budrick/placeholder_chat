@@ -1,23 +1,28 @@
 import { component$, useVisibleTask$ } from "@builder.io/qwik";
+import { routeLoader$ } from "@builder.io/qwik-city";
 import type { DocumentHead, DocumentLink } from "@builder.io/qwik-city";
 import BackButton from "../../components/BackButton";
 import DaisyButtonsDemo from "../../components/integrations/DaisyButtonsDemo";
 import FakerDemo from "../../components/integrations/FakerDemo";
+import type { FakerUser } from "../../components/integrations/FakerDemo";
 import IconsDemo from "../../components/integrations/IconsDemo";
 import MotionOneDemo from "../../components/integrations/MotionOneDemo";
 import PictureDemo from "../../components/integrations/PictureDemo";
 import { PreactCounterIsland } from "../../components/PreactCounterIsland";
 import UnpicDemo from "../../components/integrations/UnpicDemo";
 
-export default component$(() => {
-	// Prewarm faker chunk in the background to reduce first-interaction latency
-	useVisibleTask$(() => {
-		(async () => {
-			try {
-				await import("@faker-js/faker/locale/en");
-			} catch {}
-		})();
+export const useFakerUsers = routeLoader$<FakerUser[]>(async () => {
+	const { faker } = await import("@faker-js/faker/locale/en");
+	const createUser = () => ({
+		id: faker.string.uuid(),
+		name: faker.person.fullName(),
+		email: faker.internet.email(),
 	});
+	return Array.from({ length: 3 }, () => createUser());
+});
+
+export default component$(() => {
+	const fakerUsers = useFakerUsers();
 
 	// Soft patch: allow libraries that fetch inline data: shaders/text to work without relaxing CSP.
 	// We intercept fetch(data:text/plain;base64,...) and return a synthetic Response locally.
@@ -88,9 +93,8 @@ export default component$(() => {
 				Preact Island, and DaisyUI.
 			</p>
 			<div class="grid gap-8 md:grid-cols-2">
-				{/* Gate non-critical demos behind client:visible to trim initial JS */}
-				{/* @ts-expect-error client directive */}
-				<FakerDemo client:visible />
+				{/* Faker roster is generated during SSR to avoid extra hydration work */}
+				<FakerDemo initialUsers={fakerUsers.value} />
 				{/* @ts-expect-error client directive */}
 				<MotionOneDemo client:visible />
 				{/* @ts-expect-error client directive */}
@@ -153,6 +157,7 @@ export const head: DocumentHead = {
 // Enable SSG for this route so the LCP image and preload hints
 // are present in the initial HTML of the static build.
 export const prerender = true;
+
 
 
 
