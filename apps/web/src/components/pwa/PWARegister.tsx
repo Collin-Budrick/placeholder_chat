@@ -7,10 +7,13 @@ export default component$(() => {
       // Only register if PWA is enabled at build time
       if (import.meta.env.VITE_ENABLE_PWA !== '1') return;
 
+      if (!window.isSecureContext && location.hostname !== 'localhost') {
+        return;
+      }
+
       try {
         // Use Vite PWA helper when plugin is present (resolved at build time)
-        const moduleId = 'virtual:pwa-register';
-        const { registerSW } = (await import(/* @vite-ignore */ moduleId)) as typeof import('virtual:pwa-register');
+        const { registerSW } = (await import('virtual:pwa-register')) as typeof import('virtual:pwa-register');
         const updateSW = registerSW({
           immediate: true,
           onNeedRefresh() {
