@@ -9,13 +9,13 @@
   "dependencies": {
     "@builder.io/qwik": "1.16.0",
     "@builder.io/qwik-city": "1.16.0",
-    "@openai/codex": "0.36.0",
+    "@openai/codex": "0.38.0",
     "ignore": "7.0.5",
     "typescript": "5.9.2",
-    "vite": "7.1.5"
+    "vite": "7.1.6"
   },
   "devDependencies": {
-    "@types/node": "24.4.0",
+    "@types/node": "24.5.2",
     "concurrently": "9.2.1",
     "dotenv": "17.2.2",
     "lightningcss": "1.30.1",
