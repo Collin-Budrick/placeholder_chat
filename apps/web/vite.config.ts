@@ -102,6 +102,21 @@ export default defineConfig(({ command, mode }): UserConfig => {
     },
   });
   extraPlugins.push(warnTrace());
+
+  const pwaRegisterStubPlugin = () => ({
+    name: "virtual-pwa-register-stub",
+    resolveId(id: string) {
+      return id === "virtual:pwa-register" ? id : null;
+    },
+    load(id: string) {
+      if (id !== "virtual:pwa-register") return undefined;
+      return [
+        "export const registerSW = () => {",
+        "	return async () => {};",
+        "};",
+      ].join("\n");
+    },
+  });
 	// Try to load Preact plugin for client/dev builds only; skip during SSG to avoid server-side imports
 	if (!process.env.BUILD_TARGET || process.env.BUILD_TARGET !== "ssg") {
 		try {
@@ -298,6 +313,7 @@ export default defineConfig(({ command, mode }): UserConfig => {
 		}
 	};
   // Optional plugins: load if present
+  let hasPwaHelper = false;
   try {
     // Load PWA only for production client builds (avoid SW caching in dev/SSG)
     const enablePwa = env.VITE_ENABLE_PWA === "1" || process.env.VITE_ENABLE_PWA === "1";
@@ -403,8 +419,12 @@ export default defineConfig(({ command, mode }): UserConfig => {
           },
         }),
       );
+      hasPwaHelper = true;
     }
   } catch (e) {}
+  if (!hasPwaHelper) {
+    extraPlugins.push(pwaRegisterStubPlugin());
+  }
 	try {
 		if (process.env.USE_MKCERT === "1") {
 			// Enable trusted HTTPS in dev using mkcert with optional custom hosts
